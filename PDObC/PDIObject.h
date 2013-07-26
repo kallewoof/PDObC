@@ -77,6 +77,13 @@
 - (void)removeStream;
 
 /**
+ Get the value of the primitive object. 
+ 
+ @note If the object is not a primitive, this method will return nil.
+ */
+- (NSString *)primitiveValue;
+
+/**
  Get the value of the given key.
  
  @param key The dictionary key.
@@ -103,6 +110,13 @@
  @warning Setting a value, and then changing the contents of that value, even if it is mutable, will not affect the resulting PDF. setValue:forKey: must be called *after* all modifications are done, regardless of the object type.
  */
 - (void)setValue:(id)value forKey:(NSString *)key;
+
+/**
+ Construct an NSDictionary representation of the (dictionary) object's definition.
+ 
+ @note If the object is not a dictionary, this returns nil.
+ */
+- (NSDictionary *)constructDictionary;
 
 /**
  Replace the object stream with the given string.
@@ -135,5 +149,10 @@
  The object's generation number.
  */
 @property (nonatomic, readonly) NSInteger generationID;
+
+/**
+ The object's type.
+ */
+@property (nonatomic, readonly) PDObjectType type;
 
 @end

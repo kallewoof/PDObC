@@ -35,7 +35,6 @@
 - (void)dealloc
 {
     PDReferenceDestroy(_ref);
-    [super dealloc];
 }
 
 - (id)initWithReference:(PDReferenceRef)reference
@@ -62,7 +61,7 @@
 - (const char *)PDFString
 {
     if (NULL == _PDFString) {
-        _PDFString = strdup([[NSString stringWithFormat:@"%d %d R", _objectID, _generationID] cStringUsingEncoding:NSUTF8StringEncoding]);
+        _PDFString = strdup([[NSString stringWithFormat:@"%ld %ld R", _objectID, _generationID] cStringUsingEncoding:NSUTF8StringEncoding]);
     }
     return _PDFString;
 }

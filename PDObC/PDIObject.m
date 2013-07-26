@@ -25,6 +25,7 @@
 #import "PDIObject.h"
 #import "PDInternal.h"
 #import "PDStack.h"
+#import "NSObjects+PDIEntity.h"
 
 @interface PDIObject () {
     PDObjectRef _obj;
@@ -38,8 +39,6 @@
 - (void)dealloc
 {
     PDObjectRelease(_obj);
-    [_dict release];
-    [super dealloc];
 }
 
 - (id)initWithObject:(PDObjectRef)object
@@ -49,6 +48,7 @@
         _obj = PDObjectRetain(object);
         _objectID = PDObjectGetObID(_obj);
         _generationID = PDObjectGetGenID(_obj);
+        _type = PDObjectGetType(_obj);
         _dict = [[NSMutableDictionary alloc] initWithCapacity:3];
     }
     return self;
@@ -70,7 +70,7 @@
 - (const char *)PDFString
 {
     if (NULL == _PDFString) {
-        _PDFString = strdup([[NSString stringWithFormat:@"%d %d R", _objectID, _generationID] cStringUsingEncoding:NSUTF8StringEncoding]);
+        _PDFString = strdup([[NSString stringWithFormat:@"%ld %ld R", (long)_objectID, _generationID] cStringUsingEncoding:NSUTF8StringEncoding]);
     }
     return _PDFString;
 }
@@ -101,10 +101,11 @@
     if (! value) {
         const char *vstr = PDObjectGetDictionaryEntry(_obj, [key cStringUsingEncoding:NSUTF8StringEncoding]);
         if (vstr) {
-            value = [NSString stringWithCString:vstr encoding:NSUTF8StringEncoding];
+            value = [NSString stringWithPDFString:vstr];
             [_dict setObject:value forKey:key];
         }
     }
+    _type = _obj->type;
     return value;
 }
 
@@ -123,6 +124,31 @@
     }
     PDObjectSetDictionaryEntry(_obj, [key cStringUsingEncoding:NSUTF8StringEncoding], vstr);
     [_dict setObject:value forKey:key];
+    _type = _obj->type;
+}
+
+- (NSString *)primitiveValue
+{
+    if (_type != PDObjectTypeString) 
+        return nil;
+    return [NSString stringWithPDFString:PDObjectGetValue(_obj)];
+}
+
+- (NSDictionary *)constructDictionary
+{
+    if (_type != PDObjectTypeDictionary) {
+        return nil;
+    }
+    
+    PDStackRef iter = _obj->def;
+    char *key;
+    char *value;
+    while (PDStackGetNextDictKey(&iter, &key, &value)) {
+        [self setValue:[NSString stringWithPDFString:value]
+                forKey:[NSString stringWithPDFString:key]];
+        free(value);
+    }
+    return _dict;
 }
 
 - (void)removeValueForKey:(NSString *)key

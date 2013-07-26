@@ -30,12 +30,12 @@ extern void PDTaskDealloc(void *ob);
 
 PDTaskResult PDBlockLauncher(PDPipeRef pipe, PDTaskRef task, PDObjectRef object)
 {
-    return as(PDTaskBlock, task->info)(pipe, task, object);
+    return as(__bridge PDTaskBlock, task->info)(pipe, task, object);
 }
 
 void PDBlockTaskDealloc(void *ob) 
 {
-    [as(PDTaskBlock, as(PDTaskRef, ob)->info) release];
+    CFBridgingRelease(as(PDTaskRef, ob)->info);
     PDTaskDealloc(ob);
 }
 
@@ -43,7 +43,7 @@ PDTaskRef PDTaskCreateBlockMutator(PDTaskBlock mutatorBlock)
 {
     PDTaskRef task = PDTaskCreateMutator(&PDBlockLauncher);
     task->deallocator = &PDBlockTaskDealloc;
-    task->info = [mutatorBlock copy];
+    task->info = (void*)CFBridgingRetain([mutatorBlock copy]);
     return task;
 }
 

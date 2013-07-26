@@ -41,3 +41,13 @@
 
 @end
 
+/**
+ `NSString` category implementing PDIEntity protocol. This includes a method to get an NSString out of a C string that tries different encodings.
+ */
+
+@interface NSString (PDIEntity) <PDIEntity>
+
++ (NSString *)stringWithPDFString:(const char *)PDFString;
+
+@end
+

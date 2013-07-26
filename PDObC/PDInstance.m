@@ -29,6 +29,7 @@
 #import "PDInstance.h"
 #import "PDIObject.h"
 #import "PDIReference.h"
+#import "PDPortableDocumentFormatState.h"
 
 @interface PDInstance () {
     PDPipeRef _pipe;
@@ -50,36 +51,32 @@
 
 - (void)dealloc
 {
-    [_rootObject release];
-    [_rootRef release];
-    [_infoRef release];
-    [_sourcePDFPath release];
-    [_destPDFPath release];
     if (_pipe) PDPipeDestroy(_pipe);
-    [super dealloc];
+    
+    PDPortableDocumentFormatConversionTableRelease();
 }
 
 - (id)initWithSourcePDFPath:(NSString *)sourcePDFPath destinationPDFPath:(NSString *)destPDFPath
 {
     self = [super init];
     if (self) {
+        PDPortableDocumentFormatConversionTableRetain();
+        
         if ([sourcePDFPath isEqualToString:destPDFPath]) {
             [NSException raise:NSInvalidArgumentException format:@"Input source and destination source must not be the same file."];
         }
         if (nil == sourcePDFPath || nil == destPDFPath) {
             [NSException raise:NSInvalidArgumentException format:@"Source and destination must be non-nil."];
         }
-        _sourcePDFPath = [sourcePDFPath retain];
-        _destPDFPath = [destPDFPath retain];
+        _sourcePDFPath = sourcePDFPath;
+        _destPDFPath = destPDFPath;
         _pipe = PDPipeCreateWithFilePaths([sourcePDFPath cStringUsingEncoding:NSUTF8StringEncoding], 
                                           [destPDFPath cStringUsingEncoding:NSUTF8StringEncoding]);
         if (NULL == _pipe) {
-            [self release];
             return nil;
         }
         
         if (! PDPipePrepare(_pipe)) {
-            [self release];
             return nil;
         }
         _parser = PDPipeGetParser(_pipe);
@@ -130,7 +127,7 @@
 - (PDIObject *)createObject:(BOOL)append
 {
     PDObjectRef ob = append ? PDParserCreateAppendedObject(_parser) : PDParserCreateNewObject(_parser);
-    PDIObject *iob = [[[PDIObject alloc] initWithObject:ob] autorelease];
+    PDIObject *iob = [[PDIObject alloc] initWithObject:ob];
     PDObjectRelease(ob);
     return iob;
 }
@@ -153,9 +150,7 @@
     
     task = PDTaskCreateBlockMutator(^PDTaskResult(PDPipeRef pipe, PDTaskRef task, PDObjectRef object) {
         PDIObject *iob = [[PDIObject alloc] initWithObject:object];
-        operation(self, iob);
-        [iob release];
-        return PDTaskDone;
+        return operation(self, iob);
     });
     
     PDTaskAppendTask(filter, task);
@@ -170,10 +165,13 @@
     [self enqueuePropertyType:PDPropertyObjectId value:objectID operation:operation];
 }
 
-/*- (void)enqueueOperationAfterLastObject:(PDIObjectOperation)operation
+- (void)enqueueOperation:(PDIObjectOperation)operation
 {
-    [self enqueuePropertyType:PDPropertyLate value:0 operation:operation];
-}*/
+    PDPipeAddTask(_pipe, PDTaskCreateBlockMutator(^PDTaskResult(PDPipeRef pipe, PDTaskRef task, PDObjectRef object) {
+        PDIObject *iob = [[PDIObject alloc] initWithObject:object];
+        return operation(self, iob);
+    }));
+}
 
 - (void)setRootStream:(NSData *)data forKey:(NSString *)key
 {
@@ -183,9 +181,10 @@
         if (ref) {
             // got this already; we want to tweak it then
             NSInteger refID = [[[ref componentsSeparatedByString:@" "] objectAtIndex:0] integerValue];
-            [self forObjectWithID:refID enqueueOperation:^(PDInstance *instance, PDIObject *object) {
+            [self forObjectWithID:refID enqueueOperation:^PDTaskResult(PDInstance *instance, PDIObject *object) {
                 [object setStreamIsEncrypted:NO];
                 [object setStreamContent:data];
+                return PDTaskDone;
             }];
         } else {
             // don't have the key; we want to add an object then
@@ -193,8 +192,9 @@
             [ob setStreamIsEncrypted:NO];
             [ob setStreamContent:data];
             
-            [self forObjectWithID:_rootObject.objectID enqueueOperation:^(PDInstance *instance, PDIObject *object) {
+            [self forObjectWithID:_rootObject.objectID enqueueOperation:^PDTaskResult(PDInstance *instance, PDIObject *object) {
                 [object setValue:ob forKey:key];
+                return PDTaskDone;
             }];
         }
     } else {
@@ -202,6 +202,11 @@
         fprintf(stderr, "I thought all pdfs had root objects...\n");
         [NSException raise:@"PDInvalidDocumentException" format:@"No root object exists in the document."];
     }
+}
+
+- (NSInteger)totalObjectCount
+{
+    return PDParserGetTotalObjectCount(_parser);
 }
 
 @end

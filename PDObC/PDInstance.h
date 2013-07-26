@@ -56,8 +56,10 @@
 @class PDIObject;
 @class PDIReference;
 
+#import "PDDefines.h"
+
 // Block method for object operations.
-typedef void (^PDIObjectOperation)(PDInstance *instance, PDIObject *object);
+typedef PDTaskResult (^PDIObjectOperation)(PDInstance *instance, PDIObject *object);
 
 @interface PDInstance : NSObject
 
@@ -133,9 +135,11 @@ typedef void (^PDIObjectOperation)(PDInstance *instance, PDIObject *object);
 - (void)forObjectWithID:(NSInteger)objectID enqueueOperation:(PDIObjectOperation)operation;
 
 /**
- * Enqueue a PDIObjectOperation for after the last object has been parsed.
+ Enqueue a PDIObjectOperation that is called for every single (live) object.
+ 
+ @param operation The operation.
  */
-//- (void)enqueueOperationAfterLastObject:(PDIObjectOperation)operation;
+- (void)enqueueOperation:(PDIObjectOperation)operation;
 
 /**
  Executes the tasks required to perform the requested changes, and closes the stream. This is where all operation blocks will be executed.
@@ -149,12 +153,12 @@ typedef void (^PDIObjectOperation)(PDInstance *instance, PDIObject *object);
 /**
  Reference to the PDF root object.
  */
-@property (nonatomic, readonly) PDIReference *rootReference;
+@property (weak, nonatomic, readonly) PDIReference *rootReference;
 
 /**
  Reference to the PDF info object.
  */
-@property (nonatomic, readonly) PDIReference *infoReference;
+@property (weak, nonatomic, readonly) PDIReference *infoReference;
 
 /**
  The source PDF path.
@@ -170,5 +174,10 @@ typedef void (^PDIObjectOperation)(PDInstance *instance, PDIObject *object);
  The number of (live) objects seen in the input PDF. This property is undefined until execute has been called.
  */
 @property (nonatomic, readonly) NSInteger objectSum;
+
+/**
+ The total number of objects in the input PDF. This is always valid.
+ */
+@property (nonatomic, readonly) NSInteger totalObjectCount;
 
 @end

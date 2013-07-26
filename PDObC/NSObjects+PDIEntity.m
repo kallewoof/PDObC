@@ -65,3 +65,24 @@
 }
 
 @end
+
+@implementation NSString (PDIEntity)
+
++ (NSString *)stringWithPDFString:(const char *)PDFString
+{
+    NSString *str = [[NSString alloc] initWithCString:PDFString encoding:NSUTF8StringEncoding];
+    if (str == nil) {
+        str = [[NSString alloc] initWithCString:PDFString encoding:NSASCIIStringEncoding];
+    }
+    if (str == nil) {
+        [NSException raise:@"PDUnknownEncodingException" format:@"PDF string was using an unknown encoding."];
+    }
+    return str;
+}
+
+- (const char *)PDFString
+{
+    return [self cStringUsingEncoding:NSUTF8StringEncoding];
+}
+
+@end

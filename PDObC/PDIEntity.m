@@ -30,7 +30,6 @@
 {
     if (_PDFString)
         free(_PDFString);
-    [super dealloc];
 }
 
 - (const char *)PDFString
