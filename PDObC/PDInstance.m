@@ -116,7 +116,7 @@
 {
     if (_rootObject == nil) {
         if (_parser->rootRef) {
-            PDStackRef rootDef = PDParserLocateAndCreateDefinitionForObject(_parser, _parser->rootRef->obid, 300, true);
+            PDStackRef rootDef = PDParserLocateAndCreateDefinitionForObject(_parser, _parser->rootRef->obid, true);
             assert(rootDef);
             _rootObject = [[PDIObject alloc] initWithDefinitionStack:rootDef objectID:_parser->rootRef->obid generationID:_parser->rootRef->genid];
         }

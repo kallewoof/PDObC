@@ -92,7 +92,7 @@
 
 - (void)setStreamIsEncrypted:(BOOL)encrypted
 {
-    PDObjectSetEncryptedStreamFlag(_obj, encrypted);
+    PDObjectSetStreamEncrypted(_obj, encrypted);
 }
 
 - (id)valueForKey:(NSString *)key
