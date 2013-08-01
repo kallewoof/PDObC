@@ -38,14 +38,14 @@
 
 - (void)dealloc
 {
-    PDObjectRelease(_obj);
+    PDRelease(_obj);
 }
 
 - (id)initWithObject:(PDObjectRef)object
 {
     self = [super init];
     if (self) {
-        _obj = PDObjectRetain(object);
+        _obj = PDRetain(object);
         _objectID = PDObjectGetObID(_obj);
         _generationID = PDObjectGetGenID(_obj);
         _type = PDObjectGetType(_obj);
@@ -70,7 +70,7 @@
 - (const char *)PDFString
 {
     if (NULL == _PDFString) {
-        _PDFString = strdup([[NSString stringWithFormat:@"%ld %ld R", (long)_objectID, _generationID] cStringUsingEncoding:NSUTF8StringEncoding]);
+        _PDFString = strdup([[NSString stringWithFormat:@"%ld %ld R", (long)_objectID, (long)_generationID] cStringUsingEncoding:NSUTF8StringEncoding]);
     }
     return _PDFString;
 }
@@ -87,7 +87,7 @@
 
 - (void)setStreamContent:(NSData *)content
 {
-    PDObjectSetStream(_obj, [content bytes], [content length], true);
+    PDObjectSetStream(_obj, (char *)[content bytes], [content length], true);
 }
 
 - (void)setStreamIsEncrypted:(BOOL)encrypted

@@ -53,14 +53,14 @@
 {
     if (_pipe) PDPipeDestroy(_pipe);
     
-    PDPortableDocumentFormatConversionTableRelease();
+    PDConversionTableRelease();
 }
 
 - (id)initWithSourcePDFPath:(NSString *)sourcePDFPath destinationPDFPath:(NSString *)destPDFPath
 {
     self = [super init];
     if (self) {
-        PDPortableDocumentFormatConversionTableRetain();
+        PDConversionTableRetain();
         
         if ([sourcePDFPath isEqualToString:destPDFPath]) {
             [NSException raise:NSInvalidArgumentException format:@"Input source and destination source must not be the same file."];
@@ -128,7 +128,7 @@
 {
     PDObjectRef ob = append ? PDParserCreateAppendedObject(_parser) : PDParserCreateNewObject(_parser);
     PDIObject *iob = [[PDIObject alloc] initWithObject:ob];
-    PDObjectRelease(ob);
+    PDRelease(ob);
     return iob;
 }
 
@@ -156,8 +156,8 @@
     PDTaskAppendTask(filter, task);
     PDPipeAddTask(_pipe, filter);
     
-    PDTaskRelease(task);
-    PDTaskRelease(filter);
+    PDRelease(task);
+    PDRelease(filter);
 }
 
 - (void)forObjectWithID:(NSInteger)objectID enqueueOperation:(PDIObjectOperation)operation

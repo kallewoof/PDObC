@@ -28,7 +28,7 @@
 
 extern void PDTaskDealloc(void *ob);
 
-PDTaskResult PDBlockLauncher(PDPipeRef pipe, PDTaskRef task, PDObjectRef object)
+PDTaskResult PDBlockLauncher(PDPipeRef pipe, PDTaskRef task, PDObjectRef object, void *info)
 {
     return as(__bridge PDTaskBlock, task->info)(pipe, task, object);
 }

@@ -61,7 +61,7 @@
 - (const char *)PDFString
 {
     if (NULL == _PDFString) {
-        _PDFString = strdup([[NSString stringWithFormat:@"%ld %ld R", _objectID, _generationID] cStringUsingEncoding:NSUTF8StringEncoding]);
+        _PDFString = strdup([[NSString stringWithFormat:@"%ld %ld R", (long)_objectID, (long)_generationID] cStringUsingEncoding:NSUTF8StringEncoding]);
     }
     return _PDFString;
 }
