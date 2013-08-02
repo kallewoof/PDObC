@@ -58,10 +58,10 @@
 /**
  Sets up a reference to an object from a definition stack.
  
- @param stack The `PDStackRef` object. This can be a dictionary entry or a direct reference.
+ @param stack The `pd_stack` object. This can be a dictionary entry or a direct reference.
  @return The `PDIReference`.
  */
-- (id)initWithDefinitionStack:(PDStackRef)stack;
+- (id)initWithDefinitionStack:(pd_stack)stack;
 
 ///---------------------------------------
 /// @name Basic reference properties

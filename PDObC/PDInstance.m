@@ -29,7 +29,7 @@
 #import "PDInstance.h"
 #import "PDIObject.h"
 #import "PDIReference.h"
-#import "PDPortableDocumentFormatState.h"
+#import "pd_pdf_implementation.h"
 
 @interface PDInstance () {
     PDPipeRef _pipe;
@@ -51,16 +51,16 @@
 
 - (void)dealloc
 {
-    if (_pipe) PDPipeDestroy(_pipe);
+    if (_pipe) PDRelease(_pipe);
     
-    PDConversionTableRelease();
+    pd_pdf_conversion_discard();
 }
 
 - (id)initWithSourcePDFPath:(NSString *)sourcePDFPath destinationPDFPath:(NSString *)destPDFPath
 {
     self = [super init];
     if (self) {
-        PDConversionTableRetain();
+        pd_pdf_conversion_use();
         
         if ([sourcePDFPath isEqualToString:destPDFPath]) {
             [NSException raise:NSInvalidArgumentException format:@"Input source and destination source must not be the same file."];
@@ -90,7 +90,7 @@
     
     _objectSum = PDPipeExecute(_pipe);
     
-    PDPipeDestroy(_pipe);
+    PDRelease(_pipe);
     _pipe = NULL;
     
     return _objectSum != -1;
@@ -116,7 +116,7 @@
 {
     if (_rootObject == nil) {
         if (_parser->rootRef) {
-            PDStackRef rootDef = PDParserLocateAndCreateDefinitionForObject(_parser, _parser->rootRef->obid, true);
+            pd_stack rootDef = PDParserLocateAndCreateDefinitionForObject(_parser, _parser->rootRef->obid, true);
             assert(rootDef);
             _rootObject = [[PDIObject alloc] initWithDefinitionStack:rootDef objectID:_parser->rootRef->obid generationID:_parser->rootRef->genid];
         }

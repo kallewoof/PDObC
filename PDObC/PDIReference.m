@@ -34,7 +34,7 @@
 
 - (void)dealloc
 {
-    PDReferenceDestroy(_ref);
+    PDRelease(_ref);
 }
 
 - (id)initWithReference:(PDReferenceRef)reference
@@ -53,7 +53,7 @@
     return [self initWithReference:PDReferenceCreate(objectID, generationID)];
 }
 
-- (id)initWithDefinitionStack:(PDStackRef)stack
+- (id)initWithDefinitionStack:(pd_stack)stack
 {
     return [self initWithReference:PDReferenceCreateFromStackDictEntry(stack)];
 }

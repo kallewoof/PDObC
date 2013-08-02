@@ -24,7 +24,6 @@
 
 #import "PDTaskBlocks.h"
 #import "PDInternal.h"
-#import "PDStaticHash.h" // just want as(), and don't wanna put it in a more public place in case other as()'es exist
 
 extern void PDTaskDealloc(void *ob);
 

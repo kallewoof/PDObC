@@ -54,11 +54,11 @@
 /**
  Initialize an instance object from a PDStack.
  
- @param stack The PDStackRef containing the object definitions.
+ @param stack The pd_stack containing the object definitions.
  @param objectID The object ID.
  @param generationID The generation ID.
  */
-- (id)initWithDefinitionStack:(PDStackRef)stack objectID:(NSInteger)objectID generationID:(NSInteger)generationID;
+- (id)initWithDefinitionStack:(pd_stack)stack objectID:(NSInteger)objectID generationID:(NSInteger)generationID;
 
 ///---------------------------------------
 /// @name Modifying objects

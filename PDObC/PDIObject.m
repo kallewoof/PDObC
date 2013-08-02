@@ -24,7 +24,7 @@
 
 #import "PDIObject.h"
 #import "PDInternal.h"
-#import "PDStack.h"
+#import "pd_stack.h"
 #import "NSObjects+PDIEntity.h"
 
 @interface PDIObject () {
@@ -54,7 +54,7 @@
     return self;
 }
 
-- (id)initWithDefinitionStack:(PDStackRef)stack objectID:(NSInteger)objectID generationID:(NSInteger)generationID
+- (id)initWithDefinitionStack:(pd_stack)stack objectID:(NSInteger)objectID generationID:(NSInteger)generationID
 {
     self = [super init];
     if (self) {
@@ -140,10 +140,10 @@
         return nil;
     }
     
-    PDStackRef iter = _obj->def;
+    pd_stack iter = _obj->def;
     char *key;
     char *value;
-    while (PDStackGetNextDictKey(&iter, &key, &value)) {
+    while (pd_stack_get_next_dict_key(&iter, &key, &value)) {
         [self setValue:[NSString stringWithPDFString:value]
                 forKey:[NSString stringWithPDFString:key]];
         free(value);
