@@ -23,7 +23,7 @@
 //
 
 #import "Pajdeg.h"
-#import "PDInternal.h"
+#import "pd_internal.h"
 
 #import "PDTaskBlocks.h"
 #import "PDInstance.h"

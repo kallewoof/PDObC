@@ -23,7 +23,7 @@
 //
 
 #import "PDIObject.h"
-#import "PDInternal.h"
+#import "pd_internal.h"
 #import "pd_stack.h"
 #import "NSObjects+PDIEntity.h"
 
@@ -87,7 +87,7 @@
 
 - (void)setStreamContent:(NSData *)content
 {
-    PDObjectSetStream(_obj, (char *)[content bytes], [content length], true);
+    PDObjectSetStream(_obj, (char *)[content bytes], [content length], true, false);
 }
 
 - (void)setStreamIsEncrypted:(BOOL)encrypted

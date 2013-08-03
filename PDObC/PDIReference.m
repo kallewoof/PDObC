@@ -23,7 +23,7 @@
 //
 
 #import "PDIReference.h"
-#import "PDInternal.h"
+#import "pd_internal.h"
 
 @interface PDIReference () {
     PDReferenceRef _ref;

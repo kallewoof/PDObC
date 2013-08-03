@@ -23,7 +23,7 @@
 //
 
 #import "PDTaskBlocks.h"
-#import "PDInternal.h"
+#import "pd_internal.h"
 
 extern void PDTaskDealloc(void *ob);
 
