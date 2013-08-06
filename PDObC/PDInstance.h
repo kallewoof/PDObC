@@ -180,4 +180,9 @@ typedef PDTaskResult (^PDIObjectOperation)(PDInstance *instance, PDIObject *obje
  */
 @property (nonatomic, readonly) NSInteger totalObjectCount;
 
+/**
+ Direct access to pipe object.
+ */
+@property (nonatomic, readonly) PDPipeRef pipe;
+
 @end

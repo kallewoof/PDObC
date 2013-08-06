@@ -45,6 +45,8 @@
 
 - (void)markImmutable;
 
+- (void)setInstance:(PDInstance *)instance;
+
 @end
 
 @implementation PDInstance
@@ -115,11 +117,7 @@
 - (PDIObject *)rootObject
 {
     if (_rootObject == nil) {
-        if (_parser->rootRef) {
-            pd_stack rootDef = PDParserLocateAndCreateDefinitionForObject(_parser, _parser->rootRef->obid, true);
-            assert(rootDef);
-            _rootObject = [[PDIObject alloc] initWithDefinitionStack:rootDef objectID:_parser->rootRef->obid generationID:_parser->rootRef->genid];
-        }
+        _rootObject = [[PDIObject alloc] initWithObject:PDParserGetRootObject(_parser)];
     }
     return _rootObject;
 }
@@ -150,6 +148,7 @@
     
     task = PDTaskCreateBlockMutator(^PDTaskResult(PDPipeRef pipe, PDTaskRef task, PDObjectRef object) {
         PDIObject *iob = [[PDIObject alloc] initWithObject:object];
+        [iob setInstance:self];
         return operation(self, iob);
     });
     

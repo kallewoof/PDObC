@@ -77,6 +77,11 @@
 - (void)removeStream;
 
 /**
+ Get the stream content for the object as a retained NSData object.
+ */
+- (NSData *)allocStream;
+
+/**
  Get the value of the primitive object. 
  
  @note If the object is not a primitive, this method will return nil.

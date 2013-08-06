@@ -23,13 +23,18 @@
 //
 
 #import "PDIObject.h"
-#import "pd_internal.h"
-#import "pd_stack.h"
 #import "NSObjects+PDIEntity.h"
+#import "PDInstance.h"
+
+#include "pd_internal.h"
+#include "pd_stack.h"
+#include "PDPipe.h"
+#include "PDParser.h"
 
 @interface PDIObject () {
     PDObjectRef _obj;
     NSMutableDictionary *_dict;
+    __weak PDInstance *_instance;
 }
 
 @end
@@ -67,6 +72,11 @@
     return self;
 }
 
+- (void)setInstance:(PDInstance *)instance
+{
+    _instance = instance;
+}
+
 - (const char *)PDFString
 {
     if (NULL == _PDFString) {
@@ -83,6 +93,13 @@
 - (void)removeStream
 {
     _obj->skipStream = true;
+}
+
+- (NSData *)allocStream
+{
+    if (_instance == nil) [NSException raise:@"PDInvalidObjectOperation" format:@"The object is not mutable, or is not a part of the original PDF."];
+    char *bytes = PDParserFetchCurrentObjectStream(PDPipeGetParser([_instance pipe]), _objectID);
+    return [[NSData alloc] initWithBytes:bytes length:_obj->extractedLen];
 }
 
 - (void)setStreamContent:(NSData *)content
