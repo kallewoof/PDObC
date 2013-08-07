@@ -41,7 +41,7 @@
 {
     self = [super init];
     if (self) {
-        _ref = reference;
+        _ref = PDRetain(reference);
         _objectID = _ref->obid;
         _generationID = _ref->genid;
     }
