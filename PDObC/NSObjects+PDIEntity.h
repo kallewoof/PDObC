@@ -26,6 +26,16 @@
 #import "PDIEntity.h"
 
 /**
+ `NSString` category implementing PDIEntity protocol. This includes a method to get an NSString out of a C string that tries different encodings.
+ */
+
+@interface NSString (PDIEntity) <PDIEntity>
+
++ (NSString *)stringWithPDFString:(const char *)PDFString;
+
+@end
+
+/**
  `NSDictionary` category implementing the PDIEntity protocol. The implementation returns the NSDictionary entries wrapped in <<>>, each key prefixed with a forward slash, and each value resolved either through its `PDIEntity` implementation (if conformant) or description.
  */
 
@@ -42,12 +52,10 @@
 @end
 
 /**
- `NSString` category implementing PDIEntity protocol. This includes a method to get an NSString out of a C string that tries different encodings.
+ `NSDate` category implementing PDIEntity protocol. This converts an NSDate into a PDF date in the format D:YYYYMMDDHHMMSSZ00'00'
  */
 
-@interface NSString (PDIEntity) <PDIEntity>
-
-+ (NSString *)stringWithPDFString:(const char *)PDFString;
+@interface NSDate (PDIEntity) <PDIEntity>
 
 @end
 

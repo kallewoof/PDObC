@@ -82,7 +82,19 @@
 
 - (const char *)PDFString
 {
-    return [self cStringUsingEncoding:NSUTF8StringEncoding];
+    return [[NSString stringWithFormat:@"(%@)", self] cStringUsingEncoding:NSUTF8StringEncoding];
+}
+
+@end
+
+@implementation NSDate (PDIEntity)
+
+- (const char *)PDFString
+{
+    NSDateFormatter *df = [[NSDateFormatter alloc] init];
+    [df setFormatterBehavior:NSDateFormatterBehavior10_4];
+    [df setDateFormat:@"'(D:'yyyyMMddHHmmss')'"];
+    return [[df stringFromDate:self] cStringUsingEncoding:NSUTF8StringEncoding];
 }
 
 @end
