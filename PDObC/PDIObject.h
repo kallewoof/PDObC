@@ -47,7 +47,7 @@
 - (id)initWithObject:(PDObjectRef)object;
 
 /**
- Initialize an instance object from a PDStack.
+ Initialize an instance object from a pd_stack.
  
  @param stack The pd_stack containing the object definitions.
  @param objectID The object ID.

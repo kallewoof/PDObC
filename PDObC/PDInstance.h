@@ -53,7 +53,16 @@
 
 #import "PDDefines.h"
 
-// Block method for object operations.
+/**
+ Block method for object operations.
+ 
+ Modifications to PDFs are exclusively done via PDIObjectOperation type blocks. Provided in the call are the instance and object references, and a PDTaskResult value must be returned (normally PDTaskDone).
+ 
+ @param instance The instance reference for the session.
+ @param object   One of the mutable objects associated with the operation.
+
+ @return The task result, one of PDTaskDone, PDTaskFailure, PDTaskSkipRest, and PDTaskUnload. 
+ */
 typedef PDTaskResult (^PDIObjectOperation)(PDInstance *instance, PDIObject *object);
 
 @interface PDInstance : NSObject
@@ -67,6 +76,8 @@ typedef PDTaskResult (^PDIObjectOperation)(PDInstance *instance, PDIObject *obje
  
  @param sourcePDFPath   The input PDF file. File must exist and be readable.
  @param destPDFPath     The output PDF file. Location must be read-writable.
+ 
+ @note To perform read-only operations on a PDF, destPDFPath may be set to @"/dev/null"
  
  @warning Source and destination must not be the same.
  */
