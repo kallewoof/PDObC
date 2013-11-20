@@ -35,8 +35,8 @@ void PDBlockTaskDealloc(void *ob)
 
 PDTaskRef PDTaskCreateBlockMutator(PDTaskBlock mutatorBlock)
 {
-    PDTaskRef task = PDTaskCreateMutator(&PDBlockLauncher);
-    task->deallocator = &PDBlockTaskDealloc;
+    PDTaskRef task = PDTaskCreateMutator(PDBlockLauncher);
+    task->deallocator = PDBlockTaskDealloc;
     task->info = (void*)CFBridgingRetain([mutatorBlock copy]);
     return task;
 }
