@@ -35,6 +35,8 @@
 
 + (PDIString *)stringWithFormat:(NSString *)format, ...;
 
++ (id)stringOrObject:(id)object;                            ///< Return a PDIString instance if object is an NSString, otherwise return object as is.
+
 - (id)initWithString:(NSString *)string;                    ///< Use for strings which are not PDF encoded (e.g. @"a string")
 - (id)initWithPDFString:(NSString *)string;                 ///< Use for strings which are already PDF encoded (e.g. @"(a string)"
 - (id)initWithFormat:(NSString *)format arguments:(va_list)argList NS_FORMAT_FUNCTION(1,0);
@@ -45,6 +47,6 @@
 
 @interface NSString (PDIValue)
 
-- (PDIString *)PDIValue;
+- (PDIString *)PDIString;
 
 @end

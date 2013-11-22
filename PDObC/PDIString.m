@@ -61,6 +61,11 @@
     return [NSString stringWithFormat:@"(PDF string:\"%@\")", _s];
 }
 
++ (id)stringOrObject:(id)object
+{
+    return [object isKindOfClass:[NSString class]] ? [object PDIString] : object;
+}
+
 + (PDIString *)stringWithString:(NSString *)string
 {
     return [[PDIString alloc] initWithString:string];
@@ -89,7 +94,7 @@
 
 @implementation NSString (PDIValue)
 
-- (PDIString *)PDIValue
+- (PDIString *)PDIString
 {
     return [PDIString stringWithString:self];
 }
