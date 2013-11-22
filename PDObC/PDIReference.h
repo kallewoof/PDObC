@@ -28,6 +28,12 @@
 @interface PDIReference : PDIEntity
 
 ///---------------------------------------
+/// @name Class methods
+///---------------------------------------
+
++ (NSInteger)objectIDFromString:(NSString *)refString;
+
+///---------------------------------------
 /// @name Instantiating references
 ///---------------------------------------
 
@@ -57,6 +63,14 @@
  @return The `PDIReference`.
  */
 - (id)initWithDefinitionStack:(pd_stack)stack;
+
+/**
+ Sets up a reference to an object from a string in the form "nnn nnn ttt", e.g. "123 0 R"
+ 
+ @param refString The string reference.
+ @return The `PDIReference`.
+ */
+- (id)initWithString:(NSString *)refString;
 
 ///---------------------------------------
 /// @name Basic reference properties

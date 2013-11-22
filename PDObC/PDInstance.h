@@ -95,11 +95,40 @@ typedef PDTaskResult (^PDIObjectOperation)(PDInstance *instance, PDIObject *obje
 - (PDIObject *)insertObject;
 
 /**
- Adds a new object to the PDF at the end (recommended if object value is changed repeatedly).
+ Adds a new object to the PDF at the end (recommended if object value is not defined on creation -- appended objects can be modified until the last existing object has been read from the input).
  
  @return PDIObject instance
  */
 - (PDIObject *)appendObject;
+
+///---------------------------------------
+/// @name Pages and page objects
+///---------------------------------------
+
+/**
+ Get the number of pages in the input PDF.
+ */
+- (NSInteger)numberOfPages;
+
+/**
+ Get the object ID for the page object with the given page number.
+ 
+ @param pageNumber The page number of the object whose ID should be returned.
+ */
+- (NSInteger)objectIDForPageNumber:(NSInteger)pageNumber;
+
+///---------------------------------------
+/// @name Random access readonly instances 
+///---------------------------------------
+
+/**
+ Fetch a read only copy of the object with the given ID.
+ 
+ If modifications need to be made, the object's -scheduleMimicWithInstance: method must be called.
+
+ @param objectID The ID of the object to fetch.
+ */
+- (PDIObject *)fetchReadonlyObjectWithID:(NSInteger)objectID;
 
 ///---------------------------------------
 /// @name Modifying existing PDF objects

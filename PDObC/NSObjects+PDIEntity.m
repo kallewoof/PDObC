@@ -44,6 +44,11 @@
 
 @implementation NSArray (PDIEntity)
 
++ (NSArray *)arrayFromPDRect:(PDRect)rect
+{
+    return @[@(rect.a.x), @(rect.a.y), @(rect.b.x), @(rect.b.y)];
+}
+
 - (const char *)PDFString
 {
     NSMutableString *str = [NSMutableString stringWithString:@"["];
@@ -75,9 +80,22 @@
     return str;
 }
 
+- (NSString *)stringByRemovingPDFControlCharacters
+{
+    if ([self characterAtIndex:0] == '(' && [self characterAtIndex:self.length-1] == ')') {
+        return [self substringWithRange:(NSRange){1, self.length - 2}];
+    }
+    return self;
+}
+
+- (NSString *)stringByAddingPDFControlCharacters
+{
+    return [NSString stringWithFormat:@"(%@)", self];
+}
+
 - (const char *)PDFString
 {
-    return [[NSString stringWithFormat:@"(%@)", self] cStringUsingEncoding:NSUTF8StringEncoding];
+    return [self cStringUsingEncoding:NSUTF8StringEncoding];
 }
 
 @end

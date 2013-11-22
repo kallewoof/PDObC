@@ -23,6 +23,7 @@
 #import "PDTaskBlocks.h"
 #import "PDInstance.h"
 #import "PDIObject.h"
+#import "PDCatalog.h"
 #import "PDIReference.h"
 #import "pd_pdf_implementation.h"
 
@@ -121,6 +122,7 @@
 {
     PDObjectRef ob = append ? PDParserCreateAppendedObject(_parser) : PDParserCreateNewObject(_parser);
     PDIObject *iob = [[PDIObject alloc] initWithObject:ob];
+    [iob markMutable];
     PDRelease(ob);
     return iob;
 }
@@ -133,6 +135,25 @@
 - (PDIObject *)appendObject
 {
     return [self createObject:YES];
+}
+
+- (PDIObject *)fetchReadonlyObjectWithID:(NSInteger)objectID
+{
+    pd_stack defs = PDParserLocateAndCreateDefinitionForObject(_parser, objectID, true);
+    PDIObject *object = [[PDIObject alloc] initWithDefinitionStack:defs objectID:objectID generationID:0];
+    return object;
+}
+
+- (NSInteger)numberOfPages
+{
+    PDCatalogRef catalog = PDParserGetCatalog(_parser);
+    return PDCatalogGetPageCount(catalog);
+}
+
+- (NSInteger)objectIDForPageNumber:(NSInteger)pageNumber
+{
+    PDCatalogRef catalog = PDParserGetCatalog(_parser);
+    return PDCatalogGetObjectIDForPage(catalog, pageNumber);
 }
 
 - (void)enqueuePropertyType:(PDPropertyType)type value:(NSInteger)value operation:(PDIObjectOperation)operation

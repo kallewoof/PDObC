@@ -27,6 +27,13 @@
 
 @implementation PDIReference
 
++ (NSInteger)objectIDFromString:(NSString *)refString
+{
+    NSInteger res;
+    sscanf([refString cStringUsingEncoding:NSUTF8StringEncoding], "%d", &res);
+    return res;
+}
+
 - (void)dealloc
 {
     PDRelease(_ref);
@@ -51,6 +58,17 @@
 - (id)initWithDefinitionStack:(pd_stack)stack
 {
     return [self initWithReference:PDReferenceCreateFromStackDictEntry(stack)];
+}
+
+- (id)initWithString:(NSString *)refString
+{
+    if (refString == nil) return nil;
+
+    unsigned long obid, genid;
+    if (2 > sscanf([refString cStringUsingEncoding:NSUTF8StringEncoding], "%lu %lu", &obid, &genid))
+        return nil;
+    
+    return [self initWithObjectID:obid generationID:genid];
 }
 
 - (const char *)PDFString

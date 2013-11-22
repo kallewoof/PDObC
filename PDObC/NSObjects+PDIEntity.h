@@ -19,6 +19,7 @@
 
 #import <Foundation/Foundation.h>
 #import "PDIEntity.h"
+#import "PDDefines.h"
 
 /**
  `NSString` category implementing PDIEntity protocol. This includes a method to get an NSString out of a C string that tries different encodings.
@@ -27,6 +28,9 @@
 @interface NSString (PDIEntity) <PDIEntity>
 
 + (NSString *)stringWithPDFString:(const char *)PDFString;
+
+- (NSString *)stringByRemovingPDFControlCharacters;
+- (NSString *)stringByAddingPDFControlCharacters;
 
 @end
 
@@ -44,6 +48,13 @@
 
 @interface NSArray (PDIEntity) <PDIEntity>
 
+/**
+ Create an NSArray object based on a PDRect struct.
+ 
+ @param rect The PDRect object.
+ */
++ (NSArray *)arrayFromPDRect:(PDRect)rect;
+
 @end
 
 /**
@@ -53,4 +64,3 @@
 @interface NSDate (PDIEntity) <PDIEntity>
 
 @end
-
