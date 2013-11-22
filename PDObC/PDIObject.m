@@ -41,7 +41,7 @@
 
 @end
 
-void PDIObjectSynchronizer(void *parser, void *object, void *syncInfo)
+void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
 {
     PDIObject *ob = CFBridgingRelease(syncInfo);
     [ob synchronize];
@@ -365,7 +365,7 @@ void PDIObjectSynchronizer(void *parser, void *object, void *syncInfo)
 {
     if (_arr.count == 0) [self setupArray];
     if (index < 0 || index >= _arr.count) 
-        [NSException raise:NSRangeException format:@"Index %d is out of range (0..%d)", index, _arr.count-1];
+        [NSException raise:NSRangeException format:@"Index %ld is out of range (0..%ld)", (long)index, (long)_arr.count-1];
     id value = [_arr objectAtIndex:index];
     if (value == [NSNull null]) {
         const char *vstr = PDObjectGetArrayElementAtIndex(_obj, index);
@@ -401,7 +401,7 @@ void PDIObjectSynchronizer(void *parser, void *object, void *syncInfo)
 {
     if (_arr.count == 0) [self setupArray];
     if (index < 0 || index >= _arr.count) 
-        [NSException raise:NSRangeException format:@"Index %d is out of range (0..%d)", index, _arr.count-1];
+        [NSException raise:NSRangeException format:@"Index %ld is out of range (0..%ld)", (long)index, (long)_arr.count-1];
     PDObjectRemoveArrayElementAtIndex(_obj, index);
     [_arr removeObjectAtIndex:index];
     [self scheduleMimicking];

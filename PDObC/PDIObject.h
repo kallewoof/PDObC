@@ -33,6 +33,8 @@
  Because `Pajdeg` does not inherently support encryption, changing an object's stream content for a PDF that is encrypted will result in a broken PDF, because the PDF viewer will expect the (plaintext) content to be encrypted. To resolve this issue, setStreamIsEncrypted: must be called with `NO` for plaintext data. It is safe to call this method even if the input PDF is not encrypted.
  */
 
+@class PDInstance;
+
 @interface PDIObject : PDIEntity
 
 ///---------------------------------------

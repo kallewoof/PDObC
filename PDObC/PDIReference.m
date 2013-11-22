@@ -29,8 +29,8 @@
 
 + (NSInteger)objectIDFromString:(NSString *)refString
 {
-    NSInteger res;
-    sscanf([refString cStringUsingEncoding:NSUTF8StringEncoding], "%d", &res);
+    long res;
+    sscanf([refString cStringUsingEncoding:NSUTF8StringEncoding], "%ld", &res);
     return res;
 }
 
