@@ -25,6 +25,7 @@
 #include "pd_stack.h"
 #include "PDPipe.h"
 #include "PDParser.h"
+#include "pd_dict.h"
 
 @interface PDIObject () {
     //PDObjectRef _obj;
@@ -157,17 +158,18 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
     }
 }
 
-- (void)enableMutationViaMimicSchedulingWithInstance:(PDInstance *)instance
+- (BOOL)enableMutationViaMimicSchedulingWithInstance:(PDInstance *)instance
 {
-    if (_instance || _mutable) return;
+    if (_instance || _mutable) return YES;
     if (! PDParserIsObjectStillMutable(PDPipeGetParser(instance.pipe), _objectID)) {
 #ifdef DEBUG
         fprintf(stderr, "warning: object %ld has passed through pipe and can no longer be modified\n", (long)_objectID);
 #endif
-        return;
+        return NO;
     }
         //[NSException raise:@"PDIObjectMutabilityImpossibleException" format:@"The object (id %ld) has already passed through the pipe and can no longer be modified.", (long)_objectID];
     [self setInstance:instance];
+    return YES;
 }
 
 - (void)scheduleMimicking
@@ -287,18 +289,14 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
 
 - (NSDictionary *)constructDictionary
 {
-    /*if (_type != PDObjectTypeDictionary) {
-        return nil;
-    }*/
+    pd_dict dict = PDObjectGetDictionary(_obj);
+    const char **keys = pd_dict_keys(dict);
+    PDInteger count = pd_dict_get_count(dict);
     
-    pd_stack iter = _obj->def;
-    char *key;
-    char *value;
-    while (pd_stack_get_next_dict_key(&iter, &key, &value)) {
-        [self setValue:[NSString stringWithPDFString:value]
-                forKey:[NSString stringWithPDFString:key]];
-        free(value);
+    for (PDInteger i = 0; i < count; i++) {
+        [self valueForKey:[NSString stringWithPDFString:keys[i]]];
     }
+
     return _dict;
 }
 
@@ -429,10 +427,6 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
 
 - (NSArray *)constructArray
 {
-    /*if (_type != PDObjectTypeArray) {
-        return nil;
-    }*/
-    
     if (_arr.count == 0) [self setupArray];
     
     NSInteger count = _arr.count;

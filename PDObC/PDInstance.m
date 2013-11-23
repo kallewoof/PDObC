@@ -30,6 +30,7 @@
 @interface PDInstance () {
     PDPipeRef _pipe;
     PDIObject *_rootObject;
+    PDIObject *_infoObject;
     PDParserRef _parser;
     PDIReference *_rootRef;
     PDIReference *_infoRef;
@@ -94,6 +95,11 @@
     return _objectSum != -1;
 }
 
+- (BOOL)encrypted
+{
+    return true == PDParserGetEncryptionState(_parser);
+}
+
 - (PDIReference *)rootReference
 {
     if (_rootRef == nil && _parser->rootRef) {
@@ -116,6 +122,14 @@
         _rootObject = [[PDIObject alloc] initWithObject:PDParserGetRootObject(_parser)];
     }
     return _rootObject;
+}
+
+- (PDIObject *)infoObject
+{
+    if (_infoObject == nil) {
+        _infoObject = [[PDIObject alloc] initWithObject:PDParserGetInfoObject(_parser)];
+    }
+    return _infoObject;
 }
 
 - (PDIObject *)createObject:(BOOL)append
@@ -164,6 +178,7 @@
     
     task = PDTaskCreateBlockMutator(^PDTaskResult(PDPipeRef pipe, PDTaskRef task, PDObjectRef object) {
         PDIObject *iob = [[PDIObject alloc] initWithObject:object];
+        [iob markMutable];
         [iob setInstance:self];
         return operation(self, iob);
     });

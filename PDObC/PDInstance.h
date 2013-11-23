@@ -84,6 +84,15 @@ typedef PDTaskResult (^PDIObjectOperation)(PDInstance *instance, PDIObject *obje
 - (id)initWithSourcePDFPath:(NSString *)sourcePDFPath destinationPDFPath:(NSString *)destPDFPath;
 
 ///---------------------------------------
+/// @name Document-wide operations
+///---------------------------------------
+
+/**
+ Determine if the input PDF is encrypted or not. 
+ */
+@property (nonatomic, readonly) BOOL encrypted;
+
+///---------------------------------------
 /// @name Adding new objects to a PDF
 ///---------------------------------------
 
@@ -191,9 +200,19 @@ typedef PDTaskResult (^PDIObjectOperation)(PDInstance *instance, PDIObject *obje
 @property (weak, nonatomic, readonly) PDIReference *rootReference;
 
 /**
+ Readonly representation of the root object.
+ */
+@property (weak, nonatomic, readonly) PDIObject *rootObject;
+
+/**
  Reference to the PDF info object.
  */
 @property (weak, nonatomic, readonly) PDIReference *infoReference;
+
+/**
+ Readonly representation of the info object.
+ */
+@property (weak, nonatomic, readonly) PDIObject *infoObject;
 
 /**
  The source PDF path.

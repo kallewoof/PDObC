@@ -78,8 +78,9 @@
  This is different from scheduling mimicking directly, in that the object will not schedule mimicking unless it is actually modified.
  
  @param instance The instance object.
+ @return true if mutation was made possible; false if the object cannot be made mutable any longer
  */
-- (void)enableMutationViaMimicSchedulingWithInstance:(PDInstance *)instance;
+- (BOOL)enableMutationViaMimicSchedulingWithInstance:(PDInstance *)instance;
 
 /**
  Schedules mimicking of the object, which means readonly objects are made readwritable up until the object passes through the pipe into the output stream.
