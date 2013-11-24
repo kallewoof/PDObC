@@ -42,7 +42,7 @@ PDInstance *instance = [[PDInstance alloc] initWithSourcePDFPath:[NSString strin
 
 After the execute command, open the PDF in e.g. Preview and show the Inspector (cmd-i) and Author should now have been set to John Doe.
 
-Presuming that worked, you can check out [more examples](wiki/Examples).
+Presuming that worked, you can check out [more examples](/AlacritySoftware/PDObC/wiki/Examples).
 
 Helping Out
 ===========
