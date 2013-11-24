@@ -30,7 +30,7 @@ Xcode set up:
 
 That should be everything. You can test if it works by putting a PDF file test.pdf in your user folder, and then adding this in your launch method (e.g. applicationDidLaunch:.. if iOS):
 
-```ObC
+```objective-c
 PDInstance *instance = [[PDInstance alloc] initWithSourcePDFPath:[NSString stringWithFormat:@"/Users/%@/test.pdf", NSUserName()] 
                                               destinationPDFPath:[NSString stringWithFormat:@"/Users/%@/out.pdf", NSUserName()]];
 [instance forObjectWithID:[[instance infoReference] objectID] enqueueOperation:^PDTaskResult(PDInstance *instance, PDIObject *object) {
