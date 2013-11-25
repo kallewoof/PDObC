@@ -40,13 +40,13 @@ PDInstance *instance = [[PDInstance alloc] initWithSourcePDFPath:[NSString strin
 [instance execute];
 ```
 
-After the execute command, open the PDF in e.g. Preview and show the Inspector (cmd-i) and Author should now have been set to John Doe.
+After running the above, open the PDF in e.g. Preview and show the Inspector (cmd-i) and Author should now have been set to John Doe.
 
 Presuming that worked, you can check out [more examples](https://github.com/AlacritySoftware/PDObC/wiki/Examples).
 
 Helping Out
 ===========
 
-First and foremost, the most helpful thing you can do is test Pajdeg on lots of different PDFs and report (by sending in the PDF and code that breaks) or submit patches that make it work.
+First and foremost, the most helpful thing you can do is test Pajdeg on lots of different PDFs and report issues (by sending in the PDF and code that breaks) or submit patches that make it work.
 
 Secondly, the wrapper is fairly feature-less at this point, mostly because it's been used for specific purposes up until now. If you add features or fix stuff, patches would be great. If you don't fix something but you have issues, or if you need certain functionality that isn't in there, do let us know!
