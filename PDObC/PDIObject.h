@@ -174,7 +174,7 @@
 /**
  Get the number of entries in the array or dictionary. 
  
- @return The entry count, or -1 if this is neither an array nor a dictionary.
+ @return The entry count, or 0 if this is neither an array nor a dictionary.
  */
 - (NSInteger)count;
 

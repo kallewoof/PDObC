@@ -356,7 +356,7 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
         if (_arr.count == 0) [self setupArray];
         return [_arr count];
     }
-    return -1;
+    return 0;
 }
 
 - (id)valueAtIndex:(NSInteger)index
