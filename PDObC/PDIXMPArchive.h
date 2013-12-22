@@ -116,6 +116,15 @@
 - (BOOL)selectElement:(NSString *)element;
 
 /**
+ Select first element of given type with given attributes.
+ 
+ @param element The element to select.
+ @param attributes The attributes to match.
+ @return NO if the element with the given attributes does not exist; YES if it does.
+ */
+- (BOOL)selectElement:(NSString *)element withAttributes:(NSDictionary *)attributes;
+
+/**
  Create and select element in current element (i.e. mkdir element).
  
  Works like selecting elements if the element to create already exists.
@@ -123,6 +132,16 @@
  @param element Element to create. 
  */
 - (void)createElement:(NSString *)element;
+
+/**
+ Create and select element with given attributes.
+ 
+ If an element of the given type exists with the given attributes, it is selected, otherwise a new element with the given attributes is created.
+ 
+ @param element The element to select.
+ @param attributes The attributes to match.
+ */
+- (void)createElement:(NSString *)element withAttributes:(NSDictionary *)attributes;
 
 /**
  Get attribute value as a string.
@@ -158,5 +177,12 @@
  If a string is used, it is eventually encoded; if a PDIXMPEntry is used, it is expected to be XML encoded already.
  */
 - (void)appendElementContent:(id)content;
+
+/**
+ Get reference to current position in archive. 
+ 
+ This is used for debugging purposes to verify that traversal went as it should. 
+ */
+- (id)cursorReference;
 
 @end

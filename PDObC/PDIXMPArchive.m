@@ -21,6 +21,7 @@
 #import "PDIXMPArchive.h"
 #import "PDIXMPEntry.h"
 #import "PDIXMPUtils.h"
+#import "Pajdeg.h"
 
 #define kXMPAttributes  @" attributes "
 #define kXMPContent     @" content "
@@ -65,12 +66,16 @@
             }
         } else {
             _root = [[NSMutableArray alloc] init];
-            [self selectRoot];
-            [self createElement:@"x:xmpmeta"];
-            [self setString:@"adobe:ns:meta/" forAttribute:@"xmlns:x"];
-            [self setString:@"KEPDFKit" forAttribute:@"x:xmptk"];
         }
         
+        [self selectRoot];
+        [self createElement:@"x:xmpmeta"];
+        [self setString:@"adobe:ns:meta/" forAttribute:@"xmlns:x"];
+        [self setString:@"Pajdeg " PAJDEG_VERSION forAttribute:@"x:xmptk"];
+        [self createElement:@"rdf:RDF" withAttributes:@{@"xmlns:rdf": @"http://www.w3.org/1999/02/22-rdf-syntax-ns#"}];
+        [self selectRoot];
+        
+        _modified = data != nil;
         _data = data;
     }
     return self;
@@ -222,6 +227,11 @@ static inline void populateXMPString(NSMutableString *str, NSArray *element)
 
 #pragma mark - Archive manipulation
 
+- (id)cursorReference
+{
+    return _cursor;
+}
+
 // select the root path (i.e. cd /)
 - (void)selectRoot
 {
@@ -253,10 +263,47 @@ static inline void populateXMPString(NSMutableString *str, NSArray *element)
     [_cursor removeObject:toDelete];
 }
 
+- (BOOL)selectElement:(NSString *)element withAttributes:(NSDictionary *)attributes
+{
+    NSMutableDictionary *d;
+    for (id item in _cursor) {
+        if ([item isKindOfClass:[NSArray class]] && [item count] > 0) {
+            d = [item objectAtIndex:0];
+            if ([d isKindOfClass:[NSDictionary class]] && [[d objectForKey:kXMPElement] isEqualToString:element]) {
+                BOOL applies = YES;
+                NSDictionary *attrs = [d objectForKey:kXMPAttributes];
+                if (attributes) {
+                    for (NSString *key in attributes) {
+                        if (! [[attrs objectForKey:key] isEqualToString:[attributes objectForKey:key]]) {
+                            applies = NO;
+                            break;
+                        }
+                    }
+                }
+                
+                if (! applies) continue;
+                
+                if (! [d respondsToSelector:@selector(setObject:forKey:)]) {
+                    d = [d mutableCopy];
+                    [item replaceObjectAtIndex:0 withObject:d];
+                }
+                [_cursors addObject:_cursor];
+                _cursor = item;
+                _cdict = d;
+                _cattrs = [attrs mutableCopy];
+                [d setObject:_cattrs forKey:kXMPAttributes];
+                return YES;
+            }
+        }
+    }
+    return NO;
+}
+
 // select element in current element (i.e. cd element) -- returns NO if the element does not exist
 - (BOOL)selectElement:(NSString *)element
 {
-    NSMutableDictionary *d;
+    return [self selectElement:element withAttributes:nil];
+/*    NSMutableDictionary *d;
     for (id item in _cursor) {
         if ([item isKindOfClass:[NSArray class]] && [item count] > 0) {
             d = [item objectAtIndex:0];
@@ -274,13 +321,39 @@ static inline void populateXMPString(NSMutableString *str, NSArray *element)
             }
         }
     }
-    return NO;
+    return NO;*/
+}
+
+- (void)createElement:(NSString *)element withAttributes:(NSDictionary *)attributes
+{
+    if ([self selectElement:element withAttributes:attributes]) return;
+    _modified = YES;
+    
+    [_cursor addObject:@"\t"];
+    
+    NSMutableArray *el = [[NSMutableArray alloc] init];
+    
+    NSMutableDictionary *a = attributes ? [attributes mutableCopy] : [[NSMutableDictionary alloc] init];
+    NSMutableDictionary *d = [@{
+                                kXMPAttributes : a, 
+                                kXMPElement : element
+                                } mutableCopy];
+    [el addObject:d];
+    
+    [_cursor addObject:el];
+    [_cursor addObject:@"\n"];
+
+    [_cursors addObject:_cursor];
+    _cursor = el;
+    _cdict = d;
+    _cattrs = a;
 }
 
 // create and select element in current element (i.e. mkdir element) -- returns NO if the element already exists
 - (void)createElement:(NSString *)element
 {
-    if ([self selectElement:element]) return;
+    [self createElement:element withAttributes:nil];
+    /*if ([self selectElement:element]) return;
     _modified = YES;
     
     [_cursor addObject:@"\t"];
@@ -298,7 +371,7 @@ static inline void populateXMPString(NSMutableString *str, NSArray *element)
     [_cursor addObject:@"\n"];
     _cursor = el;
     _cdict = d;
-    _cattrs = a;
+    _cattrs = a;*/
 }
 
 // set/get attribute value
