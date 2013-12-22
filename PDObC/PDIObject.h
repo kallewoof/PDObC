@@ -49,13 +49,25 @@
 - (id)initWithObject:(PDObjectRef)object;
 
 /**
- Initialize an instance object from a pd_stack.
+ Initialize an instance object from a pd_stack. "Isolated" in the method name indicates that the object is not properly set up for certain PDFs (encrypted PDFs, to be precise).
  
  @param stack The pd_stack containing the object definitions.
  @param objectID The object ID.
  @param generationID The generation ID.
  */
-- (id)initWithDefinitionStack:(pd_stack)stack objectID:(NSInteger)objectID generationID:(NSInteger)generationID;
+- (id)initWithIsolatedDefinitionStack:(pd_stack)stack objectID:(NSInteger)objectID generationID:(NSInteger)generationID;
+
+/**
+ Initialize an instance object from a pd_stack, configuring it with parameters from the PDF via the instance object.
+ 
+ @note Does not enable mutation, despite being handed an instance reference.
+ 
+ @param instance Instance.
+ @param stack The pd_stack containing the object definitions.
+ @param objectID The object ID.
+ @param generationID The generation ID.
+ */
+- (id)initWithInstance:(PDInstance *)instance forDefinitionStack:(pd_stack)stack objectID:(NSInteger)objectID generationID:(NSInteger)generationID;
 
 ///---------------------------------------
 /// @name Modifying objects
@@ -109,9 +121,14 @@
 - (void)removeStream;
 
 /**
- Get the stream content for the object as a retained NSData object.
+ Get the stream content for the object as a retained NSData object. 
  */
 - (NSData *)allocStream;
+
+/**
+ Determine if this object is the current object in the pipe.
+ */
+- (BOOL)isCurrentObject;
 
 /**
  Get the value of the primitive object. 
@@ -226,6 +243,8 @@
 
 /**
  Replace the object stream with the given string.
+ 
+ The "getter" is called -allocStream.
  
  @param content The stream data. 
  

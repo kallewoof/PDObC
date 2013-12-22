@@ -195,6 +195,11 @@ typedef PDTaskResult (^PDIObjectOperation)(PDInstance *instance, PDIObject *obje
 - (BOOL)execute;
 
 /**
+ Obtain -- or create if necessary -- the /Metadata object, pointed to by the /Root object.
+ */
+- (PDIObject *)verifiedMetadataObject;
+
+/**
  Reference to the PDF root object.
  */
 @property (weak, nonatomic, readonly) PDIReference *rootReference;
@@ -225,7 +230,7 @@ typedef PDTaskResult (^PDIObjectOperation)(PDInstance *instance, PDIObject *obje
 @property (nonatomic, readonly) NSString *destPDFPath;
 
 /**
- The number of (live) objects seen in the input PDF. This property is undefined until execute has been called.
+ The number of (live) objects seen in the input PDF. This property is undefined until -execute has been called.
  */
 @property (nonatomic, readonly) NSInteger objectSum;
 

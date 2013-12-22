@@ -31,6 +31,7 @@
     PDPipeRef _pipe;
     PDIObject *_rootObject;
     PDIObject *_infoObject;
+    PDIObject *_metadataObject;
     PDParserRef _parser;
     PDIReference *_rootRef;
     PDIReference *_infoRef;
@@ -100,6 +101,22 @@
     return true == PDParserGetEncryptionState(_parser);
 }
 
+- (PDIObject *)verifiedMetadataObject
+{
+    if (_metadataObject) return _metadataObject;
+    PDIObject *root = [self rootObject];
+    NSString *md = [root valueForKey:@"Metadata"];
+    if (md) {
+        _metadataObject = [self fetchReadonlyObjectWithID:[PDIReference objectIDFromString:md]];
+        [_metadataObject enableMutationViaMimicSchedulingWithInstance:self];
+    } else {
+        _metadataObject = [self appendObject];
+        [root setValue:_metadataObject forKey:@"Metadata"];
+        [root enableMutationViaMimicSchedulingWithInstance:self];
+    }
+    return _metadataObject;
+}
+
 - (PDIReference *)rootReference
 {
     if (_rootRef == nil && _parser->rootRef) {
@@ -154,7 +171,7 @@
 - (PDIObject *)fetchReadonlyObjectWithID:(NSInteger)objectID
 {
     pd_stack defs = PDParserLocateAndCreateDefinitionForObject(_parser, objectID, true);
-    PDIObject *object = [[PDIObject alloc] initWithDefinitionStack:defs objectID:objectID generationID:0];
+    PDIObject *object = [[PDIObject alloc] initWithInstance:self forDefinitionStack:defs objectID:objectID generationID:0];
     return object;
 }
 
@@ -205,13 +222,20 @@
 
 - (void)setRootStream:(NSData *)data forKey:(NSString *)key
 {
+    if ([key isEqualToString:@"Metadata"]) {
+        // We use the built-in verifiedMetadata method to do this; if we don't, we run the risk of double-tasking the metadata stream and overwriting requested changes.
+        [self verifiedMetadataObject];
+        [_metadataObject setStreamIsEncrypted:NO];
+        [_metadataObject setStreamContent:data];
+        return;
+    }
+    
     // got a Root?
     if ([self rootObject]) {
         NSString *ref = [_rootObject valueForKey:key];
         if (ref) {
             // got this already; we want to tweak it then
-            NSInteger refID = [[[ref componentsSeparatedByString:@" "] objectAtIndex:0] integerValue];
-            [self forObjectWithID:refID enqueueOperation:^PDTaskResult(PDInstance *instance, PDIObject *object) {
+            [self forObjectWithID:[PDIReference objectIDFromString:ref] enqueueOperation:^PDTaskResult(PDInstance *instance, PDIObject *object) {
                 [object setStreamIsEncrypted:NO];
                 [object setStreamContent:data];
                 return PDTaskDone;
@@ -222,10 +246,13 @@
             [ob setStreamIsEncrypted:NO];
             [ob setStreamContent:data];
             
-            [self forObjectWithID:_rootObject.objectID enqueueOperation:^PDTaskResult(PDInstance *instance, PDIObject *object) {
+            [_rootObject enableMutationViaMimicSchedulingWithInstance:self];
+            [_rootObject setValue:ob forKey:key];
+            
+            /*[self forObjectWithID:_rootObject.objectID enqueueOperation:^PDTaskResult(PDInstance *instance, PDIObject *object) {
                 [object setValue:ob forKey:key];
                 return PDTaskDone;
-            }];
+            }];*/
         }
     } else {
         // it's an easy enough thing to create a root object and stuff it into the trailer, but then again, a PDF with no root object is either misinterpreted beyond oblivion (by Pajdeg) or it's broken beyond repair (by someone) so we choose to die here; if you wish to support a PDF with no root object, some form of flag may be added in the future, but I can't see why anyone would want this

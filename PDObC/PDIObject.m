@@ -76,7 +76,7 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
     return self;
 }
 
-- (id)initWithDefinitionStack:(pd_stack)stack objectID:(NSInteger)objectID generationID:(NSInteger)generationID
+- (id)initWithIsolatedDefinitionStack:(pd_stack)stack objectID:(NSInteger)objectID generationID:(NSInteger)generationID
 {
     self = [super init];
     if (self) {
@@ -85,6 +85,16 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
         _obj = PDObjectCreate(objectID, generationID);
         _obj->def = stack;
         [self sharedInit];
+    }
+    return self;
+}
+
+- (id)initWithInstance:(PDInstance *)instance forDefinitionStack:(pd_stack)stack objectID:(NSInteger)objectID generationID:(NSInteger)generationID
+{
+    self = [self initWithIsolatedDefinitionStack:stack objectID:objectID generationID:generationID];
+    if (self) {
+        PDParserRef parser = PDPipeGetParser(instance.pipe);
+        _obj->crypto = parser->crypto;
     }
     return self;
 }
@@ -221,9 +231,25 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
 
 - (NSData *)allocStream
 {
-    if (_instance == nil) [NSException raise:@"PDInvalidObjectOperation" format:@"The object is not mutable, or is not a part of the original PDF."];
-    char *bytes = PDParserFetchCurrentObjectStream(PDPipeGetParser([_instance pipe]), _objectID);
+    if (_instance == nil) {
+        // this may seem like a disturbing decision, but when an object without an instance is asked to allocate a stream, it simply means the object was created and the caller just blindly asked for the stream to be allocated -- both random-access obs and objects without streams say 'hasStream = NO'; this should probably change, however
+        return nil;
+    }
+    
+    PDParserRef parser = PDPipeGetParser([_instance pipe]);
+    char *bytes;
+    if (parser->obid == _objectID) {
+        bytes = PDParserFetchCurrentObjectStream(parser, _objectID);
+    } else {
+        bytes = PDParserLocateAndFetchObjectStreamForObject(parser, _obj);
+    }
+    
     return [[NSData alloc] initWithBytes:bytes length:_obj->extractedLen];
+}
+
+- (BOOL)isCurrentObject
+{
+    return (_instance && PDPipeGetParser([_instance pipe])->obid == _objectID);
 }
 
 - (void)setStreamContent:(NSData *)content
