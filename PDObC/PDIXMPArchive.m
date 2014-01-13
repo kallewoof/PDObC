@@ -107,7 +107,7 @@
     
     if (! result) return nil;
     
-    return [self initWithData:(__bridge NSData *)result];
+    return [self initWithData:CFBridgingRelease(result)];
 }
 
 - (void)populateStreamInObject:(PDIObject *)object

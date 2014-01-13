@@ -50,6 +50,7 @@
 @class PDInstance;
 @class PDIObject;
 @class PDIReference;
+@class PDIXMPArchive;
 
 #import "PDDefines.h"
 
@@ -82,6 +83,18 @@ typedef PDTaskResult (^PDIObjectOperation)(PDInstance *instance, PDIObject *obje
  @warning Source and destination must not be the same.
  */
 - (id)initWithSourcePDFPath:(NSString *)sourcePDFPath destinationPDFPath:(NSString *)destPDFPath;
+
+/**
+ Sets up a new PD instance for a source PDF as a URL and a destination PDF (updated version) as a file path. 
+ 
+ @param sourceURL       The input PDF source URL, which must be a file URL. The file must exist and be readable.
+ @param destPDFPath     The output PDF file. Location must be read-writable.
+ 
+ @note To perform read-only operations on a PDF, destPDFPath may be set to @"/dev/null"
+ 
+ @warning Source and destination must not be the same.
+ */
+- (id)initWithSourceURL:(NSURL *)sourceURL destinationPDFPath:(NSString *)destPDFPath;
 
 ///---------------------------------------
 /// @name Document-wide operations
@@ -198,6 +211,14 @@ typedef PDTaskResult (^PDIObjectOperation)(PDInstance *instance, PDIObject *obje
  Obtain -- or create if necessary -- the /Metadata object, pointed to by the /Root object.
  */
 - (PDIObject *)verifiedMetadataObject;
+
+/**
+ Obtain the metadata object stream as an XMP archive, or nil if it's non-existent or 
+ if it's not a XMP archive.
+ 
+ @warning This method will use Core Graphics PDF support (CGPDF) to extract data from PDFs encrypted in a way that Pajdeg does not support (AES encrypted PDFs, for example). Do note however that PDFs encrypted in unsupported formats do not result in valid PDF output.
+ */
+- (PDIXMPArchive *)metadataXMPArchive;
 
 /**
  Reference to the PDF root object.

@@ -20,6 +20,7 @@
 #import "PDIObject.h"
 #import "NSObjects+PDIEntity.h"
 #import "PDInstance.h"
+#import "PDIReference.h"
 
 #include "pd_internal.h"
 #include "pd_stack.h"
@@ -266,8 +267,8 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
 
 - (NSString *)primitiveValue
 {
-    if (_type != PDObjectTypeString) 
-        return nil;
+    //if (_type != PDObjectTypeString) 
+    //    return nil;
     return [NSString stringWithPDFString:PDObjectGetValue(_obj)];
 }
 
@@ -289,6 +290,31 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
         }
     }
     _type = _obj->type;
+    return value;
+}
+
+- (id)resolvedValueForKey:(NSString *)key
+{
+    id value = [self valueForKey:key];
+    if ([value isKindOfClass:[NSString class]]) {
+        NSInteger obid = [PDIReference objectIDFromString:value];
+        if (obid) {
+            PDIObject *object = [_instance fetchReadonlyObjectWithID:obid];
+            if (object) {
+                [_dict setObject:object forKey:key];
+                value = object;
+            }
+        }
+    }
+    
+    if (value && ! [value isKindOfClass:[NSString class]]) {
+        if ([value isKindOfClass:[PDIObject class]]) {
+            value = [value primitiveValue];
+        } else {
+            value = [NSString stringWithPDFString:[value PDFString]];
+        }
+    }
+
     return value;
 }
 

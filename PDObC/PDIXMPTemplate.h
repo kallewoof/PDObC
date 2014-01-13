@@ -20,7 +20,7 @@
 #import <Foundation/Foundation.h>
 
 typedef enum {
-    PDIXMPLicenseNone = 0,                              ///< license undefined (not same as public domain)
+    PDIXMPLicenseUndefined = 0,                         ///< license undefined (not same as public domain)
     PDIXMPLicenseAttribution,                           ///< CC BY --- This license lets others distribute, remix, tweak, and build upon your work, even commercially, as long as they credit you for the original creation. This is the most accommodating of licenses offered. Recommended for maximum dissemination and use of licensed materials. 
     PDIXMPLicenseAttributionShareAlike,                 ///< CC BY-SA --- This license lets others remix, tweak, and build upon your work even for commercial purposes, as long as they credit you and license their new creations under the identical terms. This license is often compared to “copyleft” free and open source software licenses. All new works based on yours will carry the same license, so any derivatives will also allow commercial use. This is the license used by Wikipedia, and is recommended for materials that would benefit from incorporating content from Wikipedia and similarly licensed projects. 
     PDIXMPLicenseAttributionNoDerivs,                   ///< CC BY-ND --- This license allows for redistribution, commercial and non-commercial, as long as it is passed along unchanged and in whole, with credit to you. 
@@ -32,6 +32,12 @@ typedef enum {
 @class PDIXMPArchive;
 
 @interface PDIXMPTemplate : NSObject
+
++ (NSArray *)licenseNames;
+
+///////////////
+///! Creation
+///////////////
 
 /**
  Create a template for the given license.
@@ -59,8 +65,24 @@ typedef enum {
 
 /**
  Apply the template to the given PDIXMPArchive instance, updating or inserting rdf:Description entries as appropriate.
+ 
+ @param archive The XMP archive into which license related content should be inserted.
  */
 - (void)applyToArchive:(PDIXMPArchive *)archive withAuthorName:(NSString *)authorName;
+
+/**
+ Remove licensing information from the given archive.
+ 
+ This method is called by -applyToArchive:withAuthorName: if the license is PDIXMPLicenseUndefined.
+
+ @param archive The XMP archive from which all license related content should be removed.
+ */
+- (void)removeFromArchive:(PDIXMPArchive *)archive;
+
+/**
+ License.
+ */
+@property (nonatomic, readonly) PDIXMPLicense license;
 
 /**
  License name.
@@ -71,5 +93,26 @@ typedef enum {
  License URL.
  */
 @property (nonatomic, readonly, strong) NSString *licenseUrl;
+
+///////////////
+///! Evaluating
+///////////////
+
+/**
+ Determine the license used in the given (pre-existing) XMP archive.
+ 
+ @param XMPArchive The archive for an existing PDF whose XMP data should be used to determine the PDF's license.
+ @return PDIXMPLicense enum result.
+ */
++ (PDIXMPLicense)licenseForXMPArchive:(PDIXMPArchive *)XMPArchive;
+
+/**
+ Generate a template for the given archive.
+ 
+ @param XMPArchive The archive for an existing PDF whose XMP data should be used to determine the PDF's license.
+ @return PDIXMPTemplate which inherits the license used by the given XMP archive, or nil if the license could not be determined or is not supported.
+ */
++ (id)templateForXMPArchive:(PDIXMPArchive *)XMPArchive;
+
 
 @end

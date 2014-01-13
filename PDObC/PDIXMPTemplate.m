@@ -22,6 +22,7 @@
 
 @interface PDIXMPTemplate ()
 
+@property (nonatomic, readwrite) PDIXMPLicense license;
 @property (nonatomic, strong) NSString *licenseUrl;
 @property (nonatomic, strong) NSString *licenseName;
 
@@ -85,10 +86,17 @@ static inline void PDIXMPTemplateSetup()
 #endif
 }
 
++ (NSArray *)licenseNames
+{
+    if (licenseUrls == nil) PDIXMPTemplateSetup();
+    return licenseNames;
+}
+
 + (id)templateForLicense:(PDIXMPLicense)license
 {
     if (licenseUrls == nil) PDIXMPTemplateSetup();
     PDIXMPTemplate *template = [[PDIXMPTemplate alloc] init];
+    template.license = license;
     template.licenseName = [licenseNames objectAtIndex:license];
     template.licenseUrl = [licenseNames objectAtIndex:license];
     return template;
@@ -113,8 +121,79 @@ static inline void PDIXMPTemplateSetup()
     return [self templateForLicense:[[codedLicenses objectAtIndex:code] intValue]];
 }
 
++ (id)templateForXMPArchive:(PDIXMPArchive *)XMPArchive
+{
+    PDIXMPLicense license = [self licenseForXMPArchive:XMPArchive];
+    if (license == PDIXMPLicenseUndefined) return nil;
+    
+    return [self templateForLicense:license];
+}
+
++ (PDIXMPLicense)licenseForXMPArchive:(PDIXMPArchive *)archive
+{
+    if (licenseUrls == nil) PDIXMPTemplateSetup();
+    
+    [archive selectRoot];
+    [archive selectElement:@"x:xmpmeta"];
+    [archive selectElement:@"rdf:RDF"];
+    
+    if ([archive selectElement:@"rdf:Description" withAttributes:@{@"xmlns:cc": @"http://creativecommons.org/ns#"}]) {
+        // we got a CC license expression in the form of a URL
+        // the URL is in the format
+        //  http://creativecommons.org/licenses/LICENSE_NAME/VERSION"
+        NSString *url = [archive stringForAttribute:@"rdf:resource"];
+        if (url) {
+            // first we see if we have an exact match
+            NSInteger index = [licenseUrls indexOfObject:url];
+            if (index != NSNotFound) {
+                // we do
+                return (PDIXMPLicense) index;
+            }
+            
+            /*if ([url hasPrefix:@"http://creativecommons.org/licenses/"]) {
+                url = [url substringFromIndex:@"http://creativecommons.org/licenses/".length];
+            } else {
+                NSArray *comps = [url componentsSeparatedByString:@"licenses"];
+                url = nil;
+                if (comps.count == 2) {
+                    url = [comps objectAtIndex:1];
+                    if ([url hasPrefix:@"/"]) url = [url substringFromIndex:1];
+                }
+            }
+            if (url) {
+                // we now have a cropped string in the format
+                //  LICENSE_NAME/VERSION
+                NSMutableArray *comps = [[url componentsSeparatedByString:@"/"] mutableCopy];
+                NSString *license, *version;
+
+                version = nil;
+                if (comps.count > 1) {
+                    licenseUrls = [comps lastObject];
+                    [comps removeLastObject];
+                }
+                license = [comps componentsJoinedByString:@"/"];
+            }*/
+        }
+    } [archive selectParent];
+    
+    NSString *xmpString = [[NSString alloc] initWithData:[archive allocSubset] encoding:NSUTF8StringEncoding];
+    NSRange ccRange = [xmpString rangeOfString:@"Creative Commons "];
+    if (ccRange.location != NSNotFound) {
+        NSString *string = [xmpString substringFromIndex:ccRange.location + ccRange.length];
+        for (NSInteger i = 0; i < licenseNames.count; i++) {
+            if ([string hasPrefix:[licenseNames objectAtIndex:i]]) {
+                return (PDIXMPLicense) i;
+            }
+        }
+    }
+    
+    return PDIXMPLicenseUndefined;
+}
+
 - (NSString *)declarationWithAuthorName:(NSString *)authorName
 {
+    if (_license == PDIXMPLicenseUndefined) return nil;
+    
     NSInteger year = [[[NSCalendar currentCalendar] components:NSCalendarUnitYear fromDate:[NSDate date]] year];
     NSMutableString *result = [[NSMutableString alloc] initWithCapacity:900];
     
@@ -149,8 +228,29 @@ static inline void PDIXMPTemplateSetup()
     return result;
 }
 
+- (void)removeFromArchive:(PDIXMPArchive *)archive
+{
+    [archive selectRoot];
+    if ([archive selectElement:@"x:xmpmeta"]) {
+        if ([archive selectElement:@"rdf:RDF"]) {
+    
+            id rdfRoot = [archive cursorReference];
+            assert(rdfRoot);
+    
+            while ([archive selectElement:@"rdf:Description"]) {
+                [archive deleteElement]; // delete includes -selectParent
+            }
+        }
+    }
+}
+
 - (void)applyToArchive:(PDIXMPArchive *)archive withAuthorName:(NSString *)authorName
 {
+    if (_license == PDIXMPLicenseUndefined) {
+        [self removeFromArchive:archive];
+        return;
+    }
+    
     NSInteger year = [[[NSCalendar currentCalendar] components:NSCalendarUnitYear fromDate:[NSDate date]] year];
 
     [archive selectRoot];

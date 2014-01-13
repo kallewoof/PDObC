@@ -154,6 +154,17 @@
 - (id)valueForKey:(NSString *)key;
 
 /**
+ Get the resolved value of the given key; that is, if the key is in the form "<number> <number> R", load the given object and return its value, rather than returning the reference.
+ 
+ @note Enabling mutations is required for the object to have an instance, through which to fetch external objects.
+ 
+ @param key The dictionary key.
+ 
+ @note In the current implementation, all values are returned as strings, but can be set using e.g. NSStrings, PDIObjects, PDIReferences or NSDictionary/Arrays of conformant objects.
+ */
+- (id)resolvedValueForKey:(NSString *)key;
+
+/**
  Remove the given key.
  
  @param key The dictionary key whose value should be removed.

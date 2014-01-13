@@ -19,19 +19,21 @@
 
 #import "Pajdeg.h"
 #import "pd_internal.h"
+#import "pd_pdf_implementation.h"
 
 #import "PDTaskBlocks.h"
 #import "PDInstance.h"
 #import "PDIObject.h"
 #import "PDCatalog.h"
 #import "PDIReference.h"
-#import "pd_pdf_implementation.h"
+#import "PDIXMPArchive.h"
 
 @interface PDInstance () {
     PDPipeRef _pipe;
     PDIObject *_rootObject;
     PDIObject *_infoObject;
     PDIObject *_metadataObject;
+    PDIXMPArchive *_metadataXMPArchive;
     PDParserRef _parser;
     PDIReference *_rootRef;
     PDIReference *_infoRef;
@@ -84,6 +86,15 @@
     return self;
 }
 
+- (id)initWithSourceURL:(NSURL *)sourceURL destinationPDFPath:(NSString *)destPDFPath
+{
+    if ([sourceURL isFileURL]) {
+        return [self initWithSourcePDFPath:[sourceURL path] destinationPDFPath:destPDFPath];
+    }
+    /// @todo: Network stream support (Pajdeg? PDObC?)
+    return nil;
+}
+
 - (BOOL)execute
 {
     NSAssert(_pipe, @"-execute called more than once, or initialization failed in PDInstance");
@@ -115,6 +126,21 @@
         [root enableMutationViaMimicSchedulingWithInstance:self];
     }
     return _metadataObject;
+}
+
+- (PDIXMPArchive *)metadataXMPArchive
+{
+    if (_metadataXMPArchive) return _metadataXMPArchive;
+    PDIObject *mdo = [self verifiedMetadataObject];
+
+    _metadataXMPArchive = [[PDIXMPArchive alloc] initWithObject:mdo];
+    if (_metadataXMPArchive == nil) {
+        CGPDFDocumentRef doc = CGPDFDocumentCreateWithURL((CFURLRef)[NSURL fileURLWithPath:_sourcePDFPath]);
+        _metadataXMPArchive = [[PDIXMPArchive alloc] initWithCGPDFDocument:doc];
+        CGPDFDocumentRelease(doc);
+    }
+
+    return _metadataXMPArchive;
 }
 
 - (PDIReference *)rootReference
