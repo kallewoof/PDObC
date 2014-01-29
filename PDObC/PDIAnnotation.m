@@ -53,10 +53,11 @@
         
         _subtype = [_object valueForKey:@"Subtype"];
         
-        s = [_object valueForKey:@"A"];
-        if (s) {
-            ref = [[PDIReference alloc] initWithString:s];
-            _a = [_instance fetchReadonlyObjectWithID:ref.objectID];
+        _a = [_object objectForKey:@"A"];
+        //s = [_object valueForKey:@"A"];
+        if (_a) {
+            //ref = [[PDIReference alloc] initWithString:s];
+            //_a = [_instance fetchReadonlyObjectWithID:ref.objectID];
             //[_a scheduleMimicWithInstance:_instance];
             //_mutatingA = YES;
             

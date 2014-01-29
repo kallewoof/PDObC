@@ -209,8 +209,17 @@ typedef PDTaskResult (^PDIObjectOperation)(PDInstance *instance, PDIObject *obje
 
 /**
  Obtain -- or create if necessary -- the /Metadata object, pointed to by the /Root object.
+ 
+ @return Created or existing metadata object.
  */
 - (PDIObject *)verifiedMetadataObject;
+
+/**
+ Obtain -- or create if necessary -- the /Info object of the trailer.
+
+ @return Created or existing info object.
+ */
+- (PDIObject *)verifiedInfoObject;
 
 /**
  Obtain the metadata object stream as an XMP archive, or nil if it's non-existent or 
@@ -231,12 +240,14 @@ typedef PDTaskResult (^PDIObjectOperation)(PDInstance *instance, PDIObject *obje
 @property (weak, nonatomic, readonly) PDIObject *rootObject;
 
 /**
- Reference to the PDF info object.
+ Reference to the PDF info object or nil if there is none.
  */
 @property (weak, nonatomic, readonly) PDIReference *infoReference;
 
 /**
- Readonly representation of the info object.
+ Readonly representation of the info object, or nil if there is none.
+ 
+ @see -verifiedInfoObject
  */
 @property (weak, nonatomic, readonly) PDIObject *infoObject;
 

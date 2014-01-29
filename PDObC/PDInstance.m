@@ -170,8 +170,26 @@
 - (PDIObject *)infoObject
 {
     if (_infoObject == nil) {
-        _infoObject = [[PDIObject alloc] initWithObject:PDParserGetInfoObject(_parser)];
+        PDObjectRef infoObj = PDParserGetInfoObject(_parser);
+        if (infoObj) {
+            _infoObject = [[PDIObject alloc] initWithObject:infoObj];
+        }
     }
+    return _infoObject;
+}
+
+- (PDIObject *)verifiedInfoObject
+{
+    if (_infoObject || [self infoObject]) return _infoObject;
+    
+    _infoObject = [self appendObject];
+    _parser->infoRef = PDRetain([[_infoObject reference] PDReference]);
+    
+    PDObjectRef trailer = _parser->trailer;
+    PDIObject *trailerOb = [[PDIObject alloc] initWithObject:trailer];
+    //[trailerOb setInstance:self];
+    [trailerOb setValue:_infoObject forKey:@"Info"];
+
     return _infoObject;
 }
 
@@ -235,6 +253,7 @@
 
 - (void)forObjectWithID:(NSInteger)objectID enqueueOperation:(PDIObjectOperation)operation
 {
+    NSAssert(objectID != 0, @"Object ID must not be 0.");
     [self enqueuePropertyType:PDPropertyObjectId value:objectID operation:operation];
 }
 

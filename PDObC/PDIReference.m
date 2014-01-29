@@ -52,12 +52,18 @@
 
 - (id)initWithObjectID:(NSInteger)objectID generationID:(NSInteger)generationID
 {
-    return [self initWithReference:PDReferenceCreate(objectID, generationID)];
+    PDReferenceRef ref = PDReferenceCreate(objectID, generationID);
+    self = [self initWithReference:ref];
+    PDRelease(ref);
+    return self;
 }
 
 - (id)initWithDefinitionStack:(pd_stack)stack
 {
-    return [self initWithReference:PDReferenceCreateFromStackDictEntry(stack)];
+    PDReferenceRef ref = PDReferenceCreateFromStackDictEntry(stack);
+    self = [self initWithReference:ref];
+    PDRelease(ref);
+    return self;
 }
 
 - (id)initWithString:(NSString *)refString
@@ -69,6 +75,11 @@
         return nil;
     
     return [self initWithObjectID:obid generationID:genid];
+}
+
+- (PDReferenceRef)PDReference
+{
+    return _ref;
 }
 
 - (const char *)PDFString

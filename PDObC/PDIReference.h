@@ -72,6 +72,13 @@
  */
 - (id)initWithString:(NSString *)refString;
 
+/**
+ Obtain a PDReference from this reference.
+ 
+ @return A PDReference identical to this reference.
+ */
+- (PDReferenceRef)PDReference;
+
 ///---------------------------------------
 /// @name Basic reference properties
 ///---------------------------------------

@@ -34,6 +34,7 @@
  */
 
 @class PDInstance;
+@class PDIReference;
 
 @interface PDIObject : PDIEntity
 
@@ -102,6 +103,13 @@
 - (void)scheduleMimicWithInstance:(PDInstance *)instance;
 
 /**
+ Get a PDIReference instance for this object.
+ 
+ @return PDIReference object.
+ */
+- (PDIReference *)reference;
+
+/**
  Determine if the object is in an object stream or not.
  */
 - (BOOL)isInsideObjectStream;
@@ -145,7 +153,7 @@
 // dictionary methods
 
 /**
- Get the value of the given key.
+ Get the string value of the given key.
  
  @param key The dictionary key.
  
@@ -163,6 +171,15 @@
  @note In the current implementation, all values are returned as strings, but can be set using e.g. NSStrings, PDIObjects, PDIReferences or NSDictionary/Arrays of conformant objects.
  */
 - (id)resolvedValueForKey:(NSString *)key;
+
+/**
+ Get the object value of the given key.
+ 
+ @note Enabling mutations is required for the object to have an instance, through which to fetch external objects.
+
+ @param key The dictionary key.
+ */
+- (PDIObject *)objectForKey:(NSString *)key;
 
 /**
  Remove the given key.
@@ -277,7 +294,7 @@
  
  @param block Block to be called right before object is serialized.
  */
-- (void)addSynchronizeHook:(dispatch_block_t)block;
+- (void)addSynchronizeHook:(void(^)(PDIObject *object))block;
 
 ///---------------------------------------
 /// @name Basic object properties

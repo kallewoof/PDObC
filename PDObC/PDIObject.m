@@ -58,7 +58,10 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
 
 - (void)sharedInit
 {
-    PDObjectSetSynchronizationCallback(_obj, PDIObjectSynchronizer, CFBridgingRetain(self));
+    if (_objectID != 0) {
+        PDObjectSetSynchronizationCallback(_obj, PDIObjectSynchronizer, CFBridgingRetain(self));
+    }
+    
     _dict = [[NSMutableDictionary alloc] initWithCapacity:3];
     _arr = [[NSMutableArray alloc] init];
     _type = PDObjectDetermineType(_obj);
@@ -107,12 +110,12 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
 
 - (void)synchronize
 {
-    for (dispatch_block_t block in _syncHooks) 
-        block();
+    for (void(^block)(PDIObject *) in _syncHooks) 
+        block(self);
     [_syncHooks removeAllObjects];
 }
 
-- (void)addSynchronizeHook:(dispatch_block_t)block
+- (void)addSynchronizeHook:(void (^)(PDIObject *))block
 {
     if (! _instance)
         [NSException raise:@"PDIObjectImmutableException" format:@"The object (id %ld) is not mutable. Schedule mimicking or add a task to the mutable version of the object.", (long)_objectID];
@@ -172,14 +175,14 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
 - (BOOL)enableMutationViaMimicSchedulingWithInstance:(PDInstance *)instance
 {
     if (_instance || _mutable) return YES;
-    if (! PDParserIsObjectStillMutable(PDPipeGetParser(instance.pipe), _objectID)) {
+    [self setInstance:instance];
+    if (! _mutable && ! PDParserIsObjectStillMutable(PDPipeGetParser(instance.pipe), _objectID)) {
 #ifdef DEBUG
         fprintf(stderr, "warning: object %ld has passed through pipe and can no longer be modified\n", (long)_objectID);
 #endif
         return NO;
     }
         //[NSException raise:@"PDIObjectMutabilityImpossibleException" format:@"The object (id %ld) has already passed through the pipe and can no longer be modified.", (long)_objectID];
-    [self setInstance:instance];
     return YES;
 }
 
@@ -211,6 +214,11 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
         _PDFString = strdup([[NSString stringWithFormat:@"%ld %ld R", (long)_objectID, (long)_generationID] cStringUsingEncoding:NSUTF8StringEncoding]);
     }
     return _PDFString;
+}
+
+- (PDIReference *)reference
+{
+    return [[PDIReference alloc] initWithObjectID:_objectID generationID:_generationID];
 }
 
 - (BOOL)isInsideObjectStream
@@ -316,6 +324,42 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
     }
 
     return value;
+}
+
+- (PDIObject *)objectForKey:(NSString *)key
+{
+    // use resolvedValue to fetch the object, if necessary
+    [self resolvedValueForKey:key];
+    
+    PDIObject *object = [_dict objectForKey:key];
+    if (object && ! [object isKindOfClass:[PDIObject class]]) {
+        const char *ckey = [key cStringUsingEncoding:NSUTF8StringEncoding];
+        // we probably have this value stored directly, hence we get a string back
+        pd_stack defs = PDObjectGetDictionaryEntryRaw(_obj, ckey);
+        if (defs) {
+            // that does seem right; we got a definition
+            object = [[PDIObject alloc] initWithIsolatedDefinitionStack:defs objectID:0 generationID:0];
+            
+            object.obj->obclass = PDObjectClassCompressed; // this isn't strictly the case, but it will result in no object identifying headers (e.g. 'trailer' or '1 2 obj') which is what we want
+            [_dict setObject:object forKey:key];
+            if (_instance) {
+                [object setInstance:_instance];
+                
+                [self addSynchronizeHook:^(PDIObject *myself) {
+                    char *strdef = malloc(256);
+                    PDObjectGenerateDefinition(object.obj, &strdef, 256);
+                    [myself setValue:[NSString stringWithCString:strdef encoding:NSUTF8StringEncoding] forKey:key];
+                    free(strdef);
+                }];
+            }
+        } else {
+            // hum; let's just pretend this object does not exist then
+            PDWarn("unexpected value in objectForKey:\"%s\"", ckey);
+            object = NULL;
+        }
+    }
+    
+    return object;
 }
 
 - (void)setValue:(id)value forKey:(NSString *)key
