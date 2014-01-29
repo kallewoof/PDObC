@@ -81,7 +81,13 @@
         if (! PDPipePrepare(_pipe)) {
             return nil;
         }
+        
         _parser = PDPipeGetParser(_pipe);
+        
+        // to avoid issues later on, we also set up the catalog here
+        if ([self numberOfPages] == 0) {
+            return nil;
+        }
     }
     return self;
 }
@@ -222,7 +228,7 @@
 - (NSInteger)numberOfPages
 {
     PDCatalogRef catalog = PDParserGetCatalog(_parser);
-    return PDCatalogGetPageCount(catalog);
+    return (catalog ? PDCatalogGetPageCount(catalog) : 0);
 }
 
 - (NSInteger)objectIDForPageNumber:(NSInteger)pageNumber
