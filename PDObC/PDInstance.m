@@ -220,8 +220,10 @@
 
 - (PDIObject *)fetchReadonlyObjectWithID:(NSInteger)objectID
 {
-    pd_stack defs = PDParserLocateAndCreateDefinitionForObject(_parser, objectID, true);
-    PDIObject *object = [[PDIObject alloc] initWithInstance:self forDefinitionStack:defs objectID:objectID generationID:0];
+    PDObjectRef obj = PDParserLocateAndCreateObject(_parser, objectID, true);
+    //pd_stack defs = PDParserLocateAndCreateDefinitionForObject(_parser, objectID, true);
+    PDIObject *object = [[PDIObject alloc] initWithObject:obj];//WithInstance:self forDefinitionStack:defs objectID:objectID generationID:0];
+    PDRelease(obj);
     return object;
 }
 

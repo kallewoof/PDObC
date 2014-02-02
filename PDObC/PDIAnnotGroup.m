@@ -36,7 +36,7 @@
         
         _object = object;
         NSInteger count = object.count;
-        if (count == 0) {
+        if (count == 0 && object.type != PDObjectTypeArray) {
             // it may be uninitialized; if type is unknown, it is
             if (object.type != PDObjectTypeUnknown) {
                 [NSException raise:@"PDIAnnotGroupInvalidObject" format:@"The object does not appear to be an Annots array."];

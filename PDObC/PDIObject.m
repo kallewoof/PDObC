@@ -61,7 +61,7 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
     if (_objectID != 0) {
         PDObjectSetSynchronizationCallback(_obj, PDIObjectSynchronizer, CFBridgingRetain(self));
     }
-    
+        
     _dict = [[NSMutableDictionary alloc] initWithCapacity:3];
     _arr = [[NSMutableArray alloc] init];
     _type = PDObjectDetermineType(_obj);
@@ -203,6 +203,11 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
     [self scheduleMimicking];
 }
 
+- (void)markInherentlyMutable
+{
+    _mutable = YES;
+}
+
 - (void)setInstance:(PDInstance *)instance
 {
     _instance = instance;
@@ -252,6 +257,8 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
     } else {
         bytes = PDParserLocateAndFetchObjectStreamForObject(parser, _obj);
     }
+    
+    PDAssert(_obj->extractedLen >= 0); // crash = object has no stream? something went awry extracting the stream? 
     
     return [[NSData alloc] initWithBytes:bytes length:_obj->extractedLen];
 }
@@ -344,6 +351,7 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
             [_dict setObject:object forKey:key];
             if (_instance) {
                 [object setInstance:_instance];
+                [object markInherentlyMutable];
                 
                 [self addSynchronizeHook:^(PDIObject *myself) {
                     char *strdef = malloc(256);
