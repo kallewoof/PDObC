@@ -57,7 +57,7 @@
         if (data) {
 //#ifdef DEBUG
             //NSString *str = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-            //BriefLog(@"about to parse XMP data:\n-------------------\n%@\n---------------------", str);
+            //NSLog(@"about to parse XMP data:\n-------------------\n%@\n---------------------", str);
 //#endif
             NSXMLParser *p = [[NSXMLParser alloc] initWithData:data];
             p.delegate = self;
@@ -150,7 +150,7 @@ static inline void populateXMPString(NSMutableString *str, NSArray *element)
         }
         else {
             // what is this?
-            BriefLog(@"error: undefined class for populateXMPString()");
+            NSLog(@"error: undefined class for populateXMPString()");
             assert(0);
         }
     }
@@ -165,7 +165,7 @@ static inline void populateXMPString(NSMutableString *str, NSArray *element)
         return _data;
     }
     if (! _modified) {
-        BriefLog(@"warning: generating xmp data even though modified is unset; disable when pdf code is stable and orderly");
+        NSLog(@"warning: generating xmp data even though modified is unset; disable when pdf code is stable and orderly");
     }
     
     _data = nil;
@@ -472,12 +472,12 @@ static inline void populateXMPString(NSMutableString *str, NSArray *element)
 
 - (void)parser:(NSXMLParser *)parser parseErrorOccurred:(NSError *)parseError
 {
-    BriefLog(@"parser parse error occurred: %@", [parseError description]);
+    NSLog(@"parser parse error occurred: %@", [parseError description]);
 }
 
 - (void)parser:(NSXMLParser *)parser validationErrorOccurred:(NSError *)validationError
 {
-    BriefLog(@"parser validation error occurred: %@", [validationError description]);
+    NSLog(@"parser validation error occurred: %@", [validationError description]);
 }
 
 @end

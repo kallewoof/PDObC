@@ -33,7 +33,7 @@ static NSDictionary *entityDecodes = nil;
             NSString *entity = [entitySplit objectAtIndex:0];
             NSString *decoded = [entityDecodes objectForKey:entity];
             if (decoded == nil) {
-                BriefLog(@"warning: undecoded entity: %@", entity);
+                NSLog(@"warning: undecoded entity: %@", entity);
                 decoded = [NSString stringWithFormat:@"&%@;", entity];
             }
             [entitySplit removeObjectAtIndex:0];
