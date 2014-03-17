@@ -237,6 +237,11 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
     [self scheduleMimicking];
 }
 
+- (void)unremoveObject
+{
+    PDObjectUndelete(_obj);
+}
+
 - (void)removeStream
 {
     _obj->skipStream = true;
@@ -370,6 +375,14 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
     return object;
 }
 
+#ifdef PDI_DISALLOW_KEYPATHS
+- (void)setValue:(id)value forKeyPath:(NSString *)keyPath
+{
+    NSLog(@"Notice: setValue:forKeyPath: reroutes to setValue:forKey: -- if you require the key path functionality, remove the PDI_DISALLOW_KEYPATHS #define from PDIObject.h (chances are high that you only meant to write setValue:forKey:)");
+    [self setValue:value forKey:keyPath];
+}
+#endif
+
 - (void)setValue:(id)value forKey:(NSString *)key
 {
     PDAssert(value != NULL);
@@ -487,7 +500,9 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
         vstr = [value PDFString];
     } else {
         if (! [value isKindOfClass:[NSString class]]) {
-            NSLog(@"Warning: %@ description is used.", value);
+            if (! [value isKindOfClass:[NSNumber class]]) {
+                NSLog(@"Warning: %@ description is used.", value);
+            }
             // yes we do put the description into _dict as well, if we arrive here
             value = [value description];
         }

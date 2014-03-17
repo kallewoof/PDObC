@@ -28,9 +28,12 @@
 @implementation PDIAnnotation {
     PDIObject *_a;
     PDIObject *_uri;
+    PDIObject *_dest;
+    PDIReference *_dDest;
     PDInstance *_instance;
     PDIString *_directURI;
     NSString *_subtype, *_aType, *_sType;
+    NSMutableArray *_fit;
     CGRect _rect;
 }
 
@@ -53,14 +56,22 @@
         
         _subtype = [_object valueForKey:@"Subtype"];
         
+        _dest = [_object objectForKey:@"Dest"];
+        if (_dest) {
+            [_dest enableMutationViaMimicSchedulingWithInstance:_instance];
+            NSString *s = [_dest valueAtIndex:0];
+            if (s) _dDest = [[PDIReference alloc] initWithString:s];
+            if (_dest.count > 1) {
+                _fit = [NSMutableArray arrayWithCapacity:_dest.count-1];
+                for (int i = 1; i < _dest.count; i++) {
+                    [_fit addObject:[_dest valueAtIndex:i]];
+                }
+            }
+        }
+        
         _a = [_object objectForKey:@"A"];
-        //s = [_object valueForKey:@"A"];
         if (_a) {
-            //ref = [[PDIReference alloc] initWithString:s];
-            //_a = [_instance fetchReadonlyObjectWithID:ref.objectID];
-            //[_a scheduleMimicWithInstance:_instance];
-            //_mutatingA = YES;
-            
+            // WHY IS THERE NO ENABLEMUTATION FOR _a ??????
             _aType = [_a valueForKey:@"Type"];
             
             _sType = [_a valueForKey:@"S"];
@@ -80,7 +91,7 @@
                     }
                 }
             }
-        } else {
+        } else if (! _dest) {
             _a = [_instance appendObject];
             [_object setValue:_a forKey:@"A"];
             [_a setValue:PDIAnnotationATypeAction forKey:@"Type"];
@@ -100,10 +111,6 @@
     _rect = rect;
     PDRect r = PDRectFromOSRect(_rect);
     [_object setValue:[NSArray arrayFromPDRect:r] forKey:@"Rect"];
-    /*if (! _mutatingA) {
-        _mutatingA = YES;
-        [_a scheduleMimicWithInstance:_instance];
-    }*/
 }
 
 - (NSString *)subtype
@@ -149,6 +156,9 @@
 
 - (void)setUriString:(NSString *)uriString
 {
+    [_uri unremoveObject];
+    [_a unremoveObject];
+
     self.subtype = PDIAnnotationSubtypeLink;
     self.aType = PDIAnnotationATypeAction;
     self.sType = PDIAnnotationSTypeURI;
@@ -166,6 +176,84 @@
             _mutatingURI = YES;
             [_uri scheduleMimicWithInstance:_instance];
         }*/
+    }
+}
+
+- (PDIReference *)dDest
+{
+    return _dDest;
+}
+
+- (void)setDDest:(PDIReference *)dDest
+{
+    if (dDest == nil) {
+        if (_uri) {
+            [_object setValue:_uri forKeyPath:@"URI"];
+            [_uri unremoveObject];
+        }
+        if (_a) {
+            [_object setValue:_a forKeyPath:@"A"];
+            [_a unremoveObject];
+        }
+        [_dest removeObject];
+        _dDest = nil;
+        [_object removeValueForKey:@"Dest"];
+        return;
+    }
+    
+    if (_uri) {
+        [_object removeValueForKey:@"URI"];
+        [_uri removeObject];
+    }
+    if (_a) {
+        [_object removeValueForKey:@"A"];
+        [_a removeObject];
+    }
+    
+    _dDest = dDest;
+    
+    if (_dest == nil) {
+        _dest = [_instance appendObject];
+        [_dest appendValue:_dDest];
+        if (_fit.count) 
+            for (int i = 0; i < _fit.count; i++) {
+                [_dest appendValue:_fit[i]];
+            }
+    } else {
+        [_dest unremoveObject];
+        if (_dest.count > 0)
+            [_dest replaceValueAtIndex:0 withValue:dDest];
+        else
+            [_dest appendValue:dDest];
+    }
+    
+    [_object setValue:_dest forKey:@"Dest"];
+}
+
+- (void)setDDestByPageIndex:(NSInteger)pageIndex
+{
+    self.dDest = [[PDIReference alloc] initWithObjectID:[_instance objectIDForPageNumber:pageIndex] generationID:0];
+}
+
+- (NSArray *)fit
+{
+    return _fit;
+}
+
+- (void)setFit:(NSArray *)fit
+{
+    _fit = [fit mutableCopy];
+    if (_dest) {
+        for (NSInteger i = 0; i < _fit.count; i++) {
+            if (i + 1 < _dest.count)
+                [_dest replaceValueAtIndex:i+1 withValue:fit[i]];
+            else
+                [_dest appendValue:fit[i]];
+        }
+        NSInteger count = _fit.count + 1;
+        while (_dest.count > count) {
+            [_dest removeValueAtIndex:count];
+        }
     }
 }
 

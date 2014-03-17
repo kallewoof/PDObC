@@ -90,4 +90,9 @@
     return _PDFString;
 }
 
+- (NSString *)description
+{
+    return [NSString stringWithFormat:@"<PDIReference: %p; object %ld (gen:%ld)>", self, (long)_objectID, (long)_generationID];
+}
+
 @end

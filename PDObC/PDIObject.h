@@ -36,6 +36,13 @@
 @class PDInstance;
 @class PDIReference;
 
+/**
+ Comment out this #define to allow the -setValue:forKeyPath: to pass through to the default implementation.
+ 
+ The default is to reroute it to setValue:forKey:, as Xcode tends to presume forKeyPath:, and it's subtle enough that it's near impossible to realize it happened at times.
+ */
+#define PDI_DISALLOW_KEYPATHS
+
 @interface PDIObject : PDIEntity
 
 ///---------------------------------------
@@ -122,6 +129,13 @@
  The object is completely removed from the resulting PDF.
  */
 - (void)removeObject;
+
+/**
+ Unremove the object from the PDF.
+ 
+ An object that was (potentially) told to remove itself will no longer be removed, presuming it hasn't been encountered yet in the pipe.
+ */
+- (void)unremoveObject;
 
 /**
  Remove the object's stream (but keep the object).
