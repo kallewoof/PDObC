@@ -242,6 +242,11 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
     PDObjectUndelete(_obj);
 }
 
+- (BOOL)willBeRemoved
+{
+    return _obj->skipObject;
+}
+
 - (void)removeStream
 {
     _obj->skipStream = true;

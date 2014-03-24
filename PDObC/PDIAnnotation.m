@@ -101,6 +101,17 @@
     return self;
 }
 
+- (void)deleteAnnotation
+{
+    [_object removeObject];
+    [_a removeObject];
+    [_uri removeObject];
+    [_dest removeObject];
+    [_annotGroup removeAnnotation:self];
+}
+
+#pragma mark - 
+
 - (CGRect)rect
 {
     return _rect;

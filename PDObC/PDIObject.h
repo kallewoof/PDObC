@@ -138,6 +138,11 @@
 - (void)unremoveObject;
 
 /**
+ Determine if the object is (to be) removed or not.
+ */
+- (BOOL)willBeRemoved;
+
+/**
  Remove the object's stream (but keep the object).
  */
 - (void)removeStream;

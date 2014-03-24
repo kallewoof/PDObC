@@ -65,4 +65,18 @@
     return annot;
 }
 
+- (void)removeAnnotation:(PDIAnnotation *)annotation
+{
+    if (! annotation.object.willBeRemoved) {
+        [annotation deleteAnnotation];
+        return;
+    }
+    
+    NSInteger index = [_annotations indexOfObject:annotation];
+    assert(index != NSNotFound); // crash = you tried to call removeAnnotation: on a PDIAnnotGroup for a PDIAnnotation that WAS NOT CREATED BY THAT ANNOT GROUP -- alternatively, you called removeAnnotation: twice with the same object
+    
+    [_object removeValueAtIndex:index];
+    [_annotations removeObjectAtIndex:index];
+}
+
 @end

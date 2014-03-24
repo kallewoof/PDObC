@@ -52,6 +52,11 @@ typedef enum {
  */
 - (id)initWithObject:(PDIObject *)object inAnnotGroup:(PDIAnnotGroup *)annotGroup withInstance:(PDInstance *)instance;
 
+/**
+ Delete this annotation from the resulting PDF.
+ */
+- (void)deleteAnnotation;
+
 @property (nonatomic, readonly)  PDIAnnotGroup *annotGroup;
 @property (nonatomic, readonly)  PDIObject *object;
 
