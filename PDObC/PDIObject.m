@@ -177,9 +177,7 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
     if (_instance || _mutable) return YES;
     [self setInstance:instance];
     if (! _mutable && ! PDParserIsObjectStillMutable(PDPipeGetParser(instance.pipe), _objectID)) {
-#ifdef DEBUG
-        fprintf(stderr, "warning: object %ld has passed through pipe and can no longer be modified\n", (long)_objectID);
-#endif
+        PDWarn("object %ld has passed through pipe and can no longer be modified", (long)_objectID);
         return NO;
     }
         //[NSException raise:@"PDIObjectMutabilityImpossibleException" format:@"The object (id %ld) has already passed through the pipe and can no longer be modified.", (long)_objectID];
