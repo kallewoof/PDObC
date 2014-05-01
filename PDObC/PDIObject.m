@@ -34,6 +34,7 @@
     NSMutableArray *_arr;
     __weak PDInstance *_instance;
     NSMutableSet *_syncHooks;
+    PDObjectType _type;
     BOOL _mutable;
 }
 
@@ -558,6 +559,19 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
         }
     }
     return _arr;
+}
+
+#pragma mark - Extended properties
+
+- (PDObjectType)type
+{
+    return _type;
+}
+
+- (void)setType:(PDObjectType)type
+{
+    _type = type;
+    PDObjectSetType(_obj, type);
 }
 
 @end

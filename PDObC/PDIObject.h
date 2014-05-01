@@ -82,6 +82,11 @@
 ///---------------------------------------
 
 /**
+ The object type that this object believes itself to be. If set, the object will be forced to that type, regardless of its previous content.
+ */
+@property (nonatomic, readwrite) PDObjectType type;
+
+/**
  Mimic the target object, i.e. make this object as identical to the target as possible.
  
  Does not change object or generation ID's.
@@ -328,11 +333,6 @@
  The object's generation number.
  */
 @property (nonatomic, readonly) NSInteger generationID;
-
-/**
- The object's type.
- */
-@property (nonatomic, readonly) PDObjectType type;
 
 
 ///---------------------------------------

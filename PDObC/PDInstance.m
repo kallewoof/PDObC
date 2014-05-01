@@ -128,6 +128,7 @@
         [_metadataObject enableMutationViaMimicSchedulingWithInstance:self];
     } else {
         _metadataObject = [self appendObject];
+        _metadataObject.type = PDObjectTypeDictionary; // we set the type explicitly, because the metadata object isn't always modified; if it isn't modified, Pajdeg considers it illegal to add it, as it requires that new objects have a type
         [root setValue:_metadataObject forKey:@"Metadata"];
         [root enableMutationViaMimicSchedulingWithInstance:self];
     }
