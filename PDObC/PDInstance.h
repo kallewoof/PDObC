@@ -50,6 +50,7 @@
 @class PDInstance;
 @class PDIObject;
 @class PDIReference;
+@class PDIPage;
 @class PDIXMPArchive;
 
 #import "PDDefines.h"
@@ -138,6 +139,27 @@ typedef PDTaskResult (^PDIObjectOperation)(PDInstance *instance, PDIObject *obje
  @param pageNumber The page number of the object whose ID should be returned.
  */
 - (NSInteger)objectIDForPageNumber:(NSInteger)pageNumber;
+
+/**
+ *  Get the page object for the page at the given page number. 
+ *
+ *  @note Page numbers begin at 1, not 0.
+ *
+ *  @param pageNumber The page number
+ *
+ *  @return The page object for the given page
+ */
+- (PDIPage *)pageForPageNumber:(NSInteger)pageNumber;
+
+/**
+ *  Inserts the given page into the PDF document, so that it becomes the new page at pageNumber (and the old, and subsequent pages, become the pages of pageNumber + 1, ...).
+ *
+ *  @param page       The page to insert, which must not be native to the instance (i.e. it must be form a separate PDInstance)
+ *  @param pageNumber Page number at which the page should be inserted in the PDF
+ *
+ *  @return The new native PDIPage object based on page
+ */
+- (PDIPage *)insertPage:(PDIPage *)page atPageNumber:(NSInteger)pageNumber;
 
 ///---------------------------------------
 /// @name Random access readonly instances 
