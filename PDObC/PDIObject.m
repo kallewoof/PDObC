@@ -252,24 +252,30 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
     [self scheduleMimicking];
 }
 
-- (NSData *)allocStream
+- (BOOL)prepareStream
 {
     if (_instance == nil) {
         // this may seem like a disturbing decision, but when an object without an instance is asked to allocate a stream, it simply means the object was created and the caller just blindly asked for the stream to be allocated -- both random-access obs and objects without streams say 'hasStream = NO'; this should probably change, however
-        return nil;
+        return NO;
     }
     
     PDParserRef parser = PDPipeGetParser([_instance pipe]);
-    char *bytes;
     if (parser->obid == _objectID) {
-        bytes = PDParserFetchCurrentObjectStream(parser, _objectID);
+        PDParserFetchCurrentObjectStream(parser, _objectID);
     } else {
-        bytes = PDParserLocateAndFetchObjectStreamForObject(parser, _obj);
+        PDParserLocateAndFetchObjectStreamForObject(parser, _obj);
     }
     
-    PDAssert(_obj->extractedLen >= 0); // crash = object has no stream? something went awry extracting the stream? 
+    return _obj->extractedLen >= 0;
+}
+
+- (NSData *)allocStream
+{
+    if (! [self prepareStream]) {
+        return nil;
+    }
     
-    return [[NSData alloc] initWithBytes:bytes length:_obj->extractedLen];
+    return [[NSData alloc] initWithBytes:_obj->streamBuf length:_obj->extractedLen];
 }
 
 - (BOOL)isCurrentObject
@@ -572,6 +578,11 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
 {
     _type = type;
     PDObjectSetType(_obj, type);
+}
+
+- (PDObjectRef)objectRef
+{
+    return _obj;
 }
 
 @end

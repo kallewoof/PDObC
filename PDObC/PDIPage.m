@@ -17,10 +17,15 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
+#import "PDPage.h"
 #import "PDIPage.h"
+#import "PDIObject.h"
 #import "PDDefines.h"
+#import "pd_internal.h"
 
-@interface PDIPage ()
+@interface PDIPage () {
+    PDIObject *_contents;
+}
 
 //@property (nonatomic, assign) PDInstance *instance;
 //@property (nonatomic, retain) PDIObject *object;
@@ -38,7 +43,17 @@
 {
     self = [super init];
     _pageRef = PDRetain(page);
+    _pageObject = [[PDIObject alloc] initWithObject:_pageRef->ob];
     return self;
+}
+
+#pragma mark - Extended properties
+
+- (PDIObject *)contents
+{
+    if (_contents) return _contents;
+    _contents = [[PDIObject alloc] initWithObject:PDPageGetContentsObject(_pageRef)];
+    return _contents;
 }
 
 @end

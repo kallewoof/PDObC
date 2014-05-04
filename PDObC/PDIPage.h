@@ -33,4 +33,8 @@
  */
 @property (nonatomic, readonly) PDPageRef pageRef;
 
+@property (nonatomic, readonly) PDIObject *pageObject;
+
+@property (nonatomic, readonly) PDIObject *contents;
+
 @end

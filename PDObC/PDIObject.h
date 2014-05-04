@@ -153,6 +153,13 @@
 - (void)removeStream;
 
 /**
+ Prepare the object's stream so that functions which rely on it being prepared will not fail.
+ 
+ @return YES if there is a stream, NO otherwise
+ */
+- (BOOL)prepareStream;
+
+/**
  Get the stream content for the object as a retained NSData object. 
  */
 - (NSData *)allocStream;
@@ -345,5 +352,10 @@
  This will prevent the object from attempting to schedule a mimic callback when edited.
  */
 - (void)markMutable;
+
+/**
+ *  The internal PDObject reference.
+ */
+@property (nonatomic, readonly) PDObjectRef objectRef;
 
 @end
