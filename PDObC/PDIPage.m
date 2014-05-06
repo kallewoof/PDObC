@@ -44,6 +44,10 @@
     self = [super init];
     _pageRef = PDRetain(page);
     _pageObject = [[PDIObject alloc] initWithObject:_pageRef->ob];
+
+    PDRect r = PDPageGetMediaBox(_pageRef);
+    _mediaBox = (CGRect) PDRectToOSRect(r);
+    
     return self;
 }
 

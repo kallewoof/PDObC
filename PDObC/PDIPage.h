@@ -37,4 +37,6 @@
 
 @property (nonatomic, readonly) PDIObject *contents;
 
+@property (nonatomic, readonly) CGRect mediaBox;
+
 @end

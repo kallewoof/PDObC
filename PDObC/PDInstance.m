@@ -273,7 +273,6 @@
 {
     PDPageRef nativePage = PDPageInsertIntoPipe(page.pageRef, _pipe, pageNumber);
     PDIPage *newPage = [[PDIPage alloc] initWithPage:nativePage];
-    PDRelease(nativePage);
 
     NSMutableDictionary *newPageDict = [[NSMutableDictionary alloc] initWithCapacity:_pageDict.count + 1];
     for (NSNumber *n in _pageDict.allKeys) {
