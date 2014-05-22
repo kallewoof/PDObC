@@ -47,7 +47,7 @@
 
 @interface PDIPage (PDInstance)
 
-- (id)initWithPage:(PDPageRef)page;
+- (id)initWithPage:(PDPageRef)page inInstance:(PDInstance *)instance;
 
 @end
 
@@ -141,8 +141,8 @@
     } else {
         _metadataObject = [self appendObject];
         _metadataObject.type = PDObjectTypeDictionary; // we set the type explicitly, because the metadata object isn't always modified; if it isn't modified, Pajdeg considers it illegal to add it, as it requires that new objects have a type
-        [root setValue:_metadataObject forKey:@"Metadata"];
         [root enableMutationViaMimicSchedulingWithInstance:self];
+        [root setValue:_metadataObject forKey:@"Metadata"];
     }
     return _metadataObject;
 }
@@ -261,7 +261,7 @@
     if (page) return page;
     
     PDPageRef pageRef = PDPageCreateForPageWithNumber(_parser, pageNumber);
-    page = [[PDIPage alloc] initWithPage:pageRef];
+    page = [[PDIPage alloc] initWithPage:pageRef inInstance:self];
     PDRelease(pageRef);
     
     _pageDict[@(pageNumber)] = page;
@@ -272,7 +272,7 @@
 - (PDIPage *)insertPage:(PDIPage *)page atPageNumber:(NSInteger)pageNumber
 {
     PDPageRef nativePage = PDPageInsertIntoPipe(page.pageRef, _pipe, pageNumber);
-    PDIPage *newPage = [[PDIPage alloc] initWithPage:nativePage];
+    PDIPage *newPage = [[PDIPage alloc] initWithPage:nativePage inInstance:self];
 
     NSMutableDictionary *newPageDict = [[NSMutableDictionary alloc] initWithCapacity:_pageDict.count + 1];
     for (NSNumber *n in _pageDict.allKeys) {

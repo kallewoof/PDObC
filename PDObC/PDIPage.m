@@ -22,9 +22,12 @@
 #import "PDIObject.h"
 #import "PDDefines.h"
 #import "pd_internal.h"
+#import "PDContentStream.h"
 
 @interface PDIPage () {
     PDIObject *_contents;
+    NSString *_text;
+    __weak PDInstance *_instance;
 }
 
 //@property (nonatomic, assign) PDInstance *instance;
@@ -39,7 +42,7 @@
     PDRelease(_pageRef);
 }
 
-- (id)initWithPage:(PDPageRef)page
+- (id)initWithPage:(PDPageRef)page inInstance:(PDInstance *)instance
 {
     self = [super init];
     _pageRef = PDRetain(page);
@@ -47,6 +50,7 @@
 
     PDRect r = PDPageGetMediaBox(_pageRef);
     _mediaBox = (CGRect) PDRectToOSRect(r);
+    _instance = instance;
     
     return self;
 }
@@ -58,6 +62,27 @@
     if (_contents) return _contents;
     _contents = [[PDIObject alloc] initWithObject:PDPageGetContentsObject(_pageRef)];
     return _contents;
+}
+
+- (NSString *)text
+{
+    if (_text) return _text;
+    char *buf;
+    PDIObject *contents = [self contents];
+    [contents enableMutationViaMimicSchedulingWithInstance:_instance];
+    [contents prepareStream];
+    PDContentStreamRef cs = PDContentStreamCreateTextExtractor(contents.objectRef, &buf);
+    PDContentStreamExecute(cs);
+    PDRelease(cs);
+    _text = [NSString stringWithCString:buf encoding:NSUTF8StringEncoding];
+    if (_text == nil) {
+        // try mac roman
+        _text = [NSString stringWithCString:buf encoding:NSMacOSRomanStringEncoding];
+        if (_text == nil) _text = [NSString stringWithCString:buf encoding:NSISOLatin1StringEncoding];
+        if (_text == nil) _text = [NSString stringWithCString:buf encoding:NSASCIIStringEncoding];
+    }
+    free(buf);
+    return _text;
 }
 
 @end

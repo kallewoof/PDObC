@@ -39,4 +39,9 @@
 
 @property (nonatomic, readonly) CGRect mediaBox;
 
+/**
+ *  A single string containing all the text on the page.
+ */
+@property (nonatomic, readonly) NSString *text;
+
 @end
