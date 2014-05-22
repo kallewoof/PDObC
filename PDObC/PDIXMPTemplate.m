@@ -126,7 +126,7 @@ static inline void PDIXMPTemplateSetup()
 + (id)templateForXMPArchive:(PDIXMPArchive *)archive
 {
     PDIXMPLicense license = [self licenseForXMPArchive:archive];
-    if (license == PDIXMPLicenseUndefined) return nil;
+    if (license == PDIXMPLicenseUndefined) license = PDIXMPLicenseCommercial;
     
     PDIXMPTemplate *template = [self templateForLicense:license];
     
