@@ -18,6 +18,7 @@
 //
 
 #import "PDIXMPEntry.h"
+#import "PDIXMPUtils.h"
 
 @interface PDIXMPEntry () 
 
@@ -33,6 +34,17 @@
     
     entry.xmlString = xmlString;
     
+    return entry;
+}
+
+- (PDIXMPEntry *)entryByAppendingObject:(id)object
+{
+    PDIXMPEntry *entry = [[PDIXMPEntry alloc] init];
+    if ([object isKindOfClass:[PDIXMPEntry class]]) {
+        entry.xmlString = [_xmlString stringByAppendingString:object];
+    } else {
+        entry.xmlString = [_xmlString stringByAppendingString:[object stringByEncodingXMLEntities]];
+    }
     return entry;
 }
 

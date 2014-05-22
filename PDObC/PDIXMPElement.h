@@ -18,6 +18,7 @@
 //
 
 #import <Foundation/Foundation.h>
+#import "PDIXMPEntry.h"
 
 @interface PDIXMPElement : NSObject
 
@@ -25,7 +26,21 @@
 
 - (void)appendChild:(PDIXMPElement *)child;
 
-- (void)appendValue:(NSString *)value;
+/**
+ *  Append a value to the element. The value can be either an NSString or a PDIXMPEntry.
+ *
+ *  @param value NSString or PDIXMPEntry
+ */
+- (void)appendContent:(id)value;
+
+/**
+ *  Set the value of the element. The value can be either an NSString or a PDIXMPEntry.
+ *
+ *  @param value NSString or PDIXMPEntry
+ */
+- (void)setContent:(id)value;
+
+- (void)setString:(NSString *)string forAttribute:(NSString *)attribute;
 
 - (PDIXMPElement *)find:(NSArray *)lineage createMissing:(BOOL)createMissing;
 
@@ -43,7 +58,8 @@
 @property (nonatomic, readonly) NSArray *children;          ///< PDIXMPElement objects which exist within this element
 
 @property (nonatomic, strong)   NSString *name;             ///< @"rdf:li"
-@property (nonatomic, strong)   NSString *value;            ///< @"John Doe"; note that value is ignored if firstChild is non-nil
+@property (nonatomic, readonly) NSString *value;            ///< @"John Doe"; note that value is ignored if firstChild is non-nil
+@property (nonatomic, readonly) PDIXMPEntry *XMPValue;      ///< the value of the element, with encoding applied -- if value = @"<foo>", result will be @"&lt;foo&gt;"; if XMPValue = @"<foo>", result will be @"<foo>"
 @property (nonatomic, strong)   NSDictionary *attributes;   ///< {@"xml:lang": @"x-default"}
 
 @end

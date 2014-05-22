@@ -382,9 +382,9 @@ static inline void PDIXMPTemplateSetup()
     if (! extra[@"dc:rights"]) {
         NSMutableDictionary *d = extra ? extra.mutableCopy : [NSMutableDictionary dictionary];
         if (_license == PDIXMPLicenseCommercial) {
-            d[@"dc:rights"] = [NSString stringWithFormat:@"Copyright %ld, %@. All rights reserved.", (long)year, authorName];
+            d[@"dc:rights"] = _rights ? _rights : [NSString stringWithFormat:@"Copyright %ld, %@. All rights reserved.", (long)year, authorName];
         } else {
-            d[@"dc:rights"] = [NSString stringWithFormat:@"Copyright %ld, %@. Licensed to the public under Creative Commons %@.", (long)year, authorName, _licenseName];
+            d[@"dc:rights"] = _rights ? _rights : [NSString stringWithFormat:@"Copyright %ld, %@. Licensed to the public under Creative Commons %@.", (long)year, authorName, _licenseName];
         }
         extra = d;
     }

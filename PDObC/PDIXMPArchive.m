@@ -21,6 +21,7 @@
 #import "PDIXMPArchive.h"
 #import "PDIXMPEntry.h"
 #import "PDIXMPUtils.h"
+#import "PDIXMPElement.h"
 #import "Pajdeg.h"
 
 #define kXMPAttributes  @" attributes "
@@ -30,15 +31,9 @@
 @interface PDIXMPArchive () <NSXMLParserDelegate> {
     __strong NSData     *_data;
     BOOL                 _modified;
-    NSMutableArray      *_root;
-    NSMutableArray      *_target;
-    NSMutableArray      *_targets;
     
-    // iteration (manipulation) 
-    NSMutableArray      *_cursors;
-    NSMutableArray      *_cursor;
-    NSMutableDictionary *_cdict;
-    NSMutableDictionary *_cattrs;
+    PDIXMPElement       *_rootElement;
+    PDIXMPElement       *_currentElement;
 }
 
 @end
@@ -65,7 +60,7 @@
                 return nil;
             }
         } else {
-            _root = [[NSMutableArray alloc] init];
+            _rootElement = [[PDIXMPElement alloc] init];
         }
         
         [self selectRoot];
@@ -117,51 +112,6 @@
 
 #pragma mark - XML generation
 
-/*
- COPIED TO PDIXMPElement.m -- THIS SHOULD BE REMOVED
- */
-static inline NSString *NSStringFromXMPAttributesDict(NSDictionary *attrs)
-{
-    NSMutableString *str = [NSMutableString stringWithString:@""];
-    for (NSString *key in attrs) {
-        [str appendFormat:@" %@=\"%@\"", key, [[attrs objectForKey:key] stringByEncodingXMLEntitiesAndNewlines]];
-    }
-    return str;
-}
-
-static inline void populateXMPString(NSMutableString *str, NSArray *element)
-{
-    NSString *ename = nil;
-    for (id item in element) {
-        if ([item isKindOfClass:[NSDictionary class]]) {
-            // element definition
-            NSDictionary *attr = [item objectForKey:kXMPAttributes];
-            ename = [item objectForKey:kXMPElement];
-            [str appendFormat:@"<%@%@>", ename, NSStringFromXMPAttributesDict(attr)];
-        }
-        else if ([item isKindOfClass:[NSArray class]]) {
-            // sub element
-            populateXMPString(str, item);
-        }
-        else if ([item isKindOfClass:[NSString class]]) {
-            // content
-            [str appendString:[item stringByEncodingXMLEntities]];
-        }
-        else if ([item isKindOfClass:[PDIXMPEntry class]]) {
-            // pre-encoded content
-            [str appendString:[item xmlString]];
-        }
-        else {
-            // what is this?
-            NSLog(@"error: undefined class for populateXMPString()");
-            assert(0);
-        }
-    }
-    if (ename) {
-        [str appendFormat:@"</%@>", ename];
-    }
-}
-
 - (NSData *)XMPData
 {
     if (0 && ! _modified) {
@@ -179,7 +129,9 @@ static inline void populateXMPString(NSMutableString *str, NSArray *element)
     [str appendString:@"<?xpacket begin=\"\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n"];
     
     @autoreleasepool {
-        populateXMPString(str, _root);
+        for (PDIXMPElement *e in _rootElement.children)
+            [e populateString:str withIndent:@""];
+//        populateXMPString(str, _root);
     }
     
     // post-fluff
@@ -195,26 +147,27 @@ static inline void populateXMPString(NSMutableString *str, NSArray *element)
     NSMutableString *str = [[NSMutableString alloc] initWithCapacity:3000];
     
     @autoreleasepool {
-        populateXMPString(str, _cursor);
+        [_currentElement populateString:str withIndent:@""];
+//        populateXMPString(str, _cursor);
     }
     
-    if (_detectMangledXML) {
-        NSUInteger len = str.length;
-        NSString *wrapperElement = [_cdict objectForKey:kXMPElement];
-        NSRange searchRange = (NSRange){0, str.length};
-        if (wrapperElement && str.length > 5 + wrapperElement.length * 2) 
-            searchRange = (NSRange){wrapperElement.length + 2, str.length - wrapperElement.length * 2 - 5};
-        if (len > 30 && [str rangeOfCharacterFromSet:[NSCharacterSet characterSetWithCharactersInString:@"<>"] options:0 range:searchRange].location == NSNotFound) {
-            // suspicion: no angle brackets
-            @autoreleasepool {
-                if ([[str componentsSeparatedByString:@"&"] count] > 7) {
-                    // yeah this is mangled XML
-                    NSString *decodedString = [str stringByDecodingXMLEntities];
-                    str = (id)decodedString;
-                }
-            }
-        }
-    }
+//    if (_detectMangledXML) {
+//        NSUInteger len = str.length;
+//        NSString *wrapperElement = [_cdict objectForKey:kXMPElement];
+//        NSRange searchRange = (NSRange){0, str.length};
+//        if (wrapperElement && str.length > 5 + wrapperElement.length * 2) 
+//            searchRange = (NSRange){wrapperElement.length + 2, str.length - wrapperElement.length * 2 - 5};
+//        if (len > 30 && [str rangeOfCharacterFromSet:[NSCharacterSet characterSetWithCharactersInString:@"<>"] options:0 range:searchRange].location == NSNotFound) {
+//            // suspicion: no angle brackets
+//            @autoreleasepool {
+//                if ([[str componentsSeparatedByString:@"&"] count] > 7) {
+//                    // yeah this is mangled XML
+//                    NSString *decodedString = [str stringByDecodingXMLEntities];
+//                    str = (id)decodedString;
+//                }
+//            }
+//        }
+//    }
     
     NSData *data = [str dataUsingEncoding:NSUTF8StringEncoding];
     return data;
@@ -232,72 +185,35 @@ static inline void populateXMPString(NSMutableString *str, NSArray *element)
 
 - (id)cursorReference
 {
-    return _cursor;
+    return _currentElement;
 }
 
 // select the root path (i.e. cd /)
 - (void)selectRoot
 {
-    if (! _cursors) _cursors = [[NSMutableArray alloc] initWithCapacity:3]; else [_cursors removeAllObjects];
-    _cursor = _root;
-    _cdict = nil;
-    _cattrs = nil;
+    _currentElement = _rootElement;
 }
 
 // select the parent of the current path (i.e. cd ..)
 - (void)selectParent
 {
-    _cursor = [_cursors lastObject];
-    [_cursors removeLastObject];
-    if (_cursor == _root) {
-        _cdict = nil;
-        _cattrs = nil;
-    } else {
-        _cdict = [_cursor objectAtIndex:0];
-        _cattrs = [_cdict objectForKey:kXMPAttributes];
-    }
+    _currentElement = _currentElement.parent;
 }
 
 // delete the current element and select its parent
 - (void)deleteElement
 {
-    NSArray *toDelete = _cursor;
-    [self selectParent];
-    [_cursor removeObject:toDelete];
+    PDIXMPElement *p = _currentElement.parent;
+    [p removeChild:_currentElement];
+    _currentElement = p;
 }
 
 - (BOOL)selectElement:(NSString *)element withAttributes:(NSDictionary *)attributes
 {
-    NSMutableDictionary *d;
-    for (id item in _cursor) {
-        if ([item isKindOfClass:[NSArray class]] && [item count] > 0) {
-            d = [item objectAtIndex:0];
-            if ([d isKindOfClass:[NSDictionary class]] && [[d objectForKey:kXMPElement] isEqualToString:element]) {
-                BOOL applies = YES;
-                NSDictionary *attrs = [d objectForKey:kXMPAttributes];
-                if (attributes) {
-                    for (NSString *key in attributes) {
-                        if (! [[attrs objectForKey:key] isEqualToString:[attributes objectForKey:key]]) {
-                            applies = NO;
-                            break;
-                        }
-                    }
-                }
-                
-                if (! applies) continue;
-                
-                if (! [d respondsToSelector:@selector(setObject:forKey:)]) {
-                    d = [d mutableCopy];
-                    [item replaceObjectAtIndex:0 withObject:d];
-                }
-                [_cursors addObject:_cursor];
-                _cursor = item;
-                _cdict = d;
-                _cattrs = [attrs mutableCopy];
-                [d setObject:_cattrs forKey:kXMPAttributes];
-                return YES;
-            }
-        }
+    PDIXMPElement *e = [_currentElement findChild:element withAttributes:attributes];
+    if (e) {
+        _currentElement = e;
+        return YES;
     }
     return NO;
 }
@@ -311,25 +227,7 @@ static inline void populateXMPString(NSMutableString *str, NSArray *element)
 - (void)appendElement:(NSString *)element withAttributes:(NSDictionary *)attributes
 {
     _modified = YES;
-    
-    [_cursor addObject:@"\t"];
-    
-    NSMutableArray *el = [[NSMutableArray alloc] init];
-    
-    NSMutableDictionary *a = attributes ? [attributes mutableCopy] : [[NSMutableDictionary alloc] init];
-    NSMutableDictionary *d = [@{
-                                kXMPAttributes : a, 
-                                kXMPElement : element
-                                } mutableCopy];
-    [el addObject:d];
-    
-    [_cursor addObject:el];
-    [_cursor addObject:@"\n"];
-    
-    [_cursors addObject:_cursor];
-    _cursor = el;
-    _cdict = d;
-    _cattrs = a;
+    _currentElement = [[PDIXMPElement alloc] initWithName:element attributes:attributes parent:_currentElement];
 }
 
 - (void)createElement:(NSString *)element withAttributes:(NSDictionary *)attributes
@@ -347,97 +245,57 @@ static inline void populateXMPString(NSMutableString *str, NSArray *element)
 // set/get attribute value
 - (NSString *)stringForAttribute:(NSString *)attribute
 {
-    return [_cattrs objectForKey:attribute];
+    return _currentElement.attributes[attribute];
 }
 
 - (void)setString:(NSString *)string forAttribute:(NSString *)attribute
 {
     _modified = YES;
-    [_cattrs setObject:string forKey:attribute];
+    [_currentElement setString:string forAttribute:attribute];
 }
 
 // set/get content
 - (NSString *)elementContent
 {
-    NSMutableString *str = [NSMutableString string];
-    
-    // we iterate over the element until we run into a non-string (aside from the first dict)
-    for (id item in _cursor) {
-        if ([item isKindOfClass:[NSString class]]) 
-            [str appendString:item];
-        else if (! [item isKindOfClass:[NSDictionary class]]) 
-            return str;
-    }
-    
-    return str;
+    return _currentElement.value;
 }
 
 - (void)setElementContent:(id)content
 {
     _modified = YES;
-    
-    // iterate and delete all strings
-    for (NSInteger i = _cursor.count-1; i >= 0; i--) {
-        if ([[_cursor objectAtIndex:i] isKindOfClass:[NSString class]]) [_cursor removeObjectAtIndex:i];
-    }
-    [_cursor addObject:content];
+    [_currentElement setContent:content];
 }
 
 - (void)appendElementContent:(id)content
 {
     _modified = YES;
-    [_cursor addObject:content];
-}
-
-#pragma mark - XML parse helper methods
-
-- (void)pushTarget:(NSMutableArray *)target
-{
-    [_targets addObject:_target];
-    _target = target;
-}
-
-- (NSMutableArray *)popTarget
-{
-    _target = [_targets lastObject];
-    [_targets removeLastObject];
-    return _target;
+    [_currentElement appendContent:content];
 }
 
 #pragma mark - NSXMLParser delegation
 
 - (void)parserDidStartDocument:(NSXMLParser *)parser
 {
-    _targets = [[NSMutableArray alloc] initWithCapacity:5];
-    _root = [[NSMutableArray alloc] initWithCapacity:5];
-    _target = _root;
+    _currentElement = _rootElement = [[PDIXMPElement alloc] init];
 }
 
 - (void)parserDidEndDocument:(NSXMLParser *)parser
 {
-    _targets = nil;
-    _target = nil;
 }
 
 - (void)parser:(NSXMLParser *)parser didStartElement:(NSString *)elementName namespaceURI:(NSString *)namespaceURI qualifiedName:(NSString *)qName attributes:(NSDictionary *)attributeDict
 {
-    NSMutableArray *el = [[NSMutableArray alloc] init];
-    [el addObject:@{
-                    kXMPAttributes : attributeDict, 
-                    kXMPElement : elementName
-                    }];
-    [_target addObject:el];
-    [self pushTarget:el];
+    _currentElement = [[PDIXMPElement alloc] initWithName:elementName attributes:attributeDict parent:_currentElement];
 }
 
 - (void)parser:(NSXMLParser *)parser didEndElement:(NSString *)elementName namespaceURI:(NSString *)namespaceURI qualifiedName:(NSString *)qName
 {
-    [self popTarget];
+    _currentElement = _currentElement.parent;
 }
 
 - (void)parser:(NSXMLParser *)parser foundCharacters:(NSString *)string
 {
-    [_target addObject:string];
+    [_currentElement appendContent:string];
 }
 
 - (void)parser:(NSXMLParser *)parser parseErrorOccurred:(NSError *)parseError

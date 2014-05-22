@@ -20,9 +20,6 @@
 #import "PDIXMPElement.h"
 #import "PDIXMPUtils.h"
 
-/*
- COPIED FROM PDIXMPArchive.m -- ORIGINAL SHOULD BE REMOVED
- */
 static inline NSString *NSStringFromXMPAttributesDict(NSDictionary *attrs)
 {
     NSMutableString *str = [NSMutableString stringWithString:@""];
@@ -34,9 +31,12 @@ static inline NSString *NSStringFromXMPAttributesDict(NSDictionary *attrs)
 
 @interface PDIXMPElement () {
     NSMutableString *_value;
+    PDIXMPEntry *_XMPValue;
     NSMutableArray *_children;
     NSMutableDictionary *_attributes;
 }
+
+@property (nonatomic, assign) PDIXMPElement *parent;
 
 @end
 
@@ -47,7 +47,7 @@ static inline NSString *NSStringFromXMPAttributesDict(NSDictionary *attrs)
     self = [super init];
     if (self) {
         _name = name;
-        _attributes = [attributes mutableCopy];
+        _attributes = attributes ? [attributes mutableCopy] : [[NSMutableDictionary alloc] init];
         if (parent) [parent appendChild:self];
     }
     return self;
@@ -57,12 +57,61 @@ static inline NSString *NSStringFromXMPAttributesDict(NSDictionary *attrs)
 {
     if (! _children) _children = [[NSMutableArray alloc] init];
     [_children addObject:child];
+    child.parent = self;
 }
 
-- (void)appendValue:(NSString *)value
+- (void)appendContent:(id)value
+{
+    if (! _value) {
+        _value = [[NSMutableString alloc] init];
+    }
+
+    if ([value isKindOfClass:[NSString class]]) {
+        [_value appendString:value];
+    } else {
+        [_value appendString:[[value xmlString] stringByDecodingXMLEntities]];
+        if (! _XMPValue) {
+            _XMPValue = [PDIXMPEntry entryWithXMLString:[_value stringByEncodingXMLEntities]];
+        }
+    }
+    _XMPValue = [_XMPValue entryByAppendingObject:value];
+}
+
+- (void)setContent:(id)value
+{
+    if ([value isKindOfClass:[PDIXMPEntry class]]) 
+        [self setXMPValue:value];
+    else
+        [self setValue:value];
+}
+
+- (NSString *)value
+{
+    return _value;
+}
+
+- (PDIXMPEntry *)XMPValue
+{
+    if (_XMPValue == nil && _value != nil) _XMPValue = [PDIXMPEntry entryWithXMLString:[_value stringByEncodingXMLEntities]];
+    return _XMPValue;
+}
+
+- (void)setValue:(NSString *)value
 {
     if (! _value) _value = [[NSMutableString alloc] init];
-    [_value appendString:value];
+    [_value setString:value];
+    _XMPValue = [PDIXMPEntry entryWithXMLString:[_value stringByEncodingXMLEntities]];
+}
+
+- (void)setXMPValue:(PDIXMPEntry *)XMPValue
+{
+    _XMPValue = XMPValue;
+    [_value setString:[XMPValue.xmlString stringByDecodingXMLEntities]];
+}
+
+- (void)setString:(NSString *)string forAttribute:(NSString *)attribute
+{
+    _attributes[attribute] = string;
 }
 
 - (PDIXMPElement *)find:(NSArray *)lineage createMissing:(BOOL)createMissing
@@ -126,15 +175,18 @@ static inline NSString *NSStringFromXMPAttributesDict(NSDictionary *attrs)
 {
     if (_children.count) {
         // this is a node with children
-        [string appendFormat:@"%@<%@>\n", indent, _name];
+        [string appendFormat:@"%@<%@%@>\n", indent, _name, NSStringFromXMPAttributesDict(_attributes)];
         NSString *cindent = [indent stringByAppendingString:@"\t"];
         for (PDIXMPElement *c in _children) {
             [c populateString:string withIndent:cindent];
         }
         [string appendFormat:@"%@<\%@>\n", indent, _name];
+    } else if (self.XMPValue) {
+        // this is a term node with content
+        [string appendFormat:@"%@<%@%@>%@</%@>\n", indent, _name, NSStringFromXMPAttributesDict(_attributes), [_XMPValue.xmlString stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]], _name];
     } else {
-        // this is a term node
-        [string appendFormat:@"%@<%@>%@</%@>\n", indent, _name, _value, _name];
+        // this is a term node w/o content
+        [string appendFormat:@"%@<%@%@ />\n", indent, _name, NSStringFromXMPAttributesDict(_attributes)];
     }
 }
 

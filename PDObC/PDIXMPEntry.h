@@ -23,6 +23,15 @@
 
 + (PDIXMPEntry *)entryWithXMLString:(NSString *)xmlString;
 
+/**
+ *  Return a new PDIXMPEntry with the given object appended. If the object is a PDIXMPEntry, its xmlString is appended as is. If it is an NSString, its value is XML-encoded before being appended.
+ *
+ *  @param object PDIXMPEntry or NSString object
+ *
+ *  @return A new PDIXMPEntry with the object appended
+ */
+- (PDIXMPEntry *)entryByAppendingObject:(id)object;
+
 @property (nonatomic, readonly) NSString *xmlString;
 
 @end
