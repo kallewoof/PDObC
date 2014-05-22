@@ -221,11 +221,18 @@ static inline void PDIXMPTemplateSetup()
     return PDIXMPLicenseUndefined;
 }
 
++ (NSString *)defaultRightsForLicense:(PDIXMPLicense)license withAuthor:(NSString *)author
+{
+    NSInteger year = [[[NSCalendar currentCalendar] components:NSCalendarUnitYear fromDate:[NSDate date]] year];
+    return (license == PDIXMPLicenseCommercial
+            ? [NSString stringWithFormat:@"Copyright %ld, %@. All rights reserved.", (long)year, author]
+            : [NSString stringWithFormat:@"Copyright %ld, %@. Licensed to the public under Creative Commons %@", (long)year, author, licenseNames[license]]);
+}
+
 - (NSString *)declarationWithAuthorName:(NSString *)authorName extra:(NSDictionary *)extra
 {
     if (_license == PDIXMPLicenseUndefined) return nil;
     
-    NSInteger year = [[[NSCalendar currentCalendar] components:NSCalendarUnitYear fromDate:[NSDate date]] year];
     NSMutableString *result = [[NSMutableString alloc] initWithCapacity:900];
     
     [result appendString:@"<?xpacket begin='' id=''?><x:xmpmeta xmlns:x='adobe:ns:meta/'>\
@@ -235,7 +242,7 @@ static inline void PDIXMPTemplateSetup()
     
     if (_license == PDIXMPLicenseCommercial && ! extra[@"dc:rights"]) {
         NSMutableDictionary *d = extra ? extra.mutableCopy : [NSMutableDictionary dictionary];
-        d[@"dc:rights"] = [NSString stringWithFormat:@"Copyright %ld, %@. All rights reserved.", (long)year, authorName];
+        d[@"dc:rights"] = [PDIXMPTemplate defaultRightsForLicense:_license withAuthor:authorName];
         extra = d;
     }
     
@@ -312,8 +319,8 @@ static inline void PDIXMPTemplateSetup()
                          xmlns:dc='http://purl.org/dc/elements/1.1/'>\
             <dc:rights>\
                 <rdf:Alt>\
-                    <rdf:li xml:lang='x-default' >Copyright "];
-        [result appendFormat:@"%ld, %@. Licensed to the public under Creative Commons %@", (long)year, authorName, _licenseName];
+                    <rdf:li xml:lang='x-default' >"];
+        [result appendString:[PDIXMPTemplate defaultRightsForLicense:_license withAuthor:authorName]];
         [result appendString:@".</rdf:li>\
                 </rdf:Alt>\
             </dc:rights>\
@@ -358,8 +365,6 @@ static inline void PDIXMPTemplateSetup()
         return;
     }
     
-    NSInteger year = [[[NSCalendar currentCalendar] components:NSCalendarUnitYear fromDate:[NSDate date]] year];
-
     [archive selectRoot];
     NSAssert([archive selectElement:@"x:xmpmeta"], @"No x:xmpmeta key in PDIXMPArchive!");
     NSAssert([archive selectElement:@"rdf:RDF"], @"No rdf:RDF key in PDIXMPArchive! They should be generated automagically!");
@@ -381,11 +386,7 @@ static inline void PDIXMPTemplateSetup()
     
     if (! extra[@"dc:rights"]) {
         NSMutableDictionary *d = extra ? extra.mutableCopy : [NSMutableDictionary dictionary];
-        if (_license == PDIXMPLicenseCommercial) {
-            d[@"dc:rights"] = _rights ? _rights : [NSString stringWithFormat:@"Copyright %ld, %@. All rights reserved.", (long)year, authorName];
-        } else {
-            d[@"dc:rights"] = _rights ? _rights : [NSString stringWithFormat:@"Copyright %ld, %@. Licensed to the public under Creative Commons %@.", (long)year, authorName, _licenseName];
-        }
+        d[@"dc:rights"] = [PDIXMPTemplate defaultRightsForLicense:_license withAuthor:authorName];
         extra = d;
     }
 
@@ -475,6 +476,13 @@ static inline void PDIXMPTemplateSetup()
         } [archive selectParent];
     }
     
+}
+
+- (void)relicense:(PDIXMPLicense)newLicense
+{
+    _license = newLicense;
+    _licenseName = [licenseNames objectAtIndex:newLicense];
+    _licenseUrl = [licenseUrls objectAtIndex:newLicense];
 }
 
 @end

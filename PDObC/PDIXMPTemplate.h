@@ -46,6 +46,11 @@ typedef enum {
 + (id)templateForLicense:(PDIXMPLicense)license;
 
 /**
+ Obtain the default rights string for the given license, if any.
+ */
++ (NSString *)defaultRightsForLicense:(PDIXMPLicense)license withAuthor:(NSString *)author;
+
+/**
  Create a Creative Commons license template based on restrictions. 
  
  Note that allowsAdaptions and ifSharedAlike are in reality a 3-value switch Yes, No, and Yes, if ShareAlike. This is interpreted internally as 
@@ -97,6 +102,13 @@ typedef enum {
  @param archive The XMP archive from which all license related content should be removed.
  */
 - (void)removeFromArchive:(PDIXMPArchive *)archive;
+
+/**
+ *  Relicense the target of the template to the given new license.
+ *
+ *  @param newLicense New license
+ */
+- (void)relicense:(PDIXMPLicense)newLicense;
 
 /**
  License.
