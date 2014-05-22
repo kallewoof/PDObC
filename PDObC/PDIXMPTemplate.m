@@ -43,6 +43,7 @@ static inline void PDIXMPTemplateSetup()
                     @"http://creativecommons.org/licenses/by-nc/4.0",
                     @"http://creativecommons.org/licenses/by-nc-sa/4.0",
                     @"http://creativecommons.org/licenses/by-nc-nd/4.0",
+                    @"",
                     ];
     
     licenseNames = @[@"Unspecified",
@@ -52,6 +53,7 @@ static inline void PDIXMPTemplateSetup()
                      @"Attribution-NonCommercial 4.0",
                      @"Attribution-NonCommercial-ShareAlike 4.0",
                      @"Attribution-NonCommercial-NoDerivs 4.0",
+                     @"Commercial",
                      ];
     
     /*
@@ -98,7 +100,7 @@ static inline void PDIXMPTemplateSetup()
     PDIXMPTemplate *template = [[PDIXMPTemplate alloc] init];
     template.license = license;
     template.licenseName = [licenseNames objectAtIndex:license];
-    template.licenseUrl = [licenseNames objectAtIndex:license];
+    template.licenseUrl = [licenseUrls objectAtIndex:license];
     return template;
 }
 
@@ -121,12 +123,25 @@ static inline void PDIXMPTemplateSetup()
     return [self templateForLicense:[[codedLicenses objectAtIndex:code] intValue]];
 }
 
-+ (id)templateForXMPArchive:(PDIXMPArchive *)XMPArchive
++ (id)templateForXMPArchive:(PDIXMPArchive *)archive
 {
-    PDIXMPLicense license = [self licenseForXMPArchive:XMPArchive];
+    PDIXMPLicense license = [self licenseForXMPArchive:archive];
     if (license == PDIXMPLicenseUndefined) return nil;
     
-    return [self templateForLicense:license];
+    PDIXMPTemplate *template = [self templateForLicense:license];
+    
+    [archive selectRoot];
+    [archive selectElement:@"x:xmpmeta"] &&
+    [archive selectElement:@"rdf:RDF"] &&
+    [archive selectElement:@"rdf:Description"] &&
+    [archive selectElement:@"dc:rights"] &&
+    [archive selectElement:@"rdf:Alt"] &&
+    [archive selectElement:@"rdf:li"];
+    
+    NSString *rights = [archive elementContent];
+    if (rights) template.rights = rights;
+    
+    return template;
 }
 
 + (PDIXMPLicense)licenseForXMPArchive:(PDIXMPArchive *)archive
@@ -174,7 +189,23 @@ static inline void PDIXMPTemplateSetup()
                 license = [comps componentsJoinedByString:@"/"];
             }*/
         }
-    } [archive selectParent];
+        [archive selectParent];
+    } 
+    
+    if ([archive selectElement:@"rdf:Description"]) {
+        // look for a dc:rights entry
+        if ([archive selectElement:@"dc:rights"] && [archive selectElement:@"rdf:Alt"] && [archive selectElement:@"rdf:li"]) {
+            //               <rdf:li xml:lang="x-default">Copyright © 2014, Corp. All rights reserved.</rdf:li>
+            NSString *rights = [archive elementContent];
+            if ([rights rangeOfString:@"all rights reserved" options:NSCaseInsensitiveSearch].location != NSNotFound) {
+                return PDIXMPLicenseCommercial;
+            }
+        }
+    }
+
+    [archive selectRoot];
+    [archive selectElement:@"x:xmpmeta"];
+    [archive selectElement:@"rdf:RDF"];
     
     NSString *xmpString = [[NSString alloc] initWithData:[archive allocSubset] encoding:NSUTF8StringEncoding];
     NSRange ccRange = [xmpString rangeOfString:@"Creative Commons "];
@@ -190,7 +221,7 @@ static inline void PDIXMPTemplateSetup()
     return PDIXMPLicenseUndefined;
 }
 
-- (NSString *)declarationWithAuthorName:(NSString *)authorName
+- (NSString *)declarationWithAuthorName:(NSString *)authorName extra:(NSDictionary *)extra
 {
     if (_license == PDIXMPLicenseUndefined) return nil;
     
@@ -198,31 +229,107 @@ static inline void PDIXMPTemplateSetup()
     NSMutableString *result = [[NSMutableString alloc] initWithCapacity:900];
     
     [result appendString:@"<?xpacket begin='' id=''?><x:xmpmeta xmlns:x='adobe:ns:meta/'>\
-    <rdf:RDF xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'>\
-\
-     <rdf:Description rdf:about=''\
-      xmlns:xapRights='http://ns.adobe.com/xap/1.0/rights/'>\
-      <xapRights:Marked>True</xapRights:Marked> </rdf:Description>\
-\
-     <rdf:Description rdf:about=''\
-      xmlns:dc='http://purl.org/dc/elements/1.1/'>\
-      <dc:rights>\
-       <rdf:Alt>\
-        <rdf:li xml:lang='x-default' >Copyright "];
-    [result appendFormat:@"%ld, %@. Licensed to the public under Creative Commons %@", (long)year, authorName, _licenseName];
-    [result appendString:@".</rdf:li>\
-       </rdf:Alt>\
-      </dc:rights>\
-     </rdf:Description>\
-\
-     <rdf:Description rdf:about=''\
-      xmlns:cc='http://creativecommons.org/ns#'>\
-     <cc:license rdf:resource='"];
-    [result appendString:_licenseUrl];
-    [result appendString:@"'/>\
-     </rdf:Description>\
-\
-    </rdf:RDF>\
+     <rdf:RDF xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'>\
+     \
+     "];
+    
+    if (_license == PDIXMPLicenseCommercial && ! extra[@"dc:rights"]) {
+        NSMutableDictionary *d = extra ? extra.mutableCopy : [NSMutableDictionary dictionary];
+        d[@"dc:rights"] = [NSString stringWithFormat:@"Copyright %ld, %@. All rights reserved.", (long)year, authorName];
+        extra = d;
+    }
+    
+    if (extra) {
+        [result appendString:@"<rdf:Description rdf:about=\"\"\n"];
+        
+        BOOL hasDC = NO; // purl.org/dc/elements/1.1/
+        BOOL hasPDF = NO; // ns.adobe.com/pdf/1.3/
+        BOOL hasXMP = NO; 
+//        BOOL hasXMPMM = NO;
+//        BOOL hasXMPRights = NO;
+        BOOL hasPDFX = NO; // ns.adobe.com/pdfx/1.3/
+        /*
+            xmlns:dc="http://purl.org/dc/elements/1.1/"
+            xmlns:pdf="http://ns.adobe.com/pdf/1.3/"
+            xmlns:xmp="http://ns.adobe.com/xap/1.0/"
+            xmlns:xmpMM="http://ns.adobe.com/xap/1.0/mm/"
+            xmlns:xmpRights="http://ns.adobe.com/xap/1.0/rights/"
+            xmlns:pdfx="http://ns.adobe.com/pdfx/1.3/">
+         */
+        for (NSString *k in extra.allKeys) {
+            hasDC |= [k hasPrefix:@"dc:"];
+            hasPDF |= [k hasPrefix:@"pdf:"];
+            hasXMP |= [k hasPrefix:@"xmp:"];
+            hasPDFX |= [k hasPrefix:@"pdfx:"];
+        }
+        if (hasDC)   [result appendString:@"xmlns:dc=\"http://purl.org/dc/elements/1.1/\"\n"];
+        if (hasPDF)  [result appendString:@"xmlns:pdf=\"http://ns.adobe.com/pdf/1.3/\"\n"];
+        if (hasXMP)  [result appendString:@"xmlns:xmp=\"http://ns.adobe.com/xap/1.0/\"\
+                                    xmlns:xmpMM=\"http://ns.adobe.com/xap/1.0/mm/\"\
+                                    xmlns:xmpRights=\"http://ns.adobe.com/xap/1.0/rights/\"\n"];
+        if (hasPDFX) [result appendString:@"xmlns:pdfx=\"http://ns.adobe.com/pdfx/1.3/\""];
+
+        [result appendString:@">\n"];
+        
+        for (NSString *key in extra.allKeys) {
+            [result appendFormat:@"<%@>", key];
+            id val = extra[key];
+            if ([key hasPrefix:@"dc:"]) {
+                if ([val isKindOfClass:[NSString class]]) {
+                    [result appendFormat:@"<rdf:Alt><rdf:li xml:lang=\"x-default\">%@</rdf:li></rdf:Alt>", [val stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]]];
+                }
+                else if ([val isKindOfClass:[NSArray class]]) {
+                    [result appendString:@"<rdf:Seq>\n"];
+                    for (NSString *v in val) {
+                        [result appendFormat:@"<rdf:li xml:lang=\"x-default\">%@</rdf:li>\n", [v stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]]];
+                    }
+                    [result appendString:@"</rdf:Seq>\n"];
+                }
+                else if ([val isKindOfClass:[NSSet class]]) {
+                    [result appendString:@"<rdf:Bag>\n"];
+                    for (NSString *v in val) {
+                        [result appendFormat:@"<rdf:li xml:lang=\"x-default\">%@</rdf:li>\n", [v stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]]];
+                    }
+                    [result appendString:@"</rdf:Bag>\n"];
+                }
+            } 
+            else {
+                [result appendFormat:@"%@", val];
+            }
+            [result appendFormat:@"</%@>\n", key];
+        }
+        
+        [result appendString:@"</rdf:Description>\n"];
+    }
+
+    if (_license != PDIXMPLicenseCommercial) {
+        [result appendString:@"<rdf:Description rdf:about=''\
+                         xmlns:xapRights='http://ns.adobe.com/xap/1.0/rights/'>\
+            <xapRights:Marked>True</xapRights:Marked> \
+        </rdf:Description>\
+        \
+        <rdf:Description rdf:about=''\
+                         xmlns:dc='http://purl.org/dc/elements/1.1/'>\
+            <dc:rights>\
+                <rdf:Alt>\
+                    <rdf:li xml:lang='x-default' >Copyright "];
+        [result appendFormat:@"%ld, %@. Licensed to the public under Creative Commons %@", (long)year, authorName, _licenseName];
+        [result appendString:@".</rdf:li>\
+                </rdf:Alt>\
+            </dc:rights>\
+        </rdf:Description>\
+        \
+        <rdf:Description rdf:about=''\
+                         xmlns:cc='http://creativecommons.org/ns#'>\
+            <cc:license rdf:resource='"];
+        [result appendString:_licenseUrl];
+        [result appendString:@"'/>\
+        </rdf:Description>\
+        \
+         "];
+    }
+
+    [result appendString:@"</rdf:RDF>\
      </x:xmpmeta><?xpacket end='r'?>"];
     
     return result;
@@ -244,7 +351,7 @@ static inline void PDIXMPTemplateSetup()
     }
 }
 
-- (void)applyToArchive:(PDIXMPArchive *)archive withAuthorName:(NSString *)authorName
+- (void)applyToArchive:(PDIXMPArchive *)archive withAuthorName:(NSString *)authorName extra:(NSDictionary *)extra
 {
     if (_license == PDIXMPLicenseUndefined) {
         [self removeFromArchive:archive];
@@ -260,33 +367,113 @@ static inline void PDIXMPTemplateSetup()
     id rdfRoot = [archive cursorReference];
     assert(rdfRoot);
     
-    [archive createElement:@"rdf:Description" withAttributes:@{@"rdf:about":       @"", 
-                                                               @"xmlns:xapRights": @"http://ns.adobe.com/xap/1.0/rights/"}]; {
-        [archive createElement:@"xapRights:Marked"]; {
-            [archive setElementContent:@"True"];
+    
+    if (_license != PDIXMPLicenseCommercial) {
+        [archive createElement:@"rdf:Description" withAttributes:@{@"rdf:about":       @"", 
+                                                                   @"xmlns:xapRights": @"http://ns.adobe.com/xap/1.0/rights/"}]; {
+            [archive createElement:@"xapRights:Marked"]; {
+                [archive setElementContent:@"True"];
+            } [archive selectParent];
         } [archive selectParent];
-    } [archive selectParent];
+    }
     
     assert([archive cursorReference] == rdfRoot);
     
-    [archive createElement:@"rdf:Description" withAttributes:@{@"rdf:about":       @"",
-                                                               @"xmlns:dc":        @"http://purl.org/dc/elements/1.1/"}]; {
-        [archive createElement:@"dc:rights"]; {
-            [archive createElement:@"rdf:Alt"]; {
-                [archive createElement:@"rdf:li" withAttributes:@{@"xml:lang":     @"x-default"}]; {
-                    [archive setElementContent:[NSString stringWithFormat:@"Copyright %ld, %@. Licensed to the public under Creative Commons %@.", (long)year, authorName, _licenseName]];
-                } [archive selectParent];
+    if (! extra[@"dc:rights"]) {
+        NSMutableDictionary *d = extra ? extra.mutableCopy : [NSMutableDictionary dictionary];
+        if (_license == PDIXMPLicenseCommercial) {
+            d[@"dc:rights"] = [NSString stringWithFormat:@"Copyright %ld, %@. All rights reserved.", (long)year, authorName];
+        } else {
+            d[@"dc:rights"] = [NSString stringWithFormat:@"Copyright %ld, %@. Licensed to the public under Creative Commons %@.", (long)year, authorName, _licenseName];
+        }
+        extra = d;
+    }
+
+    NSMutableDictionary *nslist = [[NSMutableDictionary alloc] init];
+    nslist[@"rdf:about"] = @"";
+    
+    BOOL hasDC = NO; // purl.org/dc/elements/1.1/
+    BOOL hasPDF = NO; // ns.adobe.com/pdf/1.3/
+    BOOL hasXMP = NO; 
+    //        BOOL hasXMPMM = NO;
+    //        BOOL hasXMPRights = NO;
+    BOOL hasPDFX = NO; // ns.adobe.com/pdfx/1.3/
+    /*
+     xmlns:dc="http://purl.org/dc/elements/1.1/"
+     xmlns:pdf="http://ns.adobe.com/pdf/1.3/"
+     xmlns:xmp="http://ns.adobe.com/xap/1.0/"
+     xmlns:xmpMM="http://ns.adobe.com/xap/1.0/mm/"
+     xmlns:xmpRights="http://ns.adobe.com/xap/1.0/rights/"
+     xmlns:pdfx="http://ns.adobe.com/pdfx/1.3/">
+     */
+    for (NSString *k in extra.allKeys) {
+        hasDC |= [k hasPrefix:@"dc:"];
+        hasPDF |= [k hasPrefix:@"pdf:"];
+        hasXMP |= [k hasPrefix:@"xmp:"];
+        hasPDFX |= [k hasPrefix:@"pdfx:"];
+    }
+    if (hasDC)   nslist[@"xmlns:dc"] = @"http://purl.org/dc/elements/1.1/";
+    if (hasPDF)  nslist[@"xmlns:pdf"] = @"http://ns.adobe.com/pdf/1.3/";
+    if (hasXMP)  { 
+        nslist[@"xmlns:xmp"] = @"http://ns.adobe.com/xap/1.0/";
+        nslist[@"xmlns:xmpMM"] = @"http://ns.adobe.com/xap/1.0/mm/";
+        nslist[@"xmlns:xmpRights"] = @"http://ns.adobe.com/xap/1.0/rights/";
+    }
+    if (hasPDFX) nslist[@"xmlns:pdfx"] = @"http://ns.adobe.com/pdfx/1.3/";
+    
+    [archive createElement:@"rdf:Description" withAttributes:nslist]; {
+
+        for (NSString *key in extra.allKeys) {
+            // we don't want to get duplicate entries so we remove existing values with the same key
+            if ([archive selectElement:key]) 
+                [archive deleteElement];
+            
+            [archive createElement:key]; {
+                id val = extra[key];
+                if ([key hasPrefix:@"dc:"]) {
+                    if ([val isKindOfClass:[NSString class]]) {
+                        [archive createElement:@"rdf:Alt"]; 
+                        val = @[val];
+                    }
+                    else if ([val isKindOfClass:[NSArray class]]) {
+                        [archive createElement:@"rdf:Seq"];
+                    }
+                    else if ([val isKindOfClass:[NSSet class]]) {
+                        [archive createElement:@"rdf:Bag"];
+                    }
+                    
+                    for (NSString *v in val) {
+                        [archive appendElement:@"rdf:li" withAttributes:@{@"xml:lang": @"x-default"}]; {
+                            [archive setElementContent:[v stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]]];
+                        } [archive selectParent];
+                    }
+                    
+                    [archive selectParent];
+                } else {
+                    [archive setElementContent:[NSString stringWithFormat:@"%@", val]];
+                }
             } [archive selectParent];
-        } [archive selectParent];
+        }
+        
+//        [archive createElement:@"dc:rights"]; {
+//            [archive createElement:@"rdf:Alt"]; {
+//                [archive createElement:@"rdf:li" withAttributes:@{@"xml:lang":     @"x-default"}]; {
+//                    [archive setElementContent:[NSString stringWithFormat:@"Copyright %ld, %@. Licensed to the public under Creative Commons %@.", (long)year, authorName, _licenseName]];
+//                } [archive selectParent];
+//            } [archive selectParent];
+//        } [archive selectParent];
+
     } [archive selectParent];
 
     assert([archive cursorReference] == rdfRoot);
     
-    [archive createElement:@"rdf:Description" withAttributes:@{@"rdf:about":       @"",
-                                                               @"xmlns:cc":        @"http://creativecommons.org/ns#"}]; {
-        [archive createElement:@"cc:license" withAttributes:@{@"rdf:resource":     _licenseUrl}];
-        [archive selectParent];
-    } [archive selectParent];
+    if (_license != PDIXMPLicenseCommercial) {
+        [archive createElement:@"rdf:Description" withAttributes:@{@"rdf:about":       @"",
+                                                                   @"xmlns:cc":        @"http://creativecommons.org/ns#"}]; {
+            [archive createElement:@"cc:license" withAttributes:@{@"rdf:resource":     _licenseUrl}];
+            [archive selectParent];
+        } [archive selectParent];
+    }
     
 }
 

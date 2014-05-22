@@ -138,10 +138,20 @@
  
  If an element of the given type exists with the given attributes, it is selected, otherwise a new element with the given attributes is created.
  
- @param element The element to select.
- @param attributes The attributes to match.
+ @param element The element to create
+ @param attributes The attributes to match
  */
 - (void)createElement:(NSString *)element withAttributes:(NSDictionary *)attributes;
+
+/**
+ *  Create and select element with given attributes, even if another identical element already exists.
+ *
+ *  Even if an element of the given type exists with the given attributes, a new element is created.
+ *
+ *  @param element    The element to create
+ *  @param attributes The attributes to set in the element
+ */
+- (void)appendElement:(NSString *)element withAttributes:(NSDictionary *)attributes;
 
 /**
  Get attribute value as a string.

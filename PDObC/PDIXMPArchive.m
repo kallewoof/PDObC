@@ -117,6 +117,9 @@
 
 #pragma mark - XML generation
 
+/*
+ COPIED TO PDIXMPElement.m -- THIS SHOULD BE REMOVED
+ */
 static inline NSString *NSStringFromXMPAttributesDict(NSDictionary *attrs)
 {
     NSMutableString *str = [NSMutableString stringWithString:@""];
@@ -303,30 +306,10 @@ static inline void populateXMPString(NSMutableString *str, NSArray *element)
 - (BOOL)selectElement:(NSString *)element
 {
     return [self selectElement:element withAttributes:nil];
-/*    NSMutableDictionary *d;
-    for (id item in _cursor) {
-        if ([item isKindOfClass:[NSArray class]] && [item count] > 0) {
-            d = [item objectAtIndex:0];
-            if ([d isKindOfClass:[NSDictionary class]] && [[d objectForKey:kXMPElement] isEqualToString:element]) {
-                if (! [d respondsToSelector:@selector(setObject:forKey:)]) {
-                    d = [d mutableCopy];
-                    [item replaceObjectAtIndex:0 withObject:d];
-                }
-                [_cursors addObject:_cursor];
-                _cursor = item;
-                _cdict = d;
-                _cattrs = [[d objectForKey:kXMPAttributes] mutableCopy];
-                [d setObject:_cattrs forKey:kXMPAttributes];
-                return YES;
-            }
-        }
-    }
-    return NO;*/
 }
 
-- (void)createElement:(NSString *)element withAttributes:(NSDictionary *)attributes
+- (void)appendElement:(NSString *)element withAttributes:(NSDictionary *)attributes
 {
-    if ([self selectElement:element withAttributes:attributes]) return;
     _modified = YES;
     
     [_cursor addObject:@"\t"];
@@ -342,36 +325,23 @@ static inline void populateXMPString(NSMutableString *str, NSArray *element)
     
     [_cursor addObject:el];
     [_cursor addObject:@"\n"];
-
+    
     [_cursors addObject:_cursor];
     _cursor = el;
     _cdict = d;
     _cattrs = a;
 }
 
+- (void)createElement:(NSString *)element withAttributes:(NSDictionary *)attributes
+{
+    if ([self selectElement:element withAttributes:attributes]) return;
+    [self appendElement:element withAttributes:attributes];
+}
+
 // create and select element in current element (i.e. mkdir element) -- returns NO if the element already exists
 - (void)createElement:(NSString *)element
 {
     [self createElement:element withAttributes:nil];
-    /*if ([self selectElement:element]) return;
-    _modified = YES;
-    
-    [_cursor addObject:@"\t"];
-    
-    NSMutableArray *el = [[NSMutableArray alloc] init];
-    
-    NSMutableDictionary *a = [[NSMutableDictionary alloc] init];
-    NSMutableDictionary *d = [@{
-                                kXMPAttributes : a, 
-                                kXMPElement : element
-                                } mutableCopy];
-    [el addObject:d];
-    
-    [_cursor addObject:el];
-    [_cursor addObject:@"\n"];
-    _cursor = el;
-    _cdict = d;
-    _cattrs = a;*/
 }
 
 // set/get attribute value

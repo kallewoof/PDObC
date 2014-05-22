@@ -27,6 +27,7 @@ typedef enum {
     PDIXMPLicenseAttributionNonCommercial,              ///< CC BY-NC --- This license lets others remix, tweak, and build upon your work non-commercially, and although their new works must also acknowledge you and be non-commercial, they don’t have to license their derivative works on the same terms.
     PDIXMPLicenseAttributionNonCommercialShareAlike,    ///< CC BY-NC-SA --- This license lets others remix, tweak, and build upon your work non-commercially, as long as they credit you and license their new creations under the identical terms.
     PDIXMPLicenseAttributionNonCommercialNoDerivs,      ///< CC BY-NC-ND --- This license is the most restrictive of our six main licenses, only allowing others to download your works and share them with others as long as they credit you, but they can’t change them in any way or use them commercially.
+    PDIXMPLicenseCommercial,                            ///< Commercial license
 } PDIXMPLicense;
 
 @class PDIXMPArchive;
@@ -59,16 +60,34 @@ typedef enum {
 + (id)templateWhichAllowsAdaptions:(BOOL)allowsAdaptions ifSharedAlike:(BOOL)ifSharedAlike allowsCommercialUse:(BOOL)allowsCommercialUse;
 
 /**
- XMP declaration with given author name.
+ XMP declaration with given author name, used in copyright sentence, and an optional dictionary of key/values where each key/value pair translates into
+ <KEY>
+    <rdf:Alt>
+        <rdf:li xml:lang="x-default">VALUE</rdf:li>
+    </rdf:Alt>
+    -if VALUE is a string, or-
+    <rdf:Bag>
+        <rdf:li>VALUE[0]</rdf:li>
+        ...
+    </rdf:Bag>
+    -if VALUE is a set, or-
+    <rdf:Seq>
+        <rdf:li>VALUE[0]</rdf:li>
+        ...
+    </rdf:Seq>
+    -if VALUE is an array-
+    </rdf:Bag>
+ </KEY>
+ if the key begins with "dc:"; otherwise the pair is stored as a regular value in which case non-strings are -description'ed.
  */
-- (NSString *)declarationWithAuthorName:(NSString *)authorName;
+- (NSString *)declarationWithAuthorName:(NSString *)authorName extra:(NSDictionary *)extra;
 
 /**
  Apply the template to the given PDIXMPArchive instance, updating or inserting rdf:Description entries as appropriate.
  
  @param archive The XMP archive into which license related content should be inserted.
  */
-- (void)applyToArchive:(PDIXMPArchive *)archive withAuthorName:(NSString *)authorName;
+- (void)applyToArchive:(PDIXMPArchive *)archive withAuthorName:(NSString *)authorName extra:(NSDictionary *)extra;
 
 /**
  Remove licensing information from the given archive.
@@ -93,6 +112,13 @@ typedef enum {
  License URL.
  */
 @property (nonatomic, readonly, strong) NSString *licenseUrl;
+
+/**
+ Rights string, e.g. "Copyright © 2014, Company. All rights reserved."
+ 
+ A PDF with a "rights" string containing the sentence "all rights reserved" has the license PDIXMPLicenseCommercial.
+ */
+@property (nonatomic, strong) NSString *rights;
 
 ///////////////
 ///! Evaluating
