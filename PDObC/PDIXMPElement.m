@@ -180,7 +180,7 @@ static inline NSString *NSStringFromXMPAttributesDict(NSDictionary *attrs)
         for (PDIXMPElement *c in _children) {
             [c populateString:string withIndent:cindent];
         }
-        [string appendFormat:@"%@<\%@>\n", indent, _name];
+        [string appendFormat:@"%@</%@>\n", indent, _name];
     } else if (self.XMPValue) {
         // this is a term node with content
         [string appendFormat:@"%@<%@%@>%@</%@>\n", indent, _name, NSStringFromXMPAttributesDict(_attributes), [_XMPValue.xmlString stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]], _name];
