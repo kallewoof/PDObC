@@ -135,7 +135,7 @@
     }
     
     // post-fluff
-    [str appendString:@"<?xpacket end=\"r\"?>\n"];
+    [str appendString:@"<?xpacket end=\"r\"?>"];
     
     _data = [str dataUsingEncoding:NSUTF8StringEncoding];
     
