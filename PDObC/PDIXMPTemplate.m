@@ -367,6 +367,7 @@ static inline void PDIXMPTemplateSetup()
     id rdfRoot = [archive cursorReference];
     assert(rdfRoot);
     
+    
     if (_license != PDIXMPLicenseCommercial) {
         [archive createElement:@"rdf:Description" withAttributes:@{@"rdf:about":       @"", 
                                                                    @"xmlns:xapRights": @"http://ns.adobe.com/xap/1.0/rights/"}]; {
