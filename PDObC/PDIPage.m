@@ -74,13 +74,13 @@
     PDContentStreamRef cs = PDContentStreamCreateTextExtractor(contents.objectRef, &buf);
     PDContentStreamExecute(cs);
     PDRelease(cs);
-    _text = [NSString stringWithCString:buf encoding:NSUTF8StringEncoding];
-    if (_text == nil) {
-        // try mac roman
+    if (NULL != strstr(buf, "\xa9")) {
         _text = [NSString stringWithCString:buf encoding:NSMacOSRomanStringEncoding];
-        if (_text == nil) _text = [NSString stringWithCString:buf encoding:NSISOLatin1StringEncoding];
-        if (_text == nil) _text = [NSString stringWithCString:buf encoding:NSASCIIStringEncoding];
     }
+    if (_text == nil) _text = [NSString stringWithCString:buf encoding:NSUTF8StringEncoding];
+    if (_text == nil) _text = [NSString stringWithCString:buf encoding:NSMacOSRomanStringEncoding];
+    if (_text == nil) _text = [NSString stringWithCString:buf encoding:NSISOLatin1StringEncoding];
+    if (_text == nil) _text = [NSString stringWithCString:buf encoding:NSASCIIStringEncoding];
     free(buf);
     return _text;
 }
