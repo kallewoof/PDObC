@@ -114,6 +114,11 @@ static inline NSString *NSStringFromXMPAttributesDict(NSDictionary *attrs)
     _attributes[attribute] = string;
 }
 
+- (NSString *)stringOfAttribute:(NSString *)attribute
+{
+    return _attributes[attribute];
+}
+
 - (PDIXMPElement *)find:(NSArray *)lineage createMissing:(BOOL)createMissing
 {
     PDIXMPElement *e = self;
@@ -149,6 +154,19 @@ static inline NSString *NSStringFromXMPAttributesDict(NSDictionary *attrs)
         }
     }
     return nil;
+}
+
+- (NSArray *)findChildrenWithName:(NSString *)name
+{
+    NSMutableArray *a = [[NSMutableArray alloc] init];
+    
+    for (PDIXMPElement *e in _children) {
+        if ([e.name isEqualToString:name]) {
+            [a addObject:e];
+        }
+    }
+    
+    return a.count ? a : nil;
 }
 
 - (void)removeChild:(PDIXMPElement *)child

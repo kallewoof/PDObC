@@ -42,9 +42,13 @@
 
 - (void)setString:(NSString *)string forAttribute:(NSString *)attribute;
 
+- (NSString *)stringOfAttribute:(NSString *)attribute;
+
 - (PDIXMPElement *)find:(NSArray *)lineage createMissing:(BOOL)createMissing;
 
 - (PDIXMPElement *)findChild:(NSString *)name withAttributes:(NSDictionary *)attributes;
+
+- (NSArray *)findChildrenWithName:(NSString *)name;
 
 - (void)removeChild:(PDIXMPElement *)child;
 

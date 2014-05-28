@@ -19,6 +19,7 @@
 
 #import "PDIXMPTemplate.h"
 #import "PDIXMPArchive.h"
+#import "NSArray+PDIXMPArchive.h"
 
 @interface PDIXMPTemplate ()
 
@@ -131,14 +132,9 @@ static inline void PDIXMPTemplateSetup()
     PDIXMPTemplate *template = [self templateForLicense:license];
     
     [archive selectRoot];
-    [archive selectElement:@"x:xmpmeta"] &&
-    [archive selectElement:@"rdf:RDF"] &&
-    [archive selectElement:@"rdf:Description"] &&
-    [archive selectElement:@"dc:rights"] &&
-    [archive selectElement:@"rdf:Alt"] &&
-    [archive selectElement:@"rdf:li"];
-    
-    NSString *rights = [archive elementContent];
+    [archive selectElement:@"x:xmpmeta"];
+    [archive selectElement:@"rdf:RDF"];
+    NSString *rights = [[archive findElements:@"rdf:Description"] firstAvailableElementValueForPath:@[@"dc:rights", @"rdf:Alt", @"rdf:li"]];
     if (rights) template.rights = rights;
     
     return template;

@@ -224,6 +224,20 @@
     return [self selectElement:element withAttributes:nil];
 }
 
+- (BOOL)selectPath:(NSArray *)path
+{
+    for (NSString *p in path) {
+        if (! [self selectElement:p]) 
+            return NO;
+    }
+    return YES;
+}
+
+- (NSArray *)findElements:(NSString *)element
+{
+    return [_currentElement findChildrenWithName:element];
+}
+
 - (void)appendElement:(NSString *)element withAttributes:(NSDictionary *)attributes
 {
     _modified = YES;
@@ -252,6 +266,16 @@
 {
     _modified = YES;
     [_currentElement setString:string forAttribute:attribute];
+}
+
+- (NSString *)contentOfElementAtPath:(NSArray *)path
+{
+    PDIXMPElement *e = _currentElement;
+    for (NSString *p in path) {
+        e = [e findChild:p withAttributes:nil];
+        if (! e) break;
+    }
+    return e.value;
 }
 
 // set/get content

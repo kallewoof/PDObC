@@ -171,6 +171,9 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
     if (tobj->ovrStream) {
         s = _obj->ovrStream; _obj->ovrStream = tobj->ovrStream; tobj->ovrStream = s;
     }
+    if (tobj->ovrStreamLen) {
+        i = _obj->ovrStreamLen; _obj->ovrStreamLen = tobj->ovrStreamLen; tobj->ovrStreamLen = i;
+    }
 }
 
 - (BOOL)enableMutationViaMimicSchedulingWithInstance:(PDInstance *)instance
@@ -285,7 +288,8 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
 
 - (void)setStreamContent:(NSData *)content
 {
-    PDObjectSetStream(_obj, (char *)[content bytes], [content length], true, false);
+    PDObjectSetStreamFiltered(_obj, (char *)[content bytes], [content length]);
+//    PDObjectSetStream(_obj, (char *)[content bytes], [content length], true, false);
     [self scheduleMimicking];
 }
 

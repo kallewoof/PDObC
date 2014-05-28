@@ -116,6 +116,26 @@
 - (BOOL)selectElement:(NSString *)element;
 
 /**
+ *  Select the given path, that is call -selectElement: on each individual array entry until NO is returned or until the array is exhausted, and return NO in the former case and YES in the latter.
+ *
+ *  @param path Array of element names
+ *
+ *  @return YES if all elements in path existed and were successfully selected
+ */
+- (BOOL)selectPath:(NSArray *)path;
+
+/**
+ *  Find all elements of the given type and return them as an array. 
+ *
+ *  @see NSArray+PDIXMPArchive.h
+ *
+ *  @param element Element name that should be matched
+ *
+ *  @return Array of elements whose name is equal to the given element
+ */
+- (NSArray *)findElements:(NSString *)element;
+
+/**
  Select first element of given type with given attributes.
  
  @param element The element to select.
@@ -173,6 +193,15 @@
  Get current element's content.
  */
 - (NSString *)elementContent;
+
+/**
+ *  Get the content of the element at the given path, starting at the current element
+ *
+ *  @param path Path as array of element names
+ *
+ *  @return String value or nil if path is not defined in the archive
+ */
+- (NSString *)contentOfElementAtPath:(NSArray *)path;
 
 /**
  Set element content.
