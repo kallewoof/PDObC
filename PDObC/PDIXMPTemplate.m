@@ -19,6 +19,7 @@
 
 #import "PDIXMPTemplate.h"
 #import "PDIXMPArchive.h"
+#import "PDIXMPElement.h"
 #import "NSArray+PDIXMPArchive.h"
 
 @interface PDIXMPTemplate ()
@@ -368,6 +369,8 @@ static inline void PDIXMPTemplateSetup()
     id rdfRoot = [archive cursorReference];
     assert(rdfRoot);
     
+    // to avoid duplicates due to differing attribute sets, we remove all pdf:Description entries from the XMP here
+    [[archive findElements:@"rdf:Description"] makeObjectsPerformSelector:@selector(removeFromParent)];
     
     if (_license != PDIXMPLicenseCommercial) {
         [archive createElement:@"rdf:Description" withAttributes:@{@"rdf:about":       @"", 
@@ -398,6 +401,7 @@ static inline void PDIXMPTemplateSetup()
     /*
      xmlns:dc="http://purl.org/dc/elements/1.1/"
      xmlns:pdf="http://ns.adobe.com/pdf/1.3/"
+     xmlns:xapRights="http://ns.adobe.com/xap/1.0/rights/"
      xmlns:xmp="http://ns.adobe.com/xap/1.0/"
      xmlns:xmpMM="http://ns.adobe.com/xap/1.0/mm/"
      xmlns:xmpRights="http://ns.adobe.com/xap/1.0/rights/"

@@ -20,6 +20,16 @@
 #import "PDIXMPElement.h"
 #import "PDIXMPUtils.h"
 
+static inline NSString *NSStringFromXMPAttributesDictWithSeparator(NSDictionary *attrs, NSString *separator)
+{
+    NSArray *sortedAttrs = [attrs.allKeys sortedArrayUsingSelector:@selector(caseInsensitiveCompare:)];
+    NSMutableString *str = [NSMutableString stringWithString:@""];
+    for (NSString *key in sortedAttrs) {
+        [str appendFormat:@"%@%@=\"%@\"", str.length ? separator : @"", key, [[attrs objectForKey:key] stringByEncodingXMLEntitiesAndNewlines]];
+    }
+    return str;
+}
+
 static inline NSString *NSStringFromXMPAttributesDict(NSDictionary *attrs)
 {
     NSMutableString *str = [NSMutableString stringWithString:@""];
@@ -177,6 +187,11 @@ static inline NSString *NSStringFromXMPAttributesDict(NSDictionary *attrs)
     [_children removeObject:child];
 }
 
+- (void)removeFromParent
+{
+    [_parent removeChild:self];
+}
+
 - (void)removeAllChildren
 {
     _children = nil;
@@ -193,12 +208,29 @@ static inline NSString *NSStringFromXMPAttributesDict(NSDictionary *attrs)
 {
     if (_children.count) {
         // this is a node with children
-        [string appendFormat:@"%@<%@%@>\n", indent, _name, NSStringFromXMPAttributesDict(_attributes)];
-        NSString *cindent = [indent stringByAppendingString:@"\t"];
-        for (PDIXMPElement *c in _children) {
-            [c populateString:string withIndent:cindent];
+        if (_children.count == 1 && _attributes.count == 0 && [_children[0] children].count == 0) {
+            [string appendFormat:@"%@<%@%@>", indent, _name, NSStringFromXMPAttributesDict(_attributes)];
+            NSString *cindent = @"";
+            for (PDIXMPElement *c in _children) {
+                [c populateString:string withIndent:cindent];
+            }
+            [string appendFormat:@"</%@>\n", _name];
+        } else if (_attributes.count > 2) {
+            NSString *cindent = [NSString stringWithFormat:@"\n%@  ", indent];
+            [string appendFormat:@"%@<%@%@%@>\n", indent, _name, cindent, NSStringFromXMPAttributesDictWithSeparator(_attributes, cindent)];
+            cindent = [indent stringByAppendingString:@"\t"];
+            for (PDIXMPElement *c in _children) {
+                [c populateString:string withIndent:cindent];
+            }
+            [string appendFormat:@"%@</%@>\n", indent, _name];
+        } else {
+            [string appendFormat:@"%@<%@%@>\n", indent, _name, NSStringFromXMPAttributesDict(_attributes)];
+            NSString *cindent = [indent stringByAppendingString:@"\t"];
+            for (PDIXMPElement *c in _children) {
+                [c populateString:string withIndent:cindent];
+            }
+            [string appendFormat:@"%@</%@>\n", indent, _name];
         }
-        [string appendFormat:@"%@</%@>\n", indent, _name];
     } else if (self.XMPValue) {
         // this is a term node with content
         [string appendFormat:@"%@<%@%@>%@</%@>\n", indent, _name, NSStringFromXMPAttributesDict(_attributes), [_XMPValue.xmlString stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]], _name];

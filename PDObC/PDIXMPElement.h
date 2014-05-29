@@ -50,6 +50,8 @@
 
 - (NSArray *)findChildrenWithName:(NSString *)name;
 
+- (void)removeFromParent;
+
 - (void)removeChild:(PDIXMPElement *)child;
 
 - (void)removeAllChildren;
