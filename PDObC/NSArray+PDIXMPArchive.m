@@ -14,8 +14,8 @@
 - (NSString *)firstAvailableElementValueForPath:(NSArray *)path
 {
     NSString *value;
-    NSString *name;
-    NSArray *subPath;
+    NSString *name = nil;
+    NSArray *subPath = nil;
     if (path.count) {
         name = path[0];
         subPath = [path subarrayWithRange:(NSRange){1, path.count-1}];
@@ -31,14 +31,14 @@
 - (NSString *)firstAvailableValueOfAttribute:(NSString *)attributeName forPath:(NSArray *)path
 {
     NSString *value;
-    NSString *name;
-    NSArray *subPath;
+    NSString *name = nil;
+    NSArray *subPath = nil;
     if (path.count) {
         name = path[0];
         subPath = [path subarrayWithRange:(NSRange){1, path.count-1}];
     }
     for (PDIXMPElement *e in self) {
-        value = path.count ? [[e findChildrenWithName:name] firstAvailableValueOfAttribute:attributeName forPath:path] : [e stringOfAttribute:attributeName];
+        value = path.count ? [[e findChildrenWithName:name] firstAvailableValueOfAttribute:attributeName forPath:subPath] : [e stringOfAttribute:attributeName];
         if (value != nil) return value;
 //        c = [e find:path createMissing:NO];
 //        if ([c stringOfAttribute:attributeName]) return [c stringOfAttribute:attributeName];
@@ -48,8 +48,8 @@
 
 - (void)populateElementValues:(NSMutableArray *)values withPath:(NSArray *)path
 {
-    NSString *name;
-    NSArray *subPath;
+    NSString *name = nil;
+    NSArray *subPath = nil;
     if (path.count) {
         name = path[0];
         subPath = [path subarrayWithRange:(NSRange){1, path.count-1}];
