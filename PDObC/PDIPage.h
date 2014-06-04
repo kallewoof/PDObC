@@ -35,7 +35,7 @@
 
 @property (nonatomic, readonly) PDIObject *pageObject;
 
-@property (nonatomic, readonly) PDIObject *contents;
+@property (nonatomic, readonly) NSArray *contentObjects;
 
 @property (nonatomic, readonly) CGRect mediaBox;
 
