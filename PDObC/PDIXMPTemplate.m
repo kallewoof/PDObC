@@ -17,10 +17,12 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
+#import "Pajdeg.h"
 #import "PDIXMPTemplate.h"
 #import "PDIXMPArchive.h"
 #import "PDIXMPElement.h"
 #import "NSArray+PDIXMPArchive.h"
+#import "NSObjects+PDIEntity.h"
 
 @interface PDIXMPTemplate ()
 
@@ -383,11 +385,16 @@ static inline void PDIXMPTemplateSetup()
     
     assert([archive cursorReference] == rdfRoot);
     
-    if (! extra[@"dc:rights"]) {
-        NSMutableDictionary *d = extra ? extra.mutableCopy : [NSMutableDictionary dictionary];
-        d[@"dc:rights"] = [PDIXMPTemplate defaultRightsForLicense:_license withAuthor:authorName];
-        extra = d;
-    }
+    NSMutableDictionary *d = extra ? extra.mutableCopy : [NSMutableDictionary dictionary];
+    //2014-06-04T08:28:14-04:00
+    NSString *datetimeString = [[NSDate date] datetimeString];
+    d[@"xmp:MetadataDate"] = datetimeString;
+
+    if (! extra[@"xmp:ModifyDate"])     d[@"xmp:ModifyDate"] = datetimeString;
+    if (! extra[@"dc:rights"])          d[@"dc:rights"] = [PDIXMPTemplate defaultRightsForLicense:_license withAuthor:authorName];
+    if (! extra[@"xmp:CreatorTool"])    d[@"xmp:CreatorTool"] = [NSString stringWithFormat:@"Pajdeg Ob-C (Pajdeg v. " PAJDEG_VERSION ")"];
+
+    extra = d;
 
     NSMutableDictionary *nslist = [[NSMutableDictionary alloc] init];
     nslist[@"rdf:about"] = @"";
@@ -433,7 +440,21 @@ static inline void PDIXMPTemplateSetup()
                 id val = extra[key];
                     // dc:format is special; it doesn't have the rdf:Alt/Seq/etc stuff so we ignore that one here
                 if ([key hasPrefix:@"dc:"] && ! [key isEqualToString:@"dc:format"]) {
-                    if ([val isKindOfClass:[NSString class]]) {
+                    BOOL includeLang = YES;
+                    // specialized keys exist and require specific handling
+                    if ([key isEqualToString:@"dc:creator"]) {
+                        // creator requires a Seq and does not have a lang
+                        [archive createElement:@"rdf:Seq"];
+                        includeLang = NO;
+                        if ([val isKindOfClass:[NSString class]]) val = @[val];
+                    }
+                    else if ([key isEqualToString:@"dc:subject"]) {
+                        // subject is a bag and does not include lang
+                        [archive createElement:@"rdf:Bag"];
+                        includeLang = NO;
+                        if ([val isKindOfClass:[NSString class]]) val = @[val];
+                    }
+                    else if ([val isKindOfClass:[NSString class]]) {
                         [archive createElement:@"rdf:Alt"]; 
                         val = @[val];
                     }
@@ -444,8 +465,9 @@ static inline void PDIXMPTemplateSetup()
                         [archive createElement:@"rdf:Bag"];
                     }
                     
+                    NSDictionary *liAttr = (includeLang ? @{@"xml:lang": @"x-default"} : nil);
                     for (NSString *v in val) {
-                        [archive appendElement:@"rdf:li" withAttributes:@{@"xml:lang": @"x-default"}]; {
+                        [archive appendElement:@"rdf:li" withAttributes:liAttr]; {
                             [archive setElementContent:[v stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]]];
                         } [archive selectParent];
                     }

@@ -30,17 +30,25 @@
 #import "PDPage.h"
 #import "PDIReference.h"
 #import "PDIXMPArchive.h"
+#import "NSObjects+PDIEntity.h"
+
+#import "pd_dict.h"
+#import "pd_array.h"
 
 @interface PDInstance () {
     PDPipeRef _pipe;
     PDIObject *_rootObject;
     PDIObject *_infoObject;
+    PDIObject *_trailerObject;
     PDIObject *_metadataObject;
     PDIXMPArchive *_metadataXMPArchive;
     PDParserRef _parser;
     PDIReference *_rootRef;
     PDIReference *_infoRef;
+    NSString *_documentID;
+    NSString *_documentInstanceID;
     NSMutableDictionary *_pageDict;
+    BOOL _fetchedDocIDs;
 }
 
 @end
@@ -195,6 +203,17 @@
         }
     }
     return _infoObject;
+}
+
+- (PDIObject *)trailerObject
+{
+    if (_trailerObject == nil) {
+        PDObjectRef trailerObj = PDParserGetTrailerObject(_parser);
+        _trailerObject = [[PDIObject alloc] initWithObject:trailerObj];
+        [_trailerObject setInstance:self];
+        [_trailerObject markMutable];
+    }
+    return _trailerObject;
 }
 
 - (PDIObject *)verifiedInfoObject
@@ -362,6 +381,51 @@
 - (NSInteger)totalObjectCount
 {
     return PDParserGetTotalObjectCount(_parser);
+}
+
+- (void)setupDocumentIDs
+{
+    _fetchedDocIDs = YES;
+    pd_dict d = PDObjectGetDictionary(self.trailerObject.objectRef);
+    if (PDObjectTypeArray == pd_dict_get_type(d, "ID")) {
+        pd_array a = pd_dict_get_copy(d, "ID");
+        {
+            NSInteger count = pd_array_get_count(a);
+            _documentID = count > 0 ? [NSString stringWithPDFString:pd_array_get_at_index(a, 0)] : nil;
+            _documentInstanceID = count > 1 ? [NSString stringWithPDFString:pd_array_get_at_index(a, 1)] : nil;
+        }
+        pd_array_destroy(a);
+    }
+}
+
+- (NSString *)documentID
+{
+    if (_documentID) return _documentID;
+    if (! _fetchedDocIDs) [self setupDocumentIDs];
+    return _documentID;
+}
+
+- (NSString *)documentInstanceID
+{
+    if (_documentInstanceID) return _documentInstanceID;
+    if (! _fetchedDocIDs) [self setupDocumentIDs];
+    return _documentInstanceID;
+}
+
+- (void)setDocumentID:(NSString *)documentID
+{
+    if (! _fetchedDocIDs) [self setupDocumentIDs];
+    if (_documentInstanceID == nil) _documentInstanceID = documentID;
+    _documentID = documentID;
+    if (_documentID) [_trailerObject setValue:@[_documentID, _documentInstanceID] forKey:@"ID"];
+}
+
+- (void)setDocumentInstanceID:(NSString *)documentInstanceID
+{
+    if (! _fetchedDocIDs) [self setupDocumentIDs];
+    if (_documentID == nil) _documentID = documentInstanceID;
+    _documentInstanceID = documentInstanceID;
+    if (_documentInstanceID) [_trailerObject setValue:@[_documentID, _documentInstanceID] forKey:@"ID"];
 }
 
 @end

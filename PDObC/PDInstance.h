@@ -254,24 +254,29 @@ typedef PDTaskResult (^PDIObjectOperation)(PDInstance *instance, PDIObject *obje
 /**
  Reference to the PDF root object.
  */
-@property (weak, nonatomic, readonly) PDIReference *rootReference;
+@property (nonatomic, readonly) PDIReference *rootReference;
 
 /**
  Readonly representation of the root object.
  */
-@property (weak, nonatomic, readonly) PDIObject *rootObject;
+@property (nonatomic, readonly) PDIObject *rootObject;
 
 /**
  Reference to the PDF info object or nil if there is none.
  */
-@property (weak, nonatomic, readonly) PDIReference *infoReference;
+@property (nonatomic, readonly) PDIReference *infoReference;
+
+/**
+ Mutable representation of the trailer object.
+ */
+@property (nonatomic, readonly) PDIObject *trailerObject;
 
 /**
  Readonly representation of the info object, or nil if there is none.
  
  @see -verifiedInfoObject
  */
-@property (weak, nonatomic, readonly) PDIObject *infoObject;
+@property (nonatomic, readonly) PDIObject *infoObject;
 
 /**
  The source PDF path.
@@ -297,5 +302,28 @@ typedef PDTaskResult (^PDIObjectOperation)(PDInstance *instance, PDIObject *obje
  Direct access to pipe object.
  */
 @property (nonatomic, readonly) PDPipeRef pipe;
+
+/**
+ *  16-byte (32-letter) HEX string uniquely (in theory) identifying this PDF document.
+ *  The PDF specification suggests that this is set to a unique value and kept across all versions of the PDF, so that 
+ *  references to the PDF may be able to verify that the given file is the desired document, even if the version of 
+ *  the document has changed.
+ *
+ *  This string, along with the documentInstanceID, are stored as an array in the trailer dictionary, named /ID.
+ *  It is also written into the XMP metadata archive (if any) under the xmpMM:DocumentID and xmpMM:InstanceID element
+ *  names.
+ *
+ *  Setting the documentID for a nil-value documentID and/or documentInstanceID PDF will have the side effect of setting
+ *  the documentInstanceID to the same value, according to the recommendation in the PDF spec.
+ */
+@property (nonatomic, strong) NSString *documentID;
+
+/**
+ *  16-byte (32-letter) HEX string uniquely (in theory) identifying this VERSION of this PDF document.
+ *  The PDF specification suggests that this is updated for every version of the document, and the suggestion is
+ *  to base the value on the MD5 value of the current time, the file's path, the file's size in bytes, and the value
+ *  of all the entries in the file's document information (/Info) dictionary.
+ */
+@property (nonatomic, strong) NSString *documentInstanceID;
 
 @end

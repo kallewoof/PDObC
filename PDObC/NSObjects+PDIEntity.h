@@ -29,6 +29,18 @@
 
 + (NSString *)stringWithPDFString:(const char *)PDFString;
 
+/**
+ *  Return a PDF XMP archive formatted UUID string, fitted for xmpMM:DocumentID / xmpMM:InstanceID. The input string must be a series of hex characters,
+ *  and the resulting output is in the format "uuid:aabbccdd-eeff-0011-2233-445566778899"
+ *
+ *  @note Strings shorter than 32 characters are padded with zeroes from the left. Strings longer than 32 characters are truncated. The hexadecimal correctness of the string is not checked. Thus, the string "foo" will happily return @"uuid:00000000-0000-0000-0000-000000000foo"
+ *
+ *  @note If present, wrapping <>'s are trimmed out.
+ *
+ *  @return Formatted XMP archive UUID string
+ */
+- (NSString *)PXUString;
+
 - (NSString *)stringByRemovingPDFControlCharacters;
 - (NSString *)stringByAddingPDFControlCharacters;
 
@@ -62,5 +74,13 @@
  */
 
 @interface NSDate (PDIEntity) <PDIEntity>
+
+/**
+ *  Returns the given date as an date string according to http://www.w3.org/TR/NOTE-datetime in the format
+ *      YYYY-MM-DDThh:mm:ss
+ *
+ *  @return This date as datetime string
+ */
+- (NSString *)datetimeString;
 
 @end

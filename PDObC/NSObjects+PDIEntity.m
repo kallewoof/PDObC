@@ -80,6 +80,20 @@
     return str;
 }
 
+- (NSString *)PXUString
+{
+    NSString *s = [[self hasPrefix:@"<"] && [self hasSuffix:@">"] ? [self substringWithRange:(NSRange){1,self.length-2}] : self lowercaseString];
+    while (s.length < 32) s = [@"0" stringByAppendingString:s];
+
+    return [NSString stringWithFormat:@"uuid:%@-%@-%@-%@-%@", 
+            [s substringWithRange:(NSRange){ 0,8}], 
+            [s substringWithRange:(NSRange){ 8,4}], 
+            [s substringWithRange:(NSRange){12,4}], 
+            [s substringWithRange:(NSRange){16,4}], 
+            [s substringWithRange:(NSRange){20,12}] 
+            ];
+}
+
 - (NSString *)stringByRemovingPDFControlCharacters
 {
     if ([self characterAtIndex:0] == '(' && [self characterAtIndex:self.length-1] == ')') {
@@ -108,6 +122,18 @@
     [df setFormatterBehavior:NSDateFormatterBehavior10_4];
     [df setDateFormat:@"'(D:'yyyyMMddHHmmss')'"];
     return [[df stringFromDate:self] cStringUsingEncoding:NSUTF8StringEncoding];
+}
+
+- (NSString *)datetimeString
+{
+    static NSDateFormatter *df = nil;
+    if (! df) {
+        df = [[NSDateFormatter alloc] init];
+        df.timeZone = [NSTimeZone timeZoneWithName:@"UTC"];
+        [df setFormatterBehavior:NSDateFormatterBehavior10_4];
+        [df setDateFormat:@"yyyy'-'MM'-'dd'T'HH':'mm':'ss'"];
+    }
+    return [df stringFromDate:self];
 }
 
 @end
