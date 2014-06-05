@@ -25,13 +25,10 @@
 #import "PDContentStream.h"
 
 @interface PDIPage () {
-    PDIObject *_contents;
+    NSArray *_contentObjects;
     NSString *_text;
     __weak PDInstance *_instance;
 }
-
-//@property (nonatomic, assign) PDInstance *instance;
-//@property (nonatomic, retain) PDIObject *object;
 
 @end
 
@@ -57,31 +54,50 @@
 
 #pragma mark - Extended properties
 
-- (PDIObject *)contents
+- (NSArray *)contentObjects
 {
-    if (_contents) return _contents;
-    _contents = [[PDIObject alloc] initWithObject:PDPageGetContentsObject(_pageRef)];
-    return _contents;
+    if (_contentObjects) return _contentObjects;
+    
+    NSInteger count = PDPageGetContentsObjectCount(_pageRef);
+    NSMutableArray *result = [[NSMutableArray alloc] initWithCapacity:count];
+
+    for (NSInteger i = 0; i < count; i++) {
+        [result addObject:[[PDIObject alloc] initWithObject:PDPageGetContentsObjectAtIndex(_pageRef, i)]];
+    }
+    _contentObjects = result;
+    return _contentObjects;
+//    if (_contents) return _contents;
+//    _contents = [[PDIObject alloc] initWithObject:PDPageGetContentsObject(_pageRef)];
+//    return _contents;
 }
 
 - (NSString *)text
 {
     if (_text) return _text;
+    NSString *t;
+    NSMutableString *result = [NSMutableString string];
     char *buf;
-    PDIObject *contents = [self contents];
-    [contents enableMutationViaMimicSchedulingWithInstance:_instance];
-    [contents prepareStream];
-    PDContentStreamRef cs = PDContentStreamCreateTextExtractor(contents.objectRef, &buf);
-    PDContentStreamExecute(cs);
-    PDRelease(cs);
-    if (NULL != strstr(buf, "\xa9")) {
-        _text = [NSString stringWithCString:buf encoding:NSMacOSRomanStringEncoding];
+    for (PDIObject *contents in [self contentObjects]) {
+        [contents enableMutationViaMimicSchedulingWithInstance:_instance];
+        [contents prepareStream];
+        PDContentStreamRef cs = PDContentStreamCreateTextExtractor(contents.objectRef, &buf);
+        PDContentStreamExecute(cs);
+        PDRelease(cs);
+        t = nil;
+        if (NULL != strstr(buf, "\xa9")) {
+            t = [NSString stringWithCString:buf encoding:NSMacOSRomanStringEncoding];
+        }
+        if (t == nil) t = [NSString stringWithCString:buf encoding:NSUTF8StringEncoding];
+        if (t == nil) t = [NSString stringWithCString:buf encoding:NSMacOSRomanStringEncoding];
+        if (t == nil) t = [NSString stringWithCString:buf encoding:NSISOLatin1StringEncoding];
+        if (t == nil) t = [NSString stringWithCString:buf encoding:NSASCIIStringEncoding];
+        free(buf);
+        if ([t rangeOfString:@"\\251"].location != NSNotFound) {
+            t = [t stringByReplacingOccurrencesOfString:@"\\251" withString:@""];
+        }
+        [result appendString:t];
     }
-    if (_text == nil) _text = [NSString stringWithCString:buf encoding:NSUTF8StringEncoding];
-    if (_text == nil) _text = [NSString stringWithCString:buf encoding:NSMacOSRomanStringEncoding];
-    if (_text == nil) _text = [NSString stringWithCString:buf encoding:NSISOLatin1StringEncoding];
-    if (_text == nil) _text = [NSString stringWithCString:buf encoding:NSASCIIStringEncoding];
-    free(buf);
+    _text = result;
     return _text;
 }
 
