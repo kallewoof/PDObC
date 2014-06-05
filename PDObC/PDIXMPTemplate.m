@@ -431,7 +431,8 @@ static inline void PDIXMPTemplateSetup()
             
             [archive createElement:key]; {
                 id val = extra[key];
-                if ([key hasPrefix:@"dc:"]) {
+                    // dc:format is special; it doesn't have the rdf:Alt/Seq/etc stuff so we ignore that one here
+                if ([key hasPrefix:@"dc:"] && ! [key isEqualToString:@"dc:format"]) {
                     if ([val isKindOfClass:[NSString class]]) {
                         [archive createElement:@"rdf:Alt"]; 
                         val = @[val];
