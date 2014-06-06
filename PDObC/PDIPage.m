@@ -87,10 +87,10 @@
         if (NULL != strstr(buf, "\xa9")) {
             t = [NSString stringWithCString:buf encoding:NSMacOSRomanStringEncoding];
         }
-        if (t == nil) t = [NSString stringWithCString:buf encoding:NSUTF8StringEncoding];
+        if (t == nil) t = @(buf);
         if (t == nil) t = [NSString stringWithCString:buf encoding:NSMacOSRomanStringEncoding];
         if (t == nil) t = [NSString stringWithCString:buf encoding:NSISOLatin1StringEncoding];
-        if (t == nil) t = [NSString stringWithCString:buf encoding:NSASCIIStringEncoding];
+        if (t == nil) t = @(buf);
         free(buf);
         if ([t rangeOfString:@"\\251"].location != NSNotFound) {
             t = [t stringByReplacingOccurrencesOfString:@"\\251" withString:@""];

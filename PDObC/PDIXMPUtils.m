@@ -15,23 +15,21 @@ static NSDictionary *entityDecodes = nil;
 - (NSString *)stringByDecodingXMLEntities
 {
     if (entityDecodes == nil) {
-        entityDecodes = [[NSDictionary alloc] initWithObjectsAndKeys:
-                         @"<", @"lt",
-                         @">", @"gt",
-                         @"&", @"amp",
-                         @"'", @"apos",
-                         @"\"", @"quot",
-                         nil];
+        entityDecodes = @{@"lt": @"<",
+                         @"gt": @">",
+                         @"amp": @"&",
+                         @"apos": @"'",
+                         @"quot": @"\""};
     }
     NSMutableArray *comps = [[self componentsSeparatedByString:@"&"] mutableCopy];
     // [the ], [apos;happy], [apos; tiger skipped]
-    NSMutableString *res = [NSMutableString stringWithString:[comps objectAtIndex:0]];
+    NSMutableString *res = [NSMutableString stringWithString:comps[0]];
     [comps removeObjectAtIndex:0];
     for (NSString *comp in comps) {
         NSMutableArray *entitySplit = [[comp componentsSeparatedByString:@";"] mutableCopy];
         if (entitySplit.count > 1) {
-            NSString *entity = [entitySplit objectAtIndex:0];
-            NSString *decoded = [entityDecodes objectForKey:entity];
+            NSString *entity = entitySplit[0];
+            NSString *decoded = entityDecodes[entity];
             if (decoded == nil) {
                 NSLog(@"warning: undecoded entity: %@", entity);
                 decoded = [NSString stringWithFormat:@"&%@;", entity];

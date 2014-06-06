@@ -103,8 +103,8 @@ static inline void PDIXMPTemplateSetup()
     if (licenseUrls == nil) PDIXMPTemplateSetup();
     PDIXMPTemplate *template = [[PDIXMPTemplate alloc] init];
     template.license = license;
-    template.licenseName = [licenseNames objectAtIndex:license];
-    template.licenseUrl = [licenseUrls objectAtIndex:license];
+    template.licenseName = licenseNames[license];
+    template.licenseUrl = licenseUrls[license];
     return template;
 }
 
@@ -124,7 +124,7 @@ static inline void PDIXMPTemplateSetup()
      0          1           1           6       note: we consider adaptions=NO as overruling sharealike=YES
      1          1           1           7
      */
-    return [self templateForLicense:[[codedLicenses objectAtIndex:code] intValue]];
+    return [self templateForLicense:[codedLicenses[code] intValue]];
 }
 
 + (id)templateForXMPArchive:(PDIXMPArchive *)archive
@@ -211,7 +211,7 @@ static inline void PDIXMPTemplateSetup()
     if (ccRange.location != NSNotFound) {
         NSString *string = [xmpString substringFromIndex:ccRange.location + ccRange.length];
         for (NSInteger i = 0; i < licenseNames.count; i++) {
-            if ([string hasPrefix:[licenseNames objectAtIndex:i]]) {
+            if ([string hasPrefix:licenseNames[i]]) {
                 return (PDIXMPLicense) i;
             }
         }
@@ -504,8 +504,8 @@ static inline void PDIXMPTemplateSetup()
 - (void)relicense:(PDIXMPLicense)newLicense
 {
     _license = newLicense;
-    _licenseName = [licenseNames objectAtIndex:newLicense];
-    _licenseUrl = [licenseUrls objectAtIndex:newLicense];
+    _licenseName = licenseNames[newLicense];
+    _licenseUrl = licenseUrls[newLicense];
 }
 
 @end
