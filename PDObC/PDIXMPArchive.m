@@ -114,7 +114,7 @@
 
 - (NSData *)XMPData
 {
-    if (0 && ! _modified) {
+    if (/* DISABLES CODE */ (0) && ! _modified) {
         return _data;
     }
     if (! _modified) {
