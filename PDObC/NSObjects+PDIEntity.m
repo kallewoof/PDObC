@@ -28,7 +28,7 @@
     for (NSString *key in [self allKeys]) {
         [str appendFormat:@"/%@ ", key];
 
-        value = [self objectForKey:key];
+        value = self[key];
         if ([value conformsToProtocol:@protocol(PDIEntity)]) {
             [str appendFormat:@"%s", [value PDFString]];
         } else {

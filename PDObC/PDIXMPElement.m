@@ -25,7 +25,7 @@ static inline NSString *NSStringFromXMPAttributesDictWithSeparator(NSDictionary 
     NSArray *sortedAttrs = [attrs.allKeys sortedArrayUsingSelector:@selector(caseInsensitiveCompare:)];
     NSMutableString *str = [NSMutableString stringWithString:@""];
     for (NSString *key in sortedAttrs) {
-        [str appendFormat:@"%@%@=\"%@\"", str.length ? separator : @"", key, [[attrs objectForKey:key] stringByEncodingXMLEntitiesAndNewlines]];
+        [str appendFormat:@"%@%@=\"%@\"", str.length ? separator : @"", key, [attrs[key] stringByEncodingXMLEntitiesAndNewlines]];
     }
     return str;
 }
@@ -34,7 +34,7 @@ static inline NSString *NSStringFromXMPAttributesDict(NSDictionary *attrs)
 {
     NSMutableString *str = [NSMutableString stringWithString:@""];
     for (NSString *key in attrs) {
-        [str appendFormat:@" %@=\"%@\"", key, [[attrs objectForKey:key] stringByEncodingXMLEntitiesAndNewlines]];
+        [str appendFormat:@" %@=\"%@\"", key, [attrs[key] stringByEncodingXMLEntitiesAndNewlines]];
     }
     return str;
 }
