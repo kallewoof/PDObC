@@ -391,7 +391,7 @@ static inline void PDIXMPTemplateSetup()
     d[@"xmp:MetadataDate"] = datetimeString;
 
     if (! extra[@"xmp:ModifyDate"])     d[@"xmp:ModifyDate"] = datetimeString;
-    if (! extra[@"dc:rights"])          d[@"dc:rights"] = [PDIXMPTemplate defaultRightsForLicense:_license withAuthor:authorName];
+    if (! extra[@"dc:rights"])          d[@"dc:rights"] = _rights ? _rights : [PDIXMPTemplate defaultRightsForLicense:_license withAuthor:authorName];
     if (! extra[@"xmp:CreatorTool"])    d[@"xmp:CreatorTool"] = [NSString stringWithFormat:@"Pajdeg Ob-C (Pajdeg v. " PAJDEG_VERSION ")"];
 
     extra = d;
