@@ -365,8 +365,10 @@ static inline void PDIXMPTemplateSetup()
     }
     
     [archive selectRoot];
-    NSAssert([archive selectElement:@"x:xmpmeta"], @"No x:xmpmeta key in PDIXMPArchive!");
-    NSAssert([archive selectElement:@"rdf:RDF"], @"No rdf:RDF key in PDIXMPArchive! They should be generated automagically!");
+    BOOL okay = [archive selectElement:@"x:xmpmeta"];
+    NSAssert(okay, @"No x:xmpmeta key in PDIXMPArchive!");
+    okay = [archive selectElement:@"rdf:RDF"];
+    NSAssert(okay, @"No rdf:RDF key in PDIXMPArchive! They should be generated automagically!");
     
     id rdfRoot = [archive cursorReference];
     assert(rdfRoot);
