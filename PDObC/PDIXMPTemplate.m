@@ -38,6 +38,15 @@ static NSArray *licenseUrls = nil;
 static NSArray *licenseNames = nil;
 static NSArray *codedLicenses = nil;
 
+/*
+ OGL = Open Game License
+ FDL = GNU Free Documentation License
+ OPL = Open Publication License
+ (if CC, add a CC+ field: particularly useful with NC; it's not commercial but go to this URL if you wanna buy commercial right, http://wiki.creativecommons.org/CCPlus )
+ Public Domain = identified as
+ CC0 = Owned by me, given as public domain
+ */
+
 static inline void PDIXMPTemplateSetup()
 {
     licenseUrls = @[@"",
