@@ -298,6 +298,15 @@ typedef PDTaskResult (^PDIObjectOperation)(PDInstance *instance, PDIObject *obje
  */
 @property (nonatomic, readonly) NSInteger totalObjectCount;
 
+#ifdef PD_SUPPORT_CRYPTO
+
+/**
+ The cryptography object associated with the input PDF.
+ */
+@property (nonatomic, readonly) pd_crypto cryptoObject;
+
+#endif
+
 /**
  Direct access to pipe object.
  */

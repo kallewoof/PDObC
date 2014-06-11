@@ -428,4 +428,13 @@
     if (_documentInstanceID) [_trailerObject setValue:@[_documentID, _documentInstanceID] forKey:@"ID"];
 }
 
+#ifdef PD_SUPPORT_CRYPTO
+
+- (pd_crypto)cryptoObject
+{
+    return _parser->crypto;
+}
+
+#endif
+
 @end
