@@ -18,6 +18,7 @@
 //
 
 #import "PDIEntity.h"
+#import "PDString.h"
 
 @implementation PDIEntity
 
@@ -30,6 +31,11 @@
 - (const char *)PDFString
 {
     return _PDFString;
+}
+
+- (void *)PDValue
+{
+    return PDStringWithCString(strdup(self.PDFString));
 }
 
 @end

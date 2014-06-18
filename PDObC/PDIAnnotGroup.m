@@ -30,6 +30,7 @@
 
 - (id)initWithObject:(PDIObject *)object inInstance:(PDInstance *)instance
 {
+    assert([object isKindOfClass:PDIObject.class]);
     self = [super init];
     if (self) {
         _instance = instance;
@@ -44,8 +45,8 @@
             count = 1;
         }
         _annotations = [[NSMutableArray alloc] initWithCapacity:count];
-        for (NSString *ref in [object constructArray]) {
-            PDIObject *obj = [_instance fetchReadonlyObjectWithID:[PDIReference objectIDFromString:ref]];
+        for (PDIReference *ref in [object constructArray]) {
+            PDIObject *obj = [_instance fetchReadonlyObjectWithID:ref.objectID];
             PDIAnnotation *annot = [[PDIAnnotation alloc] initWithObject:obj inAnnotGroup:self withInstance:instance];
             [_annotations addObject:annot];
         }

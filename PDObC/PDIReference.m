@@ -29,6 +29,7 @@
 
 + (NSInteger)objectIDFromString:(NSString *)refString
 {
+    assert([refString isKindOfClass:[NSString class]]);
     long res = 0;
     sscanf([refString cStringUsingEncoding:NSUTF8StringEncoding], "%ld", &res);
     return res;
@@ -41,6 +42,7 @@
 
 - (id)initWithReference:(PDReferenceRef)reference
 {
+    assert(PDResolve(reference) == PDInstanceTypeRef);
     self = [super init];
     if (self) {
         _ref = PDRetain(reference);
@@ -68,6 +70,7 @@
 
 - (id)initWithString:(NSString *)refString
 {
+    assert([refString isKindOfClass:[NSString class]]);
     if (refString == nil) return nil;
 
     unsigned long obid, genid;

@@ -19,6 +19,7 @@
 
 #import "PDIString.h"
 #import "NSObjects+PDIEntity.h"
+#import "PDString.h"
 
 @implementation PDIString {
     NSString *_s;
@@ -27,6 +28,11 @@
 - (const char *)PDFString
 {
     return [[NSString stringWithFormat:@"(%@)", _s] cStringUsingEncoding:NSUTF8StringEncoding];
+}
+
+- (void *)PDValue
+{
+    return PDStringWithCString(strdup(_s.PDFString));
 }
 
 - (id)initWithString:(NSString *)string

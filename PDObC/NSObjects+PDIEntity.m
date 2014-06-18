@@ -18,6 +18,10 @@
 //
 
 #import "NSObjects+PDIEntity.h"
+#import "PDString.h"
+#import "PDNumber.h"
+#import "PDArray.h"
+#import "PDDictionary.h"
 
 @implementation NSDictionary (PDIEntity)
 
@@ -38,6 +42,22 @@
     [str appendFormat:@">>"];
     
     return [str cStringUsingEncoding:NSUTF8StringEncoding];
+}
+
+- (void *)PDValue
+{
+    PDDictionaryRef dict = PDDictionaryCreateWithCapacity(self.count);
+    for (NSString *key in self.allKeys) {
+        void *pdv;
+        id value = self[key];
+        if ([value conformsToProtocol:@protocol(PDIEntity)]) {
+            pdv = [value PDValue];
+        } else {
+            pdv = [[value description] PDValue];
+        }
+        PDDictionarySetEntry(dict, [key cStringUsingEncoding:NSUTF8StringEncoding], pdv);
+    }
+    return PDAutorelease(dict);
 }
 
 @end
@@ -64,6 +84,19 @@
     return [str cStringUsingEncoding:NSUTF8StringEncoding];
 }
 
+- (void *)PDValue
+{
+    PDArrayRef array = PDArrayCreateWithCapacity(self.count);
+    for (id v in self) {
+        if ([v conformsToProtocol:@protocol(PDIEntity)]) {
+            PDArrayAppend(array, [v PDValue]);
+        } else {
+            PDArrayAppend(array, [[v description] PDValue]);
+        }
+    }
+    return PDAutorelease(array);
+}
+
 @end
 
 @implementation NSString (PDIEntity)
@@ -78,6 +111,11 @@
         [NSException raise:@"PDUnknownEncodingException" format:@"PDF string was using an unknown encoding."];
     }
     return str;
+}
+
++ (NSString *)stringWithPDString:(PDStringRef)PDString
+{
+    return [self stringWithPDFString:PDStringEscapedValue(PDString, false)];
 }
 
 - (NSString *)PXUString
@@ -112,6 +150,11 @@
     return [self cStringUsingEncoding:NSUTF8StringEncoding];
 }
 
+- (void *)PDValue
+{
+    return PDStringWithCString(strdup([self PDFString]));
+}
+
 @end
 
 @implementation NSDate (PDIEntity)
@@ -124,6 +167,11 @@
     return [[df stringFromDate:self] cStringUsingEncoding:NSUTF8StringEncoding];
 }
 
+- (void *)PDValue
+{
+    return PDStringWithCString(strdup([self PDFString]));
+}
+
 - (NSString *)datetimeString
 {
     static NSDateFormatter *df = nil;
@@ -134,6 +182,31 @@
         [df setDateFormat:@"yyyy'-'MM'-'dd'T'HH':'mm':'ss'"];
     }
     return [df stringFromDate:self];
+}
+
+@end
+
+@implementation NSNumber (PDIEntity)
+
+- (const char *)PDFString
+{
+    return [[NSString stringWithFormat:@"%@", self] PDFString];
+}
+
+- (void *)PDValue
+{
+    NSString *d = [NSString stringWithFormat:@"%@", self];
+    if ([d rangeOfString:@"."].location != NSNotFound) {
+        // real
+        return PDNumberWithReal(self.doubleValue);
+    }
+    
+    if ([d hasPrefix:@"-"]) {
+        // integer
+        return PDNumberWithInteger(self.integerValue);
+    }
+    
+    return PDNumberWithSize(self.unsignedIntegerValue);
 }
 
 @end

@@ -32,8 +32,9 @@
 #import "PDIXMPArchive.h"
 #import "NSObjects+PDIEntity.h"
 
-#import "pd_dict.h"
-#import "pd_array.h"
+#import "PDString.h"
+#import "PDDictionary.h"
+#import "PDArray.h"
 
 @interface PDInstance () {
     PDPipeRef _pipe;
@@ -142,9 +143,13 @@
 {
     if (_metadataObject) return _metadataObject;
     PDIObject *root = [self rootObject];
-    NSString *md = [root valueForKey:@"Metadata"];
-    if (md) {
-        _metadataObject = [self fetchReadonlyObjectWithID:[PDIReference objectIDFromString:md]];
+    _metadataObject = [root resolvedValueForKey:@"Metadata"];
+//    NSString *md = [root valueForKey:@"Metadata"];
+    if (_metadataObject) {
+        if ([_metadataObject isKindOfClass:[PDIReference class]]) {
+            _metadataObject = [self fetchReadonlyObjectWithID:[(PDIReference *)_metadataObject objectID]];
+        }
+//        _metadataObject = [self fetchReadonlyObjectWithID:[PDIReference objectIDFromString:md]];
         [_metadataObject enableMutationViaMimicSchedulingWithInstance:self];
     } else {
         _metadataObject = [self appendObject];
@@ -190,6 +195,7 @@
 {
     if (_rootObject == nil) {
         _rootObject = [[PDIObject alloc] initWithObject:PDParserGetRootObject(_parser)];
+        [_rootObject setInstance:self];
     }
     return _rootObject;
 }
@@ -386,15 +392,17 @@
 - (void)setupDocumentIDs
 {
     _fetchedDocIDs = YES;
-    pd_dict d = PDObjectGetDictionary(self.trailerObject.objectRef);
-    if (PDObjectTypeArray == pd_dict_get_type(d, "ID")) {
-        pd_array a = pd_dict_get_copy(d, "ID");
+    PDDictionaryRef d = PDObjectGetDictionary(self.trailerObject.objectRef);
+    void *idValue = PDDictionaryGetEntry(d, "ID");
+    if (PDInstanceTypeArray == PDResolve(idValue)) {
+        PDArrayRef a = idValue;
         {
-            NSInteger count = pd_array_get_count(a);
-            _documentID = count > 0 ? [NSString stringWithPDFString:pd_array_get_at_index(a, 0)] : nil;
-            _documentInstanceID = count > 1 ? [NSString stringWithPDFString:pd_array_get_at_index(a, 1)] : nil;
+            NSInteger count = PDArrayGetCount(a);
+            _documentID = count > 0 ? [NSString stringWithPDString:PDArrayGetElement(a, 0)] : nil;
+            _documentInstanceID = count > 1 ? [NSString stringWithPDString:PDArrayGetElement(a, 1)] : nil;
         }
-        pd_array_destroy(a);
+        PDRelease(a);
+//        pd_array_destroy(a);
     }
 }
 

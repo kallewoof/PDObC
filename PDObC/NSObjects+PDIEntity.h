@@ -29,6 +29,8 @@
 
 + (NSString *)stringWithPDFString:(const char *)PDFString;
 
++ (NSString *)stringWithPDString:(PDStringRef)PDString;
+
 /**
  *  Return a PDF XMP archive formatted UUID string, fitted for xmpMM:DocumentID / xmpMM:InstanceID. The input string must be a series of hex characters,
  *  and the resulting output is in the format "uuid:aabbccdd-eeff-0011-2233-445566778899"
@@ -82,5 +84,9 @@
  *  @return This date as datetime string
  */
 - (NSString *)datetimeString;
+
+@end
+
+@interface NSNumber (PDIEntity) <PDIEntity>
 
 @end

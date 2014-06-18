@@ -24,6 +24,8 @@
 #import "PDInstance.h"
 #import "NSObjects+PDIEntity.h"
 #import "PDIString.h"
+#import "PDIConversion.h"
+#import "PDNumber.h"
 
 @implementation PDIAnnotation {
     PDIObject *_a;
@@ -47,10 +49,13 @@
         [_object enableMutationViaMimicSchedulingWithInstance:instance];
         
         PDIReference *ref;
-        NSString *s = [_object valueForKey:@"Rect"];
+        NSArray *arr = [_object valueForKey:@"Rect"];
+        if (arr) assert([arr isKindOfClass:NSArray.class]);
         PDRect rect;
-        if (s) {
-            PDRectReadFromArrayString(rect, [s cStringUsingEncoding:NSUTF8StringEncoding]);
+        if (arr && arr.count == 4) {
+            arr = [arr arrayByResolvingPDValues];
+            rect = (PDRect) { [arr[0] floatValue], [arr[1] floatValue], [arr[2] floatValue], [arr[3] floatValue] };
+//            PDRectReadFromArrayString(rect, [s cStringUsingEncoding:NSUTF8StringEncoding]);
             _rect = (CGRect)PDRectToOSRect(rect);
         }
         
@@ -78,7 +83,7 @@
             
             if ([_sType isEqualToString:PDIAnnotationSTypeURI]) {
                 // fetch URI
-                s = [_a valueForKey:@"URI"];
+                NSString *s = [_a valueForKey:@"URI"];
                 if (s) {
                     // it can be a ref or a direct URI
                     ref = [[PDIReference alloc] initWithString:s];
