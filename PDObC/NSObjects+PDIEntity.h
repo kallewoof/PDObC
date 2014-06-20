@@ -29,7 +29,7 @@
 
 + (NSString *)stringWithPDFString:(const char *)PDFString;
 
-+ (NSString *)stringWithPDString:(PDStringRef)PDString;
++ (id)objectWithPDString:(PDStringRef)PDString;
 
 /**
  *  Return a PDF XMP archive formatted UUID string, fitted for xmpMM:DocumentID / xmpMM:InstanceID. The input string must be a series of hex characters,
@@ -45,6 +45,19 @@
 
 - (NSString *)stringByRemovingPDFControlCharacters;
 - (NSString *)stringByAddingPDFControlCharacters;
+
+@end
+
+/**
+ *  A PDIName has as its sole purpose the task of retaining the PDString name type when converting to and from PDString and NSString. Because NSString representations of PDStrings are
+ *  always unwrapped, there's no way of separating the string (/Helvetica) from the name /Helvetica (both do occur, albeit with extra parameters added in most cases, for the string type).
+ */
+@interface PDIName : NSObject <PDIEntity>
+
++ (PDIName *)nameWithString:(NSString *)string;
++ (PDIName *)nameWithPDString:(PDStringRef)PDString;
+- (BOOL)isEqualToString:(id)object;
+- (NSString *)string;
 
 @end
 

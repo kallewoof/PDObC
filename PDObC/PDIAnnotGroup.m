@@ -20,6 +20,7 @@
 #import "PDIAnnotGroup.h"
 #import "PDIObject.h"
 #import "PDIAnnotation.h"
+#import "NSObjects+PDIEntity.h"
 #import "PDInstance.h"
 #import "PDIReference.h"
 
@@ -59,7 +60,7 @@
 - (PDIAnnotation *)appendAnnotation
 {
     PDIObject *annotObj = [_instance appendObject];
-    [annotObj setValue:@"/Annot" forKey:@"Type"];
+    [annotObj setValue:[PDIName nameWithString:@"/Annot"] forKey:@"Type"];
     PDIAnnotation *annot = [[PDIAnnotation alloc] initWithObject:annotObj inAnnotGroup:self withInstance:_instance];
     [_object appendValue:annotObj];
     [_annotations addObject:annot];

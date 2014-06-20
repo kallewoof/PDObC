@@ -20,7 +20,7 @@
  *  @param pdob  A PDString, PDNumber, PDArray, PDDictionary, PDObject, or PDReference
  *  @param depth Number of recursions allowed
  *
- *  @return An NSString, NSNumber, NSArray, NSDictionary, PDIObject, PDIReference, PDIValue, or nil
+ *  @return An NSString, PDIName, NSNumber, NSArray, NSDictionary, PDIObject, PDIReference, PDIValue, or nil
  */
 + (id<PDIEntity>)fromPDType:(void *)pdob depth:(NSInteger)depth;
 
@@ -50,5 +50,17 @@
 @interface NSDictionary (PDIConversion)
 
 - (NSDictionary *)dictionaryByResolvingPDValues;
+
+@end
+
+@interface NSMutableArray (PDIConversion)
+
+- (void)resolvePDValues;
+
+@end
+
+@interface NSMutableDictionary (PDIConversion)
+
+- (void)resolvePDValues;
 
 @end

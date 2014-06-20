@@ -108,7 +108,7 @@
 
 + (id<PDIEntity>)string:(void *)pdob depth:(NSInteger)depth
 {
-    return [NSString stringWithPDString:pdob];
+    return [NSString objectWithPDString:pdob];
 }
 
 @end
@@ -118,8 +118,13 @@
 + (PDIValue *)valueWithPDValue:(void *)pdv
 {
     PDIValue *v = [[PDIValue alloc] init];
-    v.PDValue = pdv;
+    v.PDValue = PDRetain(pdv);
     return v;
+}
+
+- (void)dealloc
+{
+    PDRelease(_PDValue);
 }
 
 - (const char *)PDFString
@@ -165,3 +170,31 @@
 
 @end
 
+@implementation NSMutableArray (PDIConversion)
+
+- (void)resolvePDValues
+{
+    NSInteger ix = self.count;
+    for (NSInteger i = 0; i < ix; i++) {
+        id v = self[i];
+        if ([v isKindOfClass:[PDIValue class]]) 
+            [self replaceObjectAtIndex:i withObject:[PDIConversion fromPDType:[v PDValue]]];
+    }
+}
+
+@end
+
+@implementation NSMutableDictionary (PDIConversion)
+
+- (void)resolvePDValues
+{
+    NSArray *keys = self.allKeys.copy;
+    NSInteger ix = self.count;
+    for (NSInteger i = 0; i < ix; i++) {
+        id v = self[keys[i]];
+        if ([v isKindOfClass:[PDIValue class]]) 
+            self[keys[i]] = [PDIConversion fromPDType:[v PDValue]];
+    }
+}
+
+@end

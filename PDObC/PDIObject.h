@@ -170,16 +170,14 @@
 - (BOOL)isCurrentObject;
 
 /**
- Get the value of the primitive object. 
- 
- @note If the object is not a primitive, this method will return nil.
+ Get the value of the object. The value is the underlying instance, which can be an array, dictionary, string, number, etc. 
  */
-- (NSString *)primitiveValue;
+- (id)objectValue;
 
 /**
- Set the value of the primitive object. 
+ Set the value of the object. 
  */
-- (void)setPrimitiveValue:(NSString *)value;
+- (void)setObjectValue:(id)value;
 
 // dictionary methods
 
@@ -204,11 +202,13 @@
 - (id)resolvedValueForKey:(NSString *)key;
 
 /**
- Get the object value of the given key.
- 
- @note Enabling mutations is required for the object to have an instance, through which to fetch external objects.
-
- @param key The dictionary key.
+ *  Get the object value of the given key. If the given key is not an indirect reference (but a direct value), a new object is created with the value, and the new object is set as the value for the given key.
+ *
+ *  @note Enabling mutations is required for the object to have an instance, through which to fetch external objects.
+ *
+ *  @param key The key
+ *
+ *  @return A PDIObject instance for the value of the given key (created, if the value was not an indirect reference at the time).
  */
 - (PDIObject *)objectForKey:(NSString *)key;
 

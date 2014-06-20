@@ -113,9 +113,11 @@
     return str;
 }
 
-+ (NSString *)stringWithPDString:(PDStringRef)PDString
++ (id)objectWithPDString:(PDStringRef)PDString
 {
-    return [self stringWithPDFString:PDStringEscapedValue(PDString, false)];
+    return (PDStringGetType(PDString) == PDStringTypeName
+            ? [PDIName nameWithPDString:PDString]
+            : [self stringWithPDFString:PDStringEscapedValue(PDString, false)]); //PDStringEscapedValue(PDString, false)];
 }
 
 - (NSString *)PXUString
@@ -153,6 +155,53 @@
 - (void *)PDValue
 {
     return PDStringWithCString(strdup([self PDFString]));
+}
+
+@end
+
+@interface PDIName () 
+@property (nonatomic, strong) NSString *s;
+@end
+
+@implementation PDIName 
+
++ (PDIName *)nameWithPDString:(PDStringRef)PDString
+{
+    PDIName *p = [[PDIName alloc] init];
+    p.s = [NSString stringWithPDFString:PDStringNameValue(PDString, false)];
+    return p;
+}
+
++ (PDIName *)nameWithString:(NSString *)string
+{
+    PDIName *p = [[PDIName alloc] init];
+    p.s = string;
+    return p;
+}
+
+- (NSString *)description
+{
+    return [NSString stringWithFormat:@"(PDIName: %p) \"%@\"", self, _s];
+}
+
+- (const char *)PDFString
+{
+    return [[NSString stringWithFormat:@"/%@", self] PDFString];
+}
+
+- (void *)PDValue
+{
+    return PDStringWithName(strdup([_s PDFString]));
+}
+
+- (BOOL)isEqualToString:(id)object
+{
+    return [_s isEqualToString:object];
+}
+
+- (NSString *)string
+{
+    return _s;
 }
 
 @end
@@ -201,12 +250,12 @@
         return PDNumberWithReal(self.doubleValue);
     }
     
-    if ([d hasPrefix:@"-"]) {
+//    if ([d hasPrefix:@"-"]) {
         // integer
         return PDNumberWithInteger(self.integerValue);
-    }
+//    }
     
-    return PDNumberWithSize(self.unsignedIntegerValue);
+//    return PDNumberWithSize(self.unsignedIntegerValue);
 }
 
 @end

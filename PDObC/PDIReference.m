@@ -70,8 +70,8 @@
 
 - (id)initWithString:(NSString *)refString
 {
-    assert([refString isKindOfClass:[NSString class]]);
     if (refString == nil) return nil;
+    assert([refString isKindOfClass:[NSString class]]);
 
     unsigned long obid, genid;
     if (2 > sscanf([refString cStringUsingEncoding:NSUTF8StringEncoding], "%lu %lu", &obid, &genid))
@@ -91,6 +91,11 @@
         _PDFString = strdup([[NSString stringWithFormat:@"%ld %ld R", (long)_objectID, (long)_generationID] cStringUsingEncoding:NSUTF8StringEncoding]);
     }
     return _PDFString;
+}
+
+- (void *)PDValue
+{
+    return _ref;
 }
 
 - (NSString *)description
