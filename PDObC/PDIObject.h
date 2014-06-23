@@ -82,11 +82,12 @@
  *
  *  @note The containing object should have mimic scheduling triggered, or changes may be lost.
  *
- *  @param value The value, such as an NSMutableDictionary or the like
+ *  @param value   The value, such as an NSMutableDictionary or the like
+ *  @param PDValue The corresponding pajdeg value
  *
  *  @return PDIObject wrapping the given value
  */
-- (id)initWrappingValue:(id)value;
+- (id)initWrappingValue:(id)value PDValue:(void *)PDValue;
 
 ///---------------------------------------
 /// @name Modifying objects

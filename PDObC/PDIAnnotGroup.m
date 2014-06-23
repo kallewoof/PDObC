@@ -17,11 +17,13 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
+#import "pd_internal.h"
 #import "PDIAnnotGroup.h"
 #import "PDIObject.h"
 #import "PDIAnnotation.h"
 #import "NSObjects+PDIEntity.h"
 #import "PDInstance.h"
+#import "PDArray.h"
 #import "PDIReference.h"
 
 @implementation PDIAnnotGroup {
@@ -55,7 +57,7 @@
             if ([entry isKindOfClass:[PDIReference class]]) {
                 obj = [_instance fetchReadonlyObjectWithID:[entry objectID]];
             } else {
-                obj = [[PDIObject alloc] initWrappingValue:entry];
+                obj = [[PDIObject alloc] initWrappingValue:entry PDValue:PDArrayGetElement(_object.objectRef->inst, i)];
 //                obj = [instance appendObject];
 //                [obj setObjectValue:entry];
 //                [object replaceValueAtIndex:i withValue:obj];

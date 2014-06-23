@@ -35,6 +35,12 @@
     return res;
 }
 
++ (void *)PDValueForObjectID:(NSInteger)objectID generationID:(NSInteger)generationID
+{
+    PDReferenceRef ref = PDReferenceCreate(objectID, generationID);
+    return PDAutorelease(ref);
+}
+
 - (void)dealloc
 {
     PDRelease(_ref);

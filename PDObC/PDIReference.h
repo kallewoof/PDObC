@@ -33,6 +33,13 @@
 
 + (NSInteger)objectIDFromString:(NSString *)refString;
 
+/**
+ *  Create a `PDReference` for a given object ID and generation ID. 
+ *
+ *  @return PDReference
+ */
++ (void *)PDValueForObjectID:(NSInteger)objectID generationID:(NSInteger)generationID;
+
 ///---------------------------------------
 /// @name Instantiating references
 ///---------------------------------------

@@ -1,4 +1,4 @@
-//
+
 // PDInstance.m
 //
 // Copyright (c) 2012 - 2014 Karl-Johan Alm (http://github.com/kallewoof)
@@ -94,10 +94,12 @@
         _pipe = PDPipeCreateWithFilePaths([sourcePDFPath cStringUsingEncoding:NSUTF8StringEncoding], 
                                           [destPDFPath cStringUsingEncoding:NSUTF8StringEncoding]);
         if (NULL == _pipe) {
+            PDWarn("PDPipeCreateWithFilePaths() failure");
             return nil;
         }
         
         if (! PDPipePrepare(_pipe)) {
+            PDWarn("PDPipePrepare() failure");
             return nil;
         }
         
@@ -105,6 +107,7 @@
         
         // to avoid issues later on, we also set up the catalog here
         if ([self numberOfPages] == 0) {
+            PDWarn("numberOfPages == 0 (this is considered a failure)");
             return nil;
         }
         
@@ -315,11 +318,13 @@
     
     filter = PDTaskCreateFilterWithValue(type, value);
     
+    __weak PDInstance *bself = self;
+    
     task = PDTaskCreateBlockMutator(^PDTaskResult(PDPipeRef pipe, PDTaskRef task, PDObjectRef object) {
         PDIObject *iob = [[PDIObject alloc] initWithObject:object];
         [iob markMutable];
-        [iob setInstance:self];
-        return operation(self, iob);
+        [iob setInstance:bself];
+        return operation(bself, iob);
     });
     
     PDTaskAppendTask(filter, task);
@@ -337,9 +342,11 @@
 
 - (void)enqueueOperation:(PDIObjectOperation)operation
 {
+    __weak PDInstance *bself = self;
+
     PDPipeAddTask(_pipe, PDTaskCreateBlockMutator(^PDTaskResult(PDPipeRef pipe, PDTaskRef task, PDObjectRef object) {
         PDIObject *iob = [[PDIObject alloc] initWithObject:object];
-        return operation(self, iob);
+        return operation(bself, iob);
     }));
 }
 
@@ -355,10 +362,11 @@
     
     // got a Root?
     if ([self rootObject]) {
-        NSString *ref = [_rootObject valueForKey:key];
+        PDIReference *ref = [_rootObject valueForKey:key];
         if (ref) {
             // got this already; we want to tweak it then
-            [self forObjectWithID:[PDIReference objectIDFromString:ref] enqueueOperation:^PDTaskResult(PDInstance *instance, PDIObject *object) {
+            if ([ref isKindOfClass:[PDIObject class]]) ref = [(PDIObject*)ref reference];
+            [self forObjectWithID:[ref objectID] enqueueOperation:^PDTaskResult(PDInstance *instance, PDIObject *object) {
                 [object setStreamIsEncrypted:NO];
                 [object setStreamContent:data];
                 return PDTaskDone;

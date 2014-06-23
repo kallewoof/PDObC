@@ -234,7 +234,9 @@
     _dDest = dDest;
     
     if (_dest == nil) {
-        _dest = [_instance appendObject];
+        NSMutableArray *a = [[NSMutableArray alloc] init]; //[_instance appendObject];
+        [_object setValue:a forKey:@"Dest"];
+        _dest = [_object objectForKey:@"Dest"];
         [_dest appendValue:_dDest];
         if (_fit.count) 
             for (int i = 0; i < _fit.count; i++) {
@@ -246,9 +248,8 @@
             [_dest replaceValueAtIndex:0 withValue:dDest];
         else
             [_dest appendValue:dDest];
+        [_object setValue:_dest.objectValue forKey:@"Dest"];
     }
-    
-    [_object setValue:_dest forKey:@"Dest"];
 }
 
 - (void)setDDestByPageIndex:(NSInteger)pageIndex

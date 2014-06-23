@@ -114,10 +114,10 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
     return self;
 }
 
-- (id)initWrappingValue:(id)value
+- (id)initWrappingValue:(id)value PDValue:(void *)PDValue
 {
     PDObjectRef ob = PDObjectCreate(0, 0);
-    PDObjectSetValue(ob, [value PDValue]);
+    PDObjectSetValue(ob, PDValue);
     ob->obclass = PDObjectClassCompressed;
     self = [self initWithObject:ob];
     if (self) {
@@ -268,7 +268,7 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
 
 - (void *)PDValue
 {
-    return self.reference.PDValue;
+    return [PDIReference PDValueForObjectID:_objectID generationID:_generationID];
 }
 
 - (PDIReference *)reference
@@ -425,32 +425,32 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
     PDAssert(_instance);
     id ob = [self resolvedValueForKey:key];
     if (ob && ! [ob isKindOfClass:[PDIObject class]]) {
-        // create object; we fake it if we're in a compressed object
-        if (_obj->obclass == PDObjectClassCompressed) {
-            PDIObject *wrapOb = [[PDIObject alloc] initWrappingValue:ob];
+        // create fake object
+//        if (_obj->obclass == PDObjectClassCompressed) {
+            PDIObject *wrapOb = [[PDIObject alloc] initWrappingValue:ob PDValue:PDDictionaryGetEntry(_obj->inst, [key UTF8String])];
             return wrapOb;
-        }
-        PDIObject *realOb = [_instance appendObject];
-        void *v = [ob PDValue];
-        switch (PDResolve(v)) {
-            case PDInstanceTypeArray:
-                for (id v in ob) {
-                    [realOb appendValue:v];
-                }
-                break;
-            case PDInstanceTypeDict:
-                for (id v in [ob allKeys]) {
-                    [realOb setValue:[ob objectForKey:v] forKey:v];
-                }
-                break;
-            default:
-                [realOb setObjectValue:ob];
-//                realOb.obj->inst = PDRetain(v);
-//                realOb.type = PDObjectDetermineType(realOb.obj);
-        }
-//        realOb.obj->inst = [ob PDValue];
-        [self setValue:realOb forKey:key];
-        ob = realOb;
+//        }
+//        PDIObject *realOb = [_instance appendObject];
+//        void *v = [ob PDValue];
+//        switch (PDResolve(v)) {
+//            case PDInstanceTypeArray:
+//                for (id v in ob) {
+//                    [realOb appendValue:v];
+//                }
+//                break;
+//            case PDInstanceTypeDict:
+//                for (id v in [ob allKeys]) {
+//                    [realOb setValue:[ob objectForKey:v] forKey:v];
+//                }
+//                break;
+//            default:
+//                [realOb setObjectValue:ob];
+////                realOb.obj->inst = PDRetain(v);
+////                realOb.type = PDObjectDetermineType(realOb.obj);
+//        }
+////        realOb.obj->inst = [ob PDValue];
+//        [self setValue:realOb forKey:key];
+//        ob = realOb;
     }
     return ob;
 //    // use resolvedValue to fetch the object, if necessary
