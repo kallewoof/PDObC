@@ -46,7 +46,7 @@ static inline NSString *NSStringFromXMPAttributesDict(NSDictionary *attrs)
     NSMutableDictionary *_attributes;
 }
 
-@property (nonatomic, assign) PDIXMPElement *parent;
+@property (nonatomic, weak) PDIXMPElement *parent;
 
 @end
 

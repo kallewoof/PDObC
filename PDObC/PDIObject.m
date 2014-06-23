@@ -48,12 +48,12 @@
 
 @end
 
-static long synx = 0;
-static long syncz = 0;
+//static long synx = 0;
+//static long syncz = 0;
 
 void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
 {
-    synx++; NSLog(@"syncs: %ld / %ld", synx, syncz);
+//    synx++; NSLog(@"syncs: %ld / %ld", synx, syncz);
     PDIObject *ob = (__bridge PDIObject *)(syncInfo);
     [ob synchronize];
 }
@@ -69,7 +69,7 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
 - (void)sharedSetup
 {
     if (_objectID != 0) {
-        syncz++;
+//        syncz++;
         PDObjectSetSynchronizationCallback(_obj, PDIObjectSynchronizer, (__bridge const void *)(self));
     }
         
