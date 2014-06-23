@@ -77,6 +77,17 @@
  */
 - (id)initWithInstance:(PDInstance *)instance forDefinitionStack:(pd_stack)stack objectID:(NSInteger)objectID generationID:(NSInteger)generationID;
 
+/**
+ *  Initialize a fake object wrapping the given value. Fake objects are handy when working with methods that require an object to work with.
+ *
+ *  @note The containing object should have mimic scheduling triggered, or changes may be lost.
+ *
+ *  @param value The value, such as an NSMutableDictionary or the like
+ *
+ *  @return PDIObject wrapping the given value
+ */
+- (id)initWrappingValue:(id)value;
+
 ///---------------------------------------
 /// @name Modifying objects
 ///---------------------------------------

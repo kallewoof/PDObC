@@ -64,12 +64,17 @@
         _dest = [_object objectForKey:@"Dest"];
         if (_dest) {
             [_dest enableMutationViaMimicSchedulingWithInstance:_instance];
-            PDIReference *ref = [_dest valueAtIndex:0];
-            if (ref) _dDest = ref; //[[PDIReference alloc] initWithString:s];
-            if (_dest.count > 1) {
-                _fit = [NSMutableArray arrayWithCapacity:_dest.count-1];
-                for (int i = 1; i < _dest.count; i++) {
-                    [_fit addObject:[_dest valueAtIndex:i]];
+            if (_dest.type == PDObjectTypeString) {
+                // this is a named destination
+                // we don't deal with that right now
+            } else {
+                PDIReference *ref = [_dest valueAtIndex:0];
+                if (ref) _dDest = ref; //[[PDIReference alloc] initWithString:s];
+                if (_dest.count > 1) {
+                    _fit = [NSMutableArray arrayWithCapacity:_dest.count-1];
+                    for (int i = 1; i < _dest.count; i++) {
+                        [_fit addObject:[_dest valueAtIndex:i]];
+                    }
                 }
             }
         }

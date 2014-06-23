@@ -136,7 +136,7 @@
 
 - (NSString *)stringByRemovingPDFControlCharacters
 {
-    if ([self characterAtIndex:0] == '(' && [self characterAtIndex:self.length-1] == ')') {
+    if (self.length > 1 && [self characterAtIndex:0] == '(' && [self characterAtIndex:self.length-1] == ')') {
         return [self substringWithRange:(NSRange){1, self.length - 2}];
     }
     return self;

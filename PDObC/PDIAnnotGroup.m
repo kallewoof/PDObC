@@ -45,9 +45,22 @@
             }
             count = 1;
         }
+        
         _annotations = [[NSMutableArray alloc] initWithCapacity:count];
-        for (PDIReference *ref in [object constructArray]) {
-            PDIObject *obj = [_instance fetchReadonlyObjectWithID:ref.objectID];
+        PDIObject *obj;
+        NSArray *array = [object constructArray];
+        NSInteger acount = array.count;
+        for (NSInteger i = 0; i < acount; i++) {
+            id entry = array[i];
+            if ([entry isKindOfClass:[PDIReference class]]) {
+                obj = [_instance fetchReadonlyObjectWithID:[entry objectID]];
+            } else {
+                obj = [[PDIObject alloc] initWrappingValue:entry];
+//                obj = [instance appendObject];
+//                [obj setObjectValue:entry];
+//                [object replaceValueAtIndex:i withValue:obj];
+            }
+            
             PDIAnnotation *annot = [[PDIAnnotation alloc] initWithObject:obj inAnnotGroup:self withInstance:instance];
             [_annotations addObject:annot];
         }

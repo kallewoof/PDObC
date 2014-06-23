@@ -254,39 +254,39 @@ typedef PDTaskResult (^PDIObjectOperation)(PDInstance *instance, PDIObject *obje
 /**
  Reference to the PDF root object.
  */
-@property (nonatomic, readonly) PDIReference *rootReference;
+@property (nonatomic, readonly, strong) PDIReference *rootReference;
 
 /**
  Readonly representation of the root object.
  */
-@property (nonatomic, readonly) PDIObject *rootObject;
+@property (nonatomic, readonly, strong) PDIObject *rootObject;
 
 /**
  Reference to the PDF info object or nil if there is none.
  */
-@property (nonatomic, readonly) PDIReference *infoReference;
+@property (nonatomic, readonly, strong) PDIReference *infoReference;
 
 /**
  Mutable representation of the trailer object.
  */
-@property (nonatomic, readonly) PDIObject *trailerObject;
+@property (nonatomic, readonly, strong) PDIObject *trailerObject;
 
 /**
  Readonly representation of the info object, or nil if there is none.
  
  @see -verifiedInfoObject
  */
-@property (nonatomic, readonly) PDIObject *infoObject;
+@property (nonatomic, readonly, strong) PDIObject *infoObject;
 
 /**
  The source PDF path.
  */
-@property (nonatomic, readonly) NSString *sourcePDFPath;
+@property (nonatomic, readonly, strong) NSString *sourcePDFPath;
 
 /**
  The destination PDF path.
  */
-@property (nonatomic, readonly) NSString *destPDFPath;
+@property (nonatomic, readonly, strong) NSString *destPDFPath;
 
 /**
  The number of (live) objects seen in the input PDF. This property is undefined until -execute has been called.

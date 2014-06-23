@@ -33,15 +33,15 @@
  */
 @property (nonatomic, readonly) PDPageRef pageRef;
 
-@property (nonatomic, readonly) PDIObject *pageObject;
+@property (nonatomic, readonly, strong) PDIObject *pageObject;
 
-@property (nonatomic, readonly) NSArray *contentObjects;
+@property (nonatomic, readonly, strong) NSArray *contentObjects;
 
 @property (nonatomic, readonly) CGRect mediaBox;
 
 /**
  *  A single string containing all the text on the page.
  */
-@property (nonatomic, readonly) NSString *text;
+@property (nonatomic, readonly, strong) NSString *text;
 
 @end

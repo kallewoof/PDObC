@@ -49,7 +49,7 @@
  */
 - (void)removeAnnotation:(PDIAnnotation *)annotation;
 
-@property (nonatomic, readonly) NSArray *annotations;   ///< Array of all annotations in this object.
-@property (nonatomic, readonly) PDIObject *object;      ///< Object associated with this annots group.
+@property (nonatomic, readonly, strong) NSArray *annotations;   ///< Array of all annotations in this object.
+@property (nonatomic, readonly, strong) PDIObject *object;      ///< Object associated with this annots group.
 
 @end

@@ -32,6 +32,6 @@
  */
 - (PDIXMPEntry *)entryByAppendingObject:(id)object;
 
-@property (nonatomic, readonly) NSString *xmlString;
+@property (nonatomic, readonly, strong) NSString *xmlString;
 
 @end

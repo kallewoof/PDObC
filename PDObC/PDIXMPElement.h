@@ -60,12 +60,12 @@
 
 - (void)populateString:(NSMutableString *)string withIndent:(NSString *)indent;
 
-@property (nonatomic, readonly) PDIXMPElement *parent;      ///< Parent element, or nil if the root object
-@property (nonatomic, readonly) NSArray *children;          ///< PDIXMPElement objects which exist within this element
+@property (nonatomic, readonly, weak) PDIXMPElement *parent;      ///< Parent element, or nil if the root object
+@property (nonatomic, readonly, strong) NSArray *children;          ///< PDIXMPElement objects which exist within this element
 
 @property (nonatomic, strong)   NSString *name;             ///< @"rdf:li"
-@property (nonatomic, readonly) NSString *value;            ///< @"John Doe"; note that value is ignored if firstChild is non-nil
-@property (nonatomic, readonly) PDIXMPEntry *XMPValue;      ///< the value of the element, with encoding applied -- if value = @"<foo>", result will be @"&lt;foo&gt;"; if XMPValue = @"<foo>", result will be @"<foo>"
+@property (nonatomic, readonly, strong) NSString *value;            ///< @"John Doe"; note that value is ignored if firstChild is non-nil
+@property (nonatomic, readonly, strong) PDIXMPEntry *XMPValue;      ///< the value of the element, with encoding applied -- if value = @"<foo>", result will be @"&lt;foo&gt;"; if XMPValue = @"<foo>", result will be @"<foo>"
 @property (nonatomic, strong)   NSDictionary *attributes;   ///< {@"xml:lang": @"x-default"}
 
 @end

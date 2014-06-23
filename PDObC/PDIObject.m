@@ -48,9 +48,13 @@
 
 @end
 
+static long synx = 0;
+static long syncz = 0;
+
 void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
 {
-    PDIObject *ob = CFBridgingRelease(syncInfo);
+    synx++; NSLog(@"syncs: %ld / %ld", synx, syncz);
+    PDIObject *ob = (__bridge PDIObject *)(syncInfo);
     [ob synchronize];
 }
 
@@ -58,13 +62,15 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
 
 - (void)dealloc
 {
+    PDObjectSetSynchronizationCallback(_obj, NULL, NULL);
     PDRelease(_obj);
 }
 
-- (void)sharedInit
+- (void)sharedSetup
 {
     if (_objectID != 0) {
-        PDObjectSetSynchronizationCallback(_obj, PDIObjectSynchronizer, CFBridgingRetain(self));
+        syncz++;
+        PDObjectSetSynchronizationCallback(_obj, PDIObjectSynchronizer, (__bridge const void *)(self));
     }
         
     _dict = [[NSMutableDictionary alloc] initWithCapacity:3];
@@ -80,7 +86,7 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
         _obj = PDRetain(object);
         _objectID = PDObjectGetObID(_obj);
         _generationID = PDObjectGetGenID(_obj);
-        [self sharedInit];
+        [self sharedSetup];
     }
     return self;
 }
@@ -93,7 +99,7 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
         _generationID = generationID;
         _obj = PDObjectCreate(objectID, generationID);
         _obj->def = stack;
-        [self sharedInit];
+        [self sharedSetup];
     }
     return self;
 }
@@ -105,6 +111,30 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
         PDParserRef parser = PDPipeGetParser(instance.pipe);
         _obj->crypto = parser->crypto;
     }
+    return self;
+}
+
+- (id)initWrappingValue:(id)value
+{
+    PDObjectRef ob = PDObjectCreate(0, 0);
+    PDObjectSetValue(ob, [value PDValue]);
+    ob->obclass = PDObjectClassCompressed;
+    self = [self initWithObject:ob];
+    if (self) {
+        _mutable = YES;
+        switch (_type) {
+            case PDObjectTypeArray:
+                _arr = value;
+                break;
+            case PDObjectTypeDictionary:
+                _dict = value;
+                break;
+            default:
+                PDNotice("wrapping value that is not a dictionary nor an array");
+                break;
+        }
+    }
+    PDRelease(ob);
     return self;
 }
 
@@ -395,7 +425,11 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
     PDAssert(_instance);
     id ob = [self resolvedValueForKey:key];
     if (ob && ! [ob isKindOfClass:[PDIObject class]]) {
-        // create object
+        // create object; we fake it if we're in a compressed object
+        if (_obj->obclass == PDObjectClassCompressed) {
+            PDIObject *wrapOb = [[PDIObject alloc] initWrappingValue:ob];
+            return wrapOb;
+        }
         PDIObject *realOb = [_instance appendObject];
         void *v = [ob PDValue];
         switch (PDResolve(v)) {
@@ -410,7 +444,9 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
                 }
                 break;
             default:
-                realOb.obj->inst = PDRetain(v);
+                [realOb setObjectValue:ob];
+//                realOb.obj->inst = PDRetain(v);
+//                realOb.type = PDObjectDetermineType(realOb.obj);
         }
 //        realOb.obj->inst = [ob PDValue];
         [self setValue:realOb forKey:key];

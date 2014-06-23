@@ -57,8 +57,8 @@ typedef enum {
  */
 - (void)deleteAnnotation;
 
-@property (nonatomic, readonly)  PDIAnnotGroup *annotGroup;
-@property (nonatomic, readonly)  PDIObject *object;
+@property (nonatomic, weak) PDIAnnotGroup *annotGroup;
+@property (nonatomic, strong) PDIObject *object;
 
 //@property (nonatomic, readwrite) CGRect border;                 ///< The border of the annotation (it's 3 digits i.e. not a rect; investigate & fix) (could it be x-offs, y-offs, width or some such?
 @property (nonatomic, readwrite) CGRect             rect;       ///< The rect of the annotation
