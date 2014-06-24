@@ -391,7 +391,7 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
     PDAssert(_instance); // crash: resolvedValueForKey: requires that an instance has been given to the PDIObject
     id value = [self valueForKey:key];
     if ([value isKindOfClass:[PDIReference class]]) {
-        PDIObject *object = [_instance fetchReadonlyObjectWithID:[value objectID]];
+        PDIObject *object = [_instance fetchReadonlyObjectWithID:[(PDIReference *)value objectID]];
         if (object) {
             _dict[key] = object;
             value = object;

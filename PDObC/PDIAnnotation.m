@@ -93,7 +93,7 @@
                     // it can be a ref or a direct URI
 //                    ref = [[PDIReference alloc] initWithString:s];
                     if ([uriValue isKindOfClass:[PDIReference class]]) {
-                        _uri = [_instance fetchReadonlyObjectWithID:[uriValue objectID]];
+                        _uri = [_instance fetchReadonlyObjectWithID:[(PDIReference *)uriValue objectID]];
                         //[_uri scheduleMimicWithInstance:_instance];
                         //_mutatingURI = YES;
                     } else {

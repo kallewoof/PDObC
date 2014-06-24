@@ -55,7 +55,7 @@
         for (NSInteger i = 0; i < acount; i++) {
             id entry = array[i];
             if ([entry isKindOfClass:[PDIReference class]]) {
-                obj = [_instance fetchReadonlyObjectWithID:[entry objectID]];
+                obj = [_instance fetchReadonlyObjectWithID:[(PDIReference *)entry objectID]];
             } else {
                 obj = [[PDIObject alloc] initWrappingValue:entry PDValue:PDArrayGetElement(_object.objectRef->inst, i)];
 //                obj = [instance appendObject];
