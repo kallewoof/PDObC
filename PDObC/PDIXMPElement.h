@@ -60,7 +60,7 @@
 
 - (void)populateString:(NSMutableString *)string withIndent:(NSString *)indent;
 
-@property (nonatomic, readonly) PDIXMPElement *parent;      ///< Parent element, or nil if the root object
+@property (nonatomic, weak, readonly) PDIXMPElement *parent;///< Parent element, or nil if the root object
 @property (nonatomic, readonly) NSArray *children;          ///< PDIXMPElement objects which exist within this element
 
 @property (nonatomic, strong)   NSString *name;             ///< @"rdf:li"
