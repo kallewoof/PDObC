@@ -1,7 +1,7 @@
-//
+
 // PDInstance.m
 //
-// Copyright (c) 2013 Karl-Johan Alm (http://github.com/kallewoof)
+// Copyright (c) 2012 - 2014 Karl-Johan Alm (http://github.com/kallewoof)
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -32,8 +32,9 @@
 #import "PDIXMPArchive.h"
 #import "NSObjects+PDIEntity.h"
 
-#import "pd_dict.h"
-#import "pd_array.h"
+#import "PDString.h"
+#import "PDDictionary.h"
+#import "PDArray.h"
 
 @interface PDInstance () {
     PDPipeRef _pipe;
@@ -93,10 +94,12 @@
         _pipe = PDPipeCreateWithFilePaths([sourcePDFPath cStringUsingEncoding:NSUTF8StringEncoding], 
                                           [destPDFPath cStringUsingEncoding:NSUTF8StringEncoding]);
         if (NULL == _pipe) {
+            PDWarn("PDPipeCreateWithFilePaths() failure");
             return nil;
         }
         
         if (! PDPipePrepare(_pipe)) {
+            PDWarn("PDPipePrepare() failure");
             return nil;
         }
         
@@ -104,6 +107,7 @@
         
         // to avoid issues later on, we also set up the catalog here
         if ([self numberOfPages] == 0) {
+            PDWarn("numberOfPages == 0 (this is considered a failure)");
             return nil;
         }
         
@@ -142,9 +146,13 @@
 {
     if (_metadataObject) return _metadataObject;
     PDIObject *root = [self rootObject];
-    NSString *md = [root valueForKey:@"Metadata"];
-    if (md) {
-        _metadataObject = [self fetchReadonlyObjectWithID:[PDIReference objectIDFromString:md]];
+    _metadataObject = [root resolvedValueForKey:@"Metadata"];
+//    NSString *md = [root valueForKey:@"Metadata"];
+    if (_metadataObject) {
+        if ([_metadataObject isKindOfClass:[PDIReference class]]) {
+            _metadataObject = [self fetchReadonlyObjectWithID:[(PDIReference *)_metadataObject objectID]];
+        }
+//        _metadataObject = [self fetchReadonlyObjectWithID:[PDIReference objectIDFromString:md]];
         [_metadataObject enableMutationViaMimicSchedulingWithInstance:self];
     } else {
         _metadataObject = [self appendObject];
@@ -190,6 +198,7 @@
 {
     if (_rootObject == nil) {
         _rootObject = [[PDIObject alloc] initWithObject:PDParserGetRootObject(_parser)];
+        [_rootObject setInstance:self];
     }
     return _rootObject;
 }
@@ -309,11 +318,13 @@
     
     filter = PDTaskCreateFilterWithValue(type, value);
     
+    __weak PDInstance *bself = self;
+    
     task = PDTaskCreateBlockMutator(^PDTaskResult(PDPipeRef pipe, PDTaskRef task, PDObjectRef object) {
         PDIObject *iob = [[PDIObject alloc] initWithObject:object];
         [iob markMutable];
-        [iob setInstance:self];
-        return operation(self, iob);
+        [iob setInstance:bself];
+        return operation(bself, iob);
     });
     
     PDTaskAppendTask(filter, task);
@@ -331,9 +342,11 @@
 
 - (void)enqueueOperation:(PDIObjectOperation)operation
 {
+    __weak PDInstance *bself = self;
+
     PDPipeAddTask(_pipe, PDTaskCreateBlockMutator(^PDTaskResult(PDPipeRef pipe, PDTaskRef task, PDObjectRef object) {
         PDIObject *iob = [[PDIObject alloc] initWithObject:object];
-        return operation(self, iob);
+        return operation(bself, iob);
     }));
 }
 
@@ -349,10 +362,11 @@
     
     // got a Root?
     if ([self rootObject]) {
-        NSString *ref = [_rootObject valueForKey:key];
+        PDIReference *ref = [_rootObject valueForKey:key];
         if (ref) {
             // got this already; we want to tweak it then
-            [self forObjectWithID:[PDIReference objectIDFromString:ref] enqueueOperation:^PDTaskResult(PDInstance *instance, PDIObject *object) {
+            if ([ref isKindOfClass:[PDIObject class]]) ref = [(PDIObject*)ref reference];
+            [self forObjectWithID:[ref objectID] enqueueOperation:^PDTaskResult(PDInstance *instance, PDIObject *object) {
                 [object setStreamIsEncrypted:NO];
                 [object setStreamContent:data];
                 return PDTaskDone;
@@ -386,15 +400,17 @@
 - (void)setupDocumentIDs
 {
     _fetchedDocIDs = YES;
-    pd_dict d = PDObjectGetDictionary(self.trailerObject.objectRef);
-    if (PDObjectTypeArray == pd_dict_get_type(d, "ID")) {
-        pd_array a = pd_dict_get_copy(d, "ID");
+    PDDictionaryRef d = PDObjectGetDictionary(self.trailerObject.objectRef);
+    void *idValue = PDDictionaryGetEntry(d, "ID");
+    if (PDInstanceTypeArray == PDResolve(idValue)) {
+        PDArrayRef a = idValue;
         {
-            NSInteger count = pd_array_get_count(a);
-            _documentID = count > 0 ? [NSString stringWithPDFString:pd_array_get_at_index(a, 0)] : nil;
-            _documentInstanceID = count > 1 ? [NSString stringWithPDFString:pd_array_get_at_index(a, 1)] : nil;
+            NSInteger count = PDArrayGetCount(a);
+            _documentID = count > 0 ? [NSString objectWithPDString:PDArrayGetElement(a, 0)] : nil;
+            _documentInstanceID = count > 1 ? [NSString objectWithPDString:PDArrayGetElement(a, 1)] : nil;
         }
-        pd_array_destroy(a);
+        PDRelease(a);
+//        pd_array_destroy(a);
     }
 }
 

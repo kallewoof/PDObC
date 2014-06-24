@@ -1,7 +1,7 @@
 //
 // PDIXMPElement.h
 //
-// Copyright (c) 2014 Karl-Johan Alm (http://github.com/kallewoof)
+// Copyright (c) 2012 - 2014 Karl-Johan Alm (http://github.com/kallewoof)
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -60,12 +60,12 @@
 
 - (void)populateString:(NSMutableString *)string withIndent:(NSString *)indent;
 
-@property (nonatomic, weak, readonly) PDIXMPElement *parent;///< Parent element, or nil if the root object
-@property (nonatomic, readonly) NSArray *children;          ///< PDIXMPElement objects which exist within this element
+@property (nonatomic, readonly, weak) PDIXMPElement *parent;      ///< Parent element, or nil if the root object
+@property (nonatomic, readonly, strong) NSArray *children;          ///< PDIXMPElement objects which exist within this element
 
 @property (nonatomic, strong)   NSString *name;             ///< @"rdf:li"
-@property (nonatomic, readonly) NSString *value;            ///< @"John Doe"; note that value is ignored if firstChild is non-nil
-@property (nonatomic, readonly) PDIXMPEntry *XMPValue;      ///< the value of the element, with encoding applied -- if value = @"<foo>", result will be @"&lt;foo&gt;"; if XMPValue = @"<foo>", result will be @"<foo>"
+@property (nonatomic, readonly, strong) NSString *value;            ///< @"John Doe"; note that value is ignored if firstChild is non-nil
+@property (nonatomic, readonly, strong) PDIXMPEntry *XMPValue;      ///< the value of the element, with encoding applied -- if value = @"<foo>", result will be @"&lt;foo&gt;"; if XMPValue = @"<foo>", result will be @"<foo>"
 @property (nonatomic, strong)   NSDictionary *attributes;   ///< {@"xml:lang": @"x-default"}
 
 @end

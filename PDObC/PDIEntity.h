@@ -1,7 +1,7 @@
 //
 // PDIEntity.h
 //
-// Copyright (c) 2013 Karl-Johan Alm (http://github.com/kallewoof)
+// Copyright (c) 2012 - 2014 Karl-Johan Alm (http://github.com/kallewoof)
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,20 +20,25 @@
 #import <Foundation/Foundation.h>
 
 /**
- The `PDIEntiy` protocol provides a single readonly property for obtaining a PDF compatible string of the given object. It is used in the internal objects, and in category implementations for e.g. `NSDictionary`.
+ *  The `PDIEntiy` protocol provides a single readonly property for obtaining a PDF compatible string of the given object. It is used in the internal objects, and in category implementations for e.g. `NSDictionary`.
  */
 
 @protocol PDIEntity <NSObject>
 
 /**
- The object's C string representation according to the PDF specification. 
+ *  The object's C string representation according to the PDF specification. 
  */
 @property (nonatomic, readonly) const char *PDFString;
+
+/**
+ *  A PD value based on this type.
+ */
+@property (nonatomic, readonly) void *PDValue;
 
 @end
 
 /**
- `PDIEntiy` is a quasi-abstract convenience implementation of the `PDIEntity` protocol. It has an instance variable that sub classes can use to cache the string, and the string is `free()`'d, if non-NULL on dealloc.
+ *  `PDIEntiy` is a quasi-abstract convenience implementation of the `PDIEntity` protocol. It has an instance variable that sub classes can use to cache the string, and the string is `free()`'d, if non-NULL on dealloc.
  */
 
 @interface PDIEntity : NSObject<PDIEntity> {

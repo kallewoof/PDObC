@@ -1,7 +1,7 @@
 //
 // PDIAnnotGroup.m
 //
-// Copyright (c) 2013 Karl-Johan Alm (http://github.com/kallewoof)
+// Copyright (c) 2012 - 2014 Karl-Johan Alm (http://github.com/kallewoof)
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,10 +17,13 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
+#import "pd_internal.h"
 #import "PDIAnnotGroup.h"
 #import "PDIObject.h"
 #import "PDIAnnotation.h"
+#import "NSObjects+PDIEntity.h"
 #import "PDInstance.h"
+#import "PDArray.h"
 #import "PDIReference.h"
 
 @implementation PDIAnnotGroup {
@@ -30,6 +33,7 @@
 
 - (id)initWithObject:(PDIObject *)object inInstance:(PDInstance *)instance
 {
+    assert([object isKindOfClass:PDIObject.class]);
     self = [super init];
     if (self) {
         _instance = instance;
@@ -43,9 +47,22 @@
             }
             count = 1;
         }
+        
         _annotations = [[NSMutableArray alloc] initWithCapacity:count];
-        for (NSString *ref in [object constructArray]) {
-            PDIObject *obj = [_instance fetchReadonlyObjectWithID:[PDIReference objectIDFromString:ref]];
+        PDIObject *obj;
+        NSArray *array = [object constructArray];
+        NSInteger acount = array.count;
+        for (NSInteger i = 0; i < acount; i++) {
+            id entry = array[i];
+            if ([entry isKindOfClass:[PDIReference class]]) {
+                obj = [_instance fetchReadonlyObjectWithID:[entry objectID]];
+            } else {
+                obj = [[PDIObject alloc] initWrappingValue:entry PDValue:PDArrayGetElement(_object.objectRef->inst, i)];
+//                obj = [instance appendObject];
+//                [obj setObjectValue:entry];
+//                [object replaceValueAtIndex:i withValue:obj];
+            }
+            
             PDIAnnotation *annot = [[PDIAnnotation alloc] initWithObject:obj inAnnotGroup:self withInstance:instance];
             [_annotations addObject:annot];
         }
@@ -58,7 +75,7 @@
 - (PDIAnnotation *)appendAnnotation
 {
     PDIObject *annotObj = [_instance appendObject];
-    [annotObj setValue:@"/Annot" forKey:@"Type"];
+    [annotObj setValue:[PDIName nameWithString:@"/Annot"] forKey:@"Type"];
     PDIAnnotation *annot = [[PDIAnnotation alloc] initWithObject:annotObj inAnnotGroup:self withInstance:_instance];
     [_object appendValue:annotObj];
     [_annotations addObject:annot];

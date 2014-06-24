@@ -1,7 +1,7 @@
 //
 // PDIAnnotation.h
 //
-// Copyright (c) 2013 Karl-Johan Alm (http://github.com/kallewoof)
+// Copyright (c) 2012 - 2014 Karl-Johan Alm (http://github.com/kallewoof)
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -57,8 +57,8 @@ typedef enum {
  */
 - (void)deleteAnnotation;
 
-@property (nonatomic, readonly)  PDIAnnotGroup *annotGroup;
-@property (nonatomic, readonly)  PDIObject *object;
+@property (nonatomic, weak) PDIAnnotGroup *annotGroup;
+@property (nonatomic, strong) PDIObject *object;
 
 //@property (nonatomic, readwrite) CGRect border;                 ///< The border of the annotation (it's 3 digits i.e. not a rect; investigate & fix) (could it be x-offs, y-offs, width or some such?
 @property (nonatomic, readwrite) CGRect             rect;       ///< The rect of the annotation
@@ -97,26 +97,26 @@ typedef enum {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /** Display the page designated by page, with the coordinates (left, top) posi- tioned at the upper-left corner of the window and the contents of the page magnified by the factor zoom. A null value for any of the parameters left, top, or zoom specifies that the current value of that parameter is to be retained un- changed. A zoom value of 0 has the same meaning as a null value. */
-#define PDIAnnotationFitXYZ(l,t,z) @[@"/XYZ", @(l), @(t), @(z)]
+#define PDIAnnotationFitXYZ(l,t,z) @[[PDIName nameWithString:@"/XYZ"], @(l), @(t), @(z)]
 
 /** Display the page designated by page, with its contents magnified just enough to fit the entire page within the window both horizontally and vertically. If the required horizontal and vertical magnification factors are different, use the smaller of the two, centering the page within the window in the other dimension. */
-#define PDIAnnotationFitFit() @[@"/Fit"]
+#define PDIAnnotationFitFit() @[[PDIName nameWithString:@"/Fit"]]
 
 /** Display the page designated by page, with the vertical coordinate top posi- tioned at the top edge of the window and the contents of the page magnified just enough to fit the entire width of the page within the window. A null value for top specifies that the current value of that parameter is to be retained un- changed. */
-#define PDIAnnotationFitH(t) @[@"/FitH", @(t)]
+#define PDIAnnotationFitH(t) @[[PDIName nameWithString:@"/FitH"], @(t)]
 
 /** Display the page designated by page, with the horizontal coordinate left posi- tioned at the left edge of the window and the contents of the page magnified just enough to fit the entire height of the page within the window. A null val- ue for left specifies that the current value of that parameter is to be retained unchanged. */
-#define PDIAnnotationFitV(l) @[@"/FitV", @(l)]
+#define PDIAnnotationFitV(l) @[[PDIName nameWithString:@"/FitV"], @(l)]
 
 /** Display the page designated by page, with its contents magnified just enough to fit the rectangle specified by the coordinates left, bottom, right, and top entirely within the window both horizontally and vertically. If the required horizontal and vertical magnification factors are different, use the smaller of the two, centering the rectangle within the window in the other dimension. A null value for any of the parameters may result in unpredictable behavior. */
-#define PDIAnnotationFitR(l,b,r,t) @[@"/FotR", @(l), @(b), @(r), @(t)]
+#define PDIAnnotationFitR(l,b,r,t) @[[PDIName nameWithString:@"/FitR"], @(l), @(b), @(r), @(t)]
 
 /** (PDF 1.1) Display the page designated by page, with its contents magnified just enough to fit its bounding box entirely within the window both hori- zontally and vertically. If the required horizontal and vertical magnification factors are different, use the smaller of the two, centering the bounding box within the window in the other dimension. */
-#define PDIAnnotationFitB() @[@"/FitB"]
+#define PDIAnnotationFitB() @[[PDIName nameWithString:@"/FitB"]]
 
 /** (PDF 1.1) Display the page designated by page, with the vertical coordinate top positioned at the top edge of the window and the contents of the page magnified just enough to fit the entire width of its bounding box within the window. A null value for top specifies that the current value of that parameter is to be retained unchanged. */
-#define PDIAnnotationFitBH(t) @[@"/FitBH", @(t)]
+#define PDIAnnotationFitBH(t) @[[PDIName nameWithString:@"/FitBH"], @(t)]
 
 /** (PDF 1.1) Display the page designated by page, with the horizontal coordi- nate left positioned at the left edge of the window and the contents of the page magnified just enough to fit the entire height of its bounding box within the window. A null value for left specifies that the current value of that parameter is to be retained unchanged. */
-#define PDIAnnotationFitBV(l) @[@"/FitBV", @(l)]
+#define PDIAnnotationFitBV(l) @[[PDIName nameWithString:@"/FitBV"], @(l)]
 

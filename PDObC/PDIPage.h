@@ -1,7 +1,7 @@
 //
 // PDIPage.h
 //
-// Copyright (c) 2014 Karl-Johan Alm (http://github.com/kallewoof)
+// Copyright (c) 2012 - 2014 Karl-Johan Alm (http://github.com/kallewoof)
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -33,15 +33,15 @@
  */
 @property (nonatomic, readonly) PDPageRef pageRef;
 
-@property (nonatomic, readonly) PDIObject *pageObject;
+@property (nonatomic, readonly, strong) PDIObject *pageObject;
 
-@property (nonatomic, readonly) NSArray *contentObjects;
+@property (nonatomic, readonly, strong) NSArray *contentObjects;
 
 @property (nonatomic, readonly) CGRect mediaBox;
 
 /**
  *  A single string containing all the text on the page.
  */
-@property (nonatomic, readonly) NSString *text;
+@property (nonatomic, readonly, strong) NSString *text;
 
 @end

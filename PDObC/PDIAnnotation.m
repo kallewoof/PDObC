@@ -1,7 +1,7 @@
 //
 // PDIAnnotation.m
 //
-// Copyright (c) 2013 Karl-Johan Alm (http://github.com/kallewoof)
+// Copyright (c) 2012 - 2014 Karl-Johan Alm (http://github.com/kallewoof)
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,6 +24,8 @@
 #import "PDInstance.h"
 #import "NSObjects+PDIEntity.h"
 #import "PDIString.h"
+#import "PDIConversion.h"
+#import "PDNumber.h"
 
 @implementation PDIAnnotation {
     PDIObject *_a;
@@ -32,7 +34,7 @@
     PDIReference *_dDest;
     PDInstance *_instance;
     PDIString *_directURI;
-    NSString *_subtype, *_aType, *_sType;
+    PDIName *_subtype, *_aType, *_sType;
     NSMutableArray *_fit;
     CGRect _rect;
 }
@@ -46,11 +48,14 @@
         _object = object;
         [_object enableMutationViaMimicSchedulingWithInstance:instance];
         
-        PDIReference *ref;
-        NSString *s = [_object valueForKey:@"Rect"];
+//        PDIReference *ref;
+        NSArray *arr = [_object valueForKey:@"Rect"];
+        if (arr) assert([arr isKindOfClass:NSArray.class]);
         PDRect rect;
-        if (s) {
-            PDRectReadFromArrayString(rect, [s cStringUsingEncoding:NSUTF8StringEncoding]);
+        if (arr && arr.count == 4) {
+            arr = [arr arrayByResolvingPDValues];
+            rect = (PDRect) { [arr[0] floatValue], [arr[1] floatValue], [arr[2] floatValue], [arr[3] floatValue] };
+//            PDRectReadFromArrayString(rect, [s cStringUsingEncoding:NSUTF8StringEncoding]);
             _rect = (CGRect)PDRectToOSRect(rect);
         }
         
@@ -59,12 +64,17 @@
         _dest = [_object objectForKey:@"Dest"];
         if (_dest) {
             [_dest enableMutationViaMimicSchedulingWithInstance:_instance];
-            NSString *s = [_dest valueAtIndex:0];
-            if (s) _dDest = [[PDIReference alloc] initWithString:s];
-            if (_dest.count > 1) {
-                _fit = [NSMutableArray arrayWithCapacity:_dest.count-1];
-                for (int i = 1; i < _dest.count; i++) {
-                    [_fit addObject:[_dest valueAtIndex:i]];
+            if (_dest.type == PDObjectTypeString) {
+                // this is a named destination
+                // we don't deal with that right now
+            } else {
+                PDIReference *ref = [_dest valueAtIndex:0];
+                if (ref) _dDest = ref; //[[PDIReference alloc] initWithString:s];
+                if (_dest.count > 1) {
+                    _fit = [NSMutableArray arrayWithCapacity:_dest.count-1];
+                    for (int i = 1; i < _dest.count; i++) {
+                        [_fit addObject:[_dest valueAtIndex:i]];
+                    }
                 }
             }
         }
@@ -78,23 +88,23 @@
             
             if ([_sType isEqualToString:PDIAnnotationSTypeURI]) {
                 // fetch URI
-                s = [_a valueForKey:@"URI"];
-                if (s) {
+                id uriValue = [_a valueForKey:@"URI"];
+                if (uriValue) {
                     // it can be a ref or a direct URI
-                    ref = [[PDIReference alloc] initWithString:s];
-                    if (ref) {
-                        _uri = [_instance fetchReadonlyObjectWithID:ref.objectID];
+//                    ref = [[PDIReference alloc] initWithString:s];
+                    if ([uriValue isKindOfClass:[PDIReference class]]) {
+                        _uri = [_instance fetchReadonlyObjectWithID:[uriValue objectID]];
                         //[_uri scheduleMimicWithInstance:_instance];
                         //_mutatingURI = YES;
                     } else {
-                        _directURI = [PDIString stringWithPDFString:s];
+                        _directURI = [PDIString stringWithPDFString:uriValue];
                     }
                 }
             }
         } else if (! _dest) {
             _a = [_instance appendObject];
             [_object setValue:_a forKey:@"A"];
-            [_a setValue:PDIAnnotationATypeAction forKey:@"Type"];
+            [_a setValue:[PDIName nameWithString:PDIAnnotationATypeAction] forKey:@"Type"];
         }
     }
     
@@ -126,43 +136,43 @@
 
 - (NSString *)subtype
 {
-    return _subtype;
+    return _subtype.string;
 }
 
 - (void)setSubtype:(NSString *)subtype
 {
-    if ([subtype isEqualToString:_subtype]) return;
-    _subtype = subtype;
+    if ([_subtype isEqualToString:subtype]) return;
+    _subtype = [PDIName nameWithString:subtype];
     [_object setValue:_subtype forKey:@"Subtype"];
 }
 
 - (NSString *)aType
 {
-    return _aType;
+    return _aType.string;
 }
 
 - (void)setAType:(NSString *)aType
 {
-    if ([aType isEqualToString:_aType]) return;
-    _aType = aType;
+    if ([_aType isEqualToString:aType]) return;
+    _aType = [PDIName nameWithString:aType];
     [_a setValue:_aType forKey:@"Type"];
 }
 
 - (NSString *)sType
 {
-    return _sType;
+    return _sType.string;
 }
 
 - (void)setSType:(NSString *)sType
 {
-    if ([sType isEqualToString:_sType]) return;
-    _sType = sType;
+    if ([_sType isEqualToString:sType]) return;
+    _sType = [PDIName nameWithString:sType];
     [_a setValue:_sType forKey:@"S"];
 }
 
 - (NSString *)uriString
 {
-    return _directURI ? [_directURI stringValue] : [_uri primitiveValue];
+    return _directURI ? [_directURI stringValue] : [_uri objectValue];
 }
 
 - (void)setUriString:(NSString *)uriString
@@ -182,7 +192,7 @@
             [_a scheduleMimicWithInstance:_instance];
         }*/
     } else {
-        [_uri setPrimitiveValue:uriString];
+        [_uri setObjectValue:uriString];
         /*if (! _mutatingURI) {
             _mutatingURI = YES;
             [_uri scheduleMimicWithInstance:_instance];
@@ -224,7 +234,9 @@
     _dDest = dDest;
     
     if (_dest == nil) {
-        _dest = [_instance appendObject];
+        NSMutableArray *a = [[NSMutableArray alloc] init]; //[_instance appendObject];
+        [_object setValue:a forKey:@"Dest"];
+        _dest = [_object objectForKey:@"Dest"];
         [_dest appendValue:_dDest];
         if (_fit.count) 
             for (int i = 0; i < _fit.count; i++) {
@@ -236,9 +248,8 @@
             [_dest replaceValueAtIndex:0 withValue:dDest];
         else
             [_dest appendValue:dDest];
+        [_object setValue:_dest.objectValue forKey:@"Dest"];
     }
-    
-    [_object setValue:_dest forKey:@"Dest"];
 }
 
 - (void)setDDestByPageIndex:(NSInteger)pageIndex

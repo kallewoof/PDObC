@@ -1,7 +1,7 @@
 //
 // NSObjects+PDIEntity.m
 //
-// Copyright (c) 2013 Karl-Johan Alm (http://github.com/kallewoof)
+// Copyright (c) 2012 - 2014 Karl-Johan Alm (http://github.com/kallewoof)
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,6 +18,10 @@
 //
 
 #import "NSObjects+PDIEntity.h"
+#import "PDString.h"
+#import "PDNumber.h"
+#import "PDArray.h"
+#import "PDDictionary.h"
 
 @implementation NSDictionary (PDIEntity)
 
@@ -38,6 +42,22 @@
     [str appendFormat:@">>"];
     
     return [str cStringUsingEncoding:NSUTF8StringEncoding];
+}
+
+- (void *)PDValue
+{
+    PDDictionaryRef dict = PDDictionaryCreateWithCapacity(self.count);
+    for (NSString *key in self.allKeys) {
+        void *pdv;
+        id value = self[key];
+        if ([value conformsToProtocol:@protocol(PDIEntity)]) {
+            pdv = [value PDValue];
+        } else {
+            pdv = [[value description] PDValue];
+        }
+        PDDictionarySetEntry(dict, [key cStringUsingEncoding:NSUTF8StringEncoding], pdv);
+    }
+    return PDAutorelease(dict);
 }
 
 @end
@@ -64,6 +84,19 @@
     return [str cStringUsingEncoding:NSUTF8StringEncoding];
 }
 
+- (void *)PDValue
+{
+    PDArrayRef array = PDArrayCreateWithCapacity(self.count);
+    for (id v in self) {
+        if ([v conformsToProtocol:@protocol(PDIEntity)]) {
+            PDArrayAppend(array, [v PDValue]);
+        } else {
+            PDArrayAppend(array, [[v description] PDValue]);
+        }
+    }
+    return PDAutorelease(array);
+}
+
 @end
 
 @implementation NSString (PDIEntity)
@@ -78,6 +111,13 @@
         [NSException raise:@"PDUnknownEncodingException" format:@"PDF string was using an unknown encoding."];
     }
     return str;
+}
+
++ (id)objectWithPDString:(PDStringRef)PDString
+{
+    return (PDStringGetType(PDString) == PDStringTypeName
+            ? [PDIName nameWithPDString:PDString]
+            : [self stringWithPDFString:PDStringEscapedValue(PDString, false)]); //PDStringEscapedValue(PDString, false)];
 }
 
 - (NSString *)PXUString
@@ -96,7 +136,7 @@
 
 - (NSString *)stringByRemovingPDFControlCharacters
 {
-    if ([self characterAtIndex:0] == '(' && [self characterAtIndex:self.length-1] == ')') {
+    if (self.length > 1 && [self characterAtIndex:0] == '(' && [self characterAtIndex:self.length-1] == ')') {
         return [self substringWithRange:(NSRange){1, self.length - 2}];
     }
     return self;
@@ -112,6 +152,58 @@
     return [self cStringUsingEncoding:NSUTF8StringEncoding];
 }
 
+- (void *)PDValue
+{
+    return PDStringWithCString(strdup([self PDFString]));
+}
+
+@end
+
+@interface PDIName () 
+@property (nonatomic, strong) NSString *s;
+@end
+
+@implementation PDIName 
+
++ (PDIName *)nameWithPDString:(PDStringRef)PDString
+{
+    PDIName *p = [[PDIName alloc] init];
+    p.s = [NSString stringWithPDFString:PDStringNameValue(PDString, false)];
+    return p;
+}
+
++ (PDIName *)nameWithString:(NSString *)string
+{
+    PDIName *p = [[PDIName alloc] init];
+    p.s = string;
+    return p;
+}
+
+- (NSString *)description
+{
+    return [NSString stringWithFormat:@"(PDIName: %p) \"%@\"", self, _s];
+}
+
+- (const char *)PDFString
+{
+    return [[NSString stringWithFormat:@"/%@", self] PDFString];
+}
+
+- (void *)PDValue
+{
+    return PDStringWithName(strdup([_s PDFString]));
+}
+
+- (BOOL)isEqualToString:(id)object
+{
+    return [_s isEqualToString:object];
+}
+
+- (NSString *)string
+{
+    return _s;
+}
+
 @end
 
 @implementation NSDate (PDIEntity)
@@ -124,6 +216,11 @@
     return [[df stringFromDate:self] cStringUsingEncoding:NSUTF8StringEncoding];
 }
 
+- (void *)PDValue
+{
+    return PDStringWithCString(strdup([self PDFString]));
+}
+
 - (NSString *)datetimeString
 {
     static NSDateFormatter *df = nil;
@@ -134,6 +231,31 @@
         [df setDateFormat:@"yyyy'-'MM'-'dd'T'HH':'mm':'ss'"];
     }
     return [df stringFromDate:self];
+}
+
+@end
+
+@implementation NSNumber (PDIEntity)
+
+- (const char *)PDFString
+{
+    return [[NSString stringWithFormat:@"%@", self] PDFString];
+}
+
+- (void *)PDValue
+{
+    NSString *d = [NSString stringWithFormat:@"%@", self];
+    if ([d rangeOfString:@"."].location != NSNotFound) {
+        // real
+        return PDNumberWithReal(self.doubleValue);
+    }
+    
+//    if ([d hasPrefix:@"-"]) {
+        // integer
+        return PDNumberWithInteger(self.integerValue);
+//    }
+    
+//    return PDNumberWithSize(self.unsignedIntegerValue);
 }
 
 @end

@@ -1,7 +1,7 @@
 //
 // PDIReference.m
 //
-// Copyright (c) 2013 Karl-Johan Alm (http://github.com/kallewoof)
+// Copyright (c) 2012 - 2014 Karl-Johan Alm (http://github.com/kallewoof)
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -29,9 +29,16 @@
 
 + (NSInteger)objectIDFromString:(NSString *)refString
 {
+    assert([refString isKindOfClass:[NSString class]]);
     long res = 0;
     sscanf([refString cStringUsingEncoding:NSUTF8StringEncoding], "%ld", &res);
     return res;
+}
+
++ (void *)PDValueForObjectID:(NSInteger)objectID generationID:(NSInteger)generationID
+{
+    PDReferenceRef ref = PDReferenceCreate(objectID, generationID);
+    return PDAutorelease(ref);
 }
 
 - (void)dealloc
@@ -41,6 +48,7 @@
 
 - (id)initWithReference:(PDReferenceRef)reference
 {
+    assert(PDResolve(reference) == PDInstanceTypeRef);
     self = [super init];
     if (self) {
         _ref = PDRetain(reference);
@@ -69,6 +77,7 @@
 - (id)initWithString:(NSString *)refString
 {
     if (refString == nil) return nil;
+    assert([refString isKindOfClass:[NSString class]]);
 
     unsigned long obid, genid;
     if (2 > sscanf([refString cStringUsingEncoding:NSUTF8StringEncoding], "%lu %lu", &obid, &genid))
@@ -88,6 +97,11 @@
         _PDFString = strdup([[NSString stringWithFormat:@"%ld %ld R", (long)_objectID, (long)_generationID] cStringUsingEncoding:NSUTF8StringEncoding]);
     }
     return _PDFString;
+}
+
+- (void *)PDValue
+{
+    return _ref;
 }
 
 - (NSString *)description

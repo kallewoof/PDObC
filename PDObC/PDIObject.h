@@ -1,7 +1,7 @@
 //
 // PDIObject.h
 //
-// Copyright (c) 2013 Karl-Johan Alm (http://github.com/kallewoof)
+// Copyright (c) 2012 - 2014 Karl-Johan Alm (http://github.com/kallewoof)
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -76,6 +76,18 @@
  @param generationID The generation ID.
  */
 - (id)initWithInstance:(PDInstance *)instance forDefinitionStack:(pd_stack)stack objectID:(NSInteger)objectID generationID:(NSInteger)generationID;
+
+/**
+ *  Initialize a fake object wrapping the given value. Fake objects are handy when working with methods that require an object to work with.
+ *
+ *  @note The containing object should have mimic scheduling triggered, or changes may be lost.
+ *
+ *  @param value   The value, such as an NSMutableDictionary or the like
+ *  @param PDValue The corresponding pajdeg value
+ *
+ *  @return PDIObject wrapping the given value
+ */
+- (id)initWrappingValue:(id)value PDValue:(void *)PDValue;
 
 ///---------------------------------------
 /// @name Modifying objects
@@ -170,16 +182,14 @@
 - (BOOL)isCurrentObject;
 
 /**
- Get the value of the primitive object. 
- 
- @note If the object is not a primitive, this method will return nil.
+ Get the value of the object. The value is the underlying instance, which can be an array, dictionary, string, number, etc. 
  */
-- (NSString *)primitiveValue;
+- (id)objectValue;
 
 /**
- Set the value of the primitive object. 
+ Set the value of the object. 
  */
-- (void)setPrimitiveValue:(NSString *)value;
+- (void)setObjectValue:(id)value;
 
 // dictionary methods
 
@@ -204,11 +214,13 @@
 - (id)resolvedValueForKey:(NSString *)key;
 
 /**
- Get the object value of the given key.
- 
- @note Enabling mutations is required for the object to have an instance, through which to fetch external objects.
-
- @param key The dictionary key.
+ *  Get the object value of the given key. If the given key is not an indirect reference (but a direct value), a new object is created with the value, and the new object is set as the value for the given key.
+ *
+ *  @note Enabling mutations is required for the object to have an instance, through which to fetch external objects.
+ *
+ *  @param key The key
+ *
+ *  @return A PDIObject instance for the value of the given key (created, if the value was not an indirect reference at the time).
  */
 - (PDIObject *)objectForKey:(NSString *)key;
 

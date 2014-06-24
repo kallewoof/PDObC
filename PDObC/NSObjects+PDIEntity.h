@@ -1,7 +1,7 @@
 //
 // NSObjects+PDIEntity.h
 //
-// Copyright (c) 2013 Karl-Johan Alm (http://github.com/kallewoof)
+// Copyright (c) 2012 - 2014 Karl-Johan Alm (http://github.com/kallewoof)
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -29,6 +29,8 @@
 
 + (NSString *)stringWithPDFString:(const char *)PDFString;
 
++ (id)objectWithPDString:(PDStringRef)PDString;
+
 /**
  *  Return a PDF XMP archive formatted UUID string, fitted for xmpMM:DocumentID / xmpMM:InstanceID. The input string must be a series of hex characters,
  *  and the resulting output is in the format "uuid:aabbccdd-eeff-0011-2233-445566778899"
@@ -43,6 +45,19 @@
 
 - (NSString *)stringByRemovingPDFControlCharacters;
 - (NSString *)stringByAddingPDFControlCharacters;
+
+@end
+
+/**
+ *  A PDIName has as its sole purpose the task of retaining the PDString name type when converting to and from PDString and NSString. Because NSString representations of PDStrings are
+ *  always unwrapped, there's no way of separating the string (/Helvetica) from the name /Helvetica (both do occur, albeit with extra parameters added in most cases, for the string type).
+ */
+@interface PDIName : NSObject <PDIEntity>
+
++ (PDIName *)nameWithString:(NSString *)string;
++ (PDIName *)nameWithPDString:(PDStringRef)PDString;
+- (BOOL)isEqualToString:(id)object;
+- (NSString *)string;
 
 @end
 
@@ -82,5 +97,9 @@
  *  @return This date as datetime string
  */
 - (NSString *)datetimeString;
+
+@end
+
+@interface NSNumber (PDIEntity) <PDIEntity>
 
 @end

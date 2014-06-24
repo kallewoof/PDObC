@@ -1,7 +1,7 @@
 //
 // PDIAnnotGroup.h
 //
-// Copyright (c) 2013 Karl-Johan Alm (http://github.com/kallewoof)
+// Copyright (c) 2012 - 2014 Karl-Johan Alm (http://github.com/kallewoof)
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -49,7 +49,7 @@
  */
 - (void)removeAnnotation:(PDIAnnotation *)annotation;
 
-@property (nonatomic, readonly) NSArray *annotations;   ///< Array of all annotations in this object.
-@property (nonatomic, readonly) PDIObject *object;      ///< Object associated with this annots group.
+@property (nonatomic, readonly, strong) NSArray *annotations;   ///< Array of all annotations in this object.
+@property (nonatomic, readonly, strong) PDIObject *object;      ///< Object associated with this annots group.
 
 @end
