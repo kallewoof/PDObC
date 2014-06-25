@@ -261,6 +261,7 @@
 
 - (PDIObject *)fetchReadonlyObjectWithID:(NSInteger)objectID
 {
+    NSAssert(objectID != 0, @"Zero is not a valid object ID");
     PDObjectRef obj = PDParserLocateAndCreateObject(_parser, objectID, true);
     //pd_stack defs = PDParserLocateAndCreateDefinitionForObject(_parser, objectID, true);
     PDIObject *object = [[PDIObject alloc] initWithObject:obj];//WithInstance:self forDefinitionStack:defs objectID:objectID generationID:0];
