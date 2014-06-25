@@ -22,7 +22,7 @@
 #import "PDIObject.h"
 #import "PDDefines.h"
 #import "pd_internal.h"
-#import "PDContentStream.h"
+#import "PDContentStreamTextExtractor.h"
 
 @interface PDIPage () {
     NSArray *_contentObjects;
