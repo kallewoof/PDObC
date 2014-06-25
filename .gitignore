@@ -16,5 +16,5 @@ profile
 *.moved-aside
 DerivedData
 .idea/
-PDObC/PDOBCTests.h
-PDObC/PDOBCTests.m
+PDObC/PajdegObcTester.h
+PDObC/PajdegObcTester.m
