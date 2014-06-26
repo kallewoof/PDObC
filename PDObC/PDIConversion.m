@@ -21,7 +21,7 @@
 
 + (id<PDIEntity>)fromPDType:(void *)pdob 
 {
-    return [self fromPDType:pdob depth:1];
+    return [self fromPDType:pdob depth:2];
 }
 
 + (id<PDIEntity>)fromPDType:(void *)pdob depth:(NSInteger)depth

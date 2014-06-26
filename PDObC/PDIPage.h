@@ -44,4 +44,9 @@
  */
 @property (nonatomic, readonly, strong) NSString *text;
 
+/**
+ *  An array of PDIReference and/or PDIObjects, one per annotation on the page.
+ */
+@property (nonatomic, readonly) NSArray *annotRefs;
+
 @end
