@@ -410,7 +410,6 @@
             _documentID = count > 0 ? [NSString objectWithPDString:PDArrayGetElement(a, 0)] : nil;
             _documentInstanceID = count > 1 ? [NSString objectWithPDString:PDArrayGetElement(a, 1)] : nil;
         }
-        PDRelease(a);
 //        pd_array_destroy(a);
     }
 }

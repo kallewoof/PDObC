@@ -28,6 +28,7 @@
 #import "PDNumber.h"
 
 @implementation PDIAnnotation {
+    BOOL _ownsA, _ownsURI, _ownsDest;
     PDIObject *_a;
     PDIObject *_uri;
     PDIObject *_dest;
@@ -81,9 +82,7 @@
         
         _a = [_object objectForKey:@"A"];
         if (_a) {
-            // WHY IS THERE NO ENABLEMUTATION FOR _a ??????
             _aType = [_a valueForKey:@"Type"];
-            
             _sType = [_a valueForKey:@"S"];
             
             if ([_sType isEqualToString:PDIAnnotationSTypeURI]) {
@@ -102,6 +101,7 @@
                 }
             }
         } else if (! _dest) {
+            _ownsA = YES;
             _a = [_instance appendObject];
             [_object setValue:_a forKey:@"A"];
             [_a setValue:[PDIName nameWithString:PDIAnnotationATypeAction] forKey:@"Type"];
@@ -114,9 +114,9 @@
 - (void)deleteAnnotation
 {
     [_object removeObject];
-    [_a removeObject];
-    [_uri removeObject];
-    [_dest removeObject];
+    if (_ownsA) [_a removeObject];
+    if (_ownsURI) [_uri removeObject];
+    if (_ownsDest) [_dest removeObject];
     [_annotGroup removeAnnotation:self];
 }
 
@@ -187,16 +187,8 @@
     if (_uri == nil) {
         _directURI = [PDIString stringWithString:uriString];
         [_a setValue:_directURI forKey:@"URI"];
-        /*if (! _mutatingA) {
-            _mutatingA = YES;
-            [_a scheduleMimicWithInstance:_instance];
-        }*/
     } else {
         [_uri setObjectValue:uriString];
-        /*if (! _mutatingURI) {
-            _mutatingURI = YES;
-            [_uri scheduleMimicWithInstance:_instance];
-        }*/
     }
 }
 
@@ -216,7 +208,9 @@
             [_object setValue:_a forKeyPath:@"A"];
             [_a unremoveObject];
         }
-        [_dest removeObject];
+        if (_ownsDest) {
+            [_dest removeObject];
+        }
         _dDest = nil;
         [_object removeValueForKey:@"Dest"];
         return;
@@ -224,17 +218,18 @@
     
     if (_uri) {
         [_object removeValueForKey:@"URI"];
-        [_uri removeObject];
+        if (_ownsURI) [_uri removeObject];
     }
     if (_a) {
         [_object removeValueForKey:@"A"];
-        [_a removeObject];
+        if (_ownsA) [_a removeObject];
     }
     
     _dDest = dDest;
     
     if (_dest == nil) {
-        NSMutableArray *a = [[NSMutableArray alloc] init]; //[_instance appendObject];
+        _ownsDest = YES;
+        NSMutableArray *a = [[NSMutableArray alloc] init];
         [_object setValue:a forKey:@"Dest"];
         _dest = [_object objectForKey:@"Dest"];
         [_dest appendValue:_dDest];

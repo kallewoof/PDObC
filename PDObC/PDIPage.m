@@ -22,6 +22,7 @@
 #import "PDIObject.h"
 #import "PDDefines.h"
 #import "pd_internal.h"
+#import "PDIConversion.h"
 #import "PDContentStreamTextExtractor.h"
 
 @interface PDIPage () {
@@ -99,6 +100,11 @@
     }
     _text = result;
     return _text;
+}
+
+- (NSArray *)annotRefs
+{
+    return (id) [PDIConversion fromPDType:PDPageGetAnnotRefs(_pageRef)];
 }
 
 @end
