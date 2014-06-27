@@ -28,6 +28,10 @@ typedef enum {
     PDIXMPLicenseAttributionNonCommercialShareAlike,    ///< CC BY-NC-SA --- This license lets others remix, tweak, and build upon your work non-commercially, as long as they credit you and license their new creations under the identical terms.
     PDIXMPLicenseAttributionNonCommercialNoDerivs,      ///< CC BY-NC-ND --- This license is the most restrictive of our six main licenses, only allowing others to download your works and share them with others as long as they credit you, but they can’t change them in any way or use them commercially.
     PDIXMPLicenseCommercial,                            ///< Commercial license
+    PDIXMPLicensePublicDomain,                          ///< Public Domain
+    PDIXMPLicenseCustom,                                ///< A custom (unknown) license
+    
+    __PDIXMPLicenseEndMarker__,
 } PDIXMPLicense;
 
 @class PDIXMPArchive;
@@ -35,20 +39,45 @@ typedef enum {
 @interface PDIXMPTemplate : NSObject
 
 + (NSArray *)licenseNames;
++ (NSString *)defaultMajorVersionStringForLicense:(PDIXMPLicense)license;
 
 ///////////////
 ///! Creation
 ///////////////
 
 /**
- Create a template for the given license.
+ *  Create a template for the given license.
+ *
+ *  @param license License
+ *
+ *  @return Template object
  */
 + (id)templateForLicense:(PDIXMPLicense)license;
 
 /**
+ *  Create a template for the given license with the specified major version string.
+ *
+ *  @param license License
+ *  @param major   Major string (e.g. @"4")
+ *
+ *  @return License with given major
+ */
++ (id)templateForLicense:(PDIXMPLicense)license major:(NSString *)major;
+
+/**
+ *  Attempt to create a template for the license identified by the given name.
+ *
+ *  @param licenseName The name of the license
+ *  @param licenseURL  The URL, or nil if the default license URL should be used, or if none is available
+ *
+ *  @return A template using the given license, if found, or the PDIXMPLicenseCustom, if not found
+ */
++ (id)templateForLicenseWithName:(NSString *)licenseName URL:(NSString *)licenseURL;
+
+/**
  Obtain the default rights string for the given license, if any.
  */
-+ (NSString *)defaultRightsForLicense:(PDIXMPLicense)license withAuthor:(NSString *)author;
++ (NSString *)defaultRightsForLicense:(PDIXMPLicense)license major:(NSString *)major withAuthor:(NSString *)author;
 
 /**
  Create a Creative Commons license template based on restrictions. 
@@ -111,9 +140,14 @@ typedef enum {
 - (void)relicense:(PDIXMPLicense)newLicense;
 
 /**
- License.
+ *  License.
  */
 @property (nonatomic, readonly) PDIXMPLicense license;
+
+/**
+ *  The license major version string. E.g. @"4" is the default for the CC licenses.
+ */
+@property (nonatomic, readonly) NSString *licenseMajorVersionString;
 
 /**
  License name.
@@ -137,12 +171,14 @@ typedef enum {
 ///////////////
 
 /**
- Determine the license used in the given (pre-existing) XMP archive.
- 
- @param XMPArchive The archive for an existing PDF whose XMP data should be used to determine the PDF's license.
- @return PDIXMPLicense enum result.
+ *  Determine the license used in the given (pre-existing) XMP archive.
+ *
+ *  @param XMPArchive The archive for an existing PDF whose XMP data should be used to determine the PDF's license.
+ *  @param mvs        Major version string NSString pointer, or NULL if not needed
+ *
+ *  @return PDIXMPLicense enum result; in addition, if mvs is non-null, *mvs is set to the major version string, if found
  */
-+ (PDIXMPLicense)licenseForXMPArchive:(PDIXMPArchive *)XMPArchive;
++ (PDIXMPLicense)licenseForXMPArchive:(PDIXMPArchive *)XMPArchive mvs:(NSString *__autoreleasing *)mvs;
 
 /**
  Generate a template for the given archive.
