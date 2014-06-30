@@ -24,19 +24,23 @@
 #import "NSArray+PDIXMPArchive.h"
 #import "NSObjects+PDIEntity.h"
 
+static NSArray *licenseUrls = nil;
+static NSArray *licenseNames = nil;
+static NSDictionary *licenseAliases = nil;
+static NSArray *codedLicenses = nil;
+static NSArray *licenseDefaultMajors = nil;
+static BOOL ccLicense[__PDIXMPLicenseEndMarker__] = {NO, YES, YES, YES, YES, YES, YES, NO, NO, NO};
+
 @interface PDIXMPTemplate ()
 
 @property (nonatomic, readwrite) PDIXMPLicense license;
 @property (nonatomic, strong) NSString *licenseUrl;
 @property (nonatomic, strong) NSString *licenseName;
+@property (nonatomic, strong) NSString *licenseMajorVersionString;
 
 @end
 
 @implementation PDIXMPTemplate
-
-static NSArray *licenseUrls = nil;
-static NSArray *licenseNames = nil;
-static NSArray *codedLicenses = nil;
 
 /*
  OGL = Open Game License
@@ -50,24 +54,73 @@ static NSArray *codedLicenses = nil;
 static inline void PDIXMPTemplateSetup()
 {
     licenseUrls = @[@"",
-                    @"http://creativecommons.org/licenses/by/4.0",
-                    @"http://creativecommons.org/licenses/by-sa/4.0",
-                    @"http://creativecommons.org/licenses/by-nd/4.0",
-                    @"http://creativecommons.org/licenses/by-nc/4.0",
-                    @"http://creativecommons.org/licenses/by-nc-sa/4.0",
-                    @"http://creativecommons.org/licenses/by-nc-nd/4.0",
+                    @"http://creativecommons.org/licenses/by/[m].0",
+                    @"http://creativecommons.org/licenses/by-sa/[m].0",
+                    @"http://creativecommons.org/licenses/by-nd/[m].0",
+                    @"http://creativecommons.org/licenses/by-nc/[m].0",
+                    @"http://creativecommons.org/licenses/by-nc-sa/[m].0",
+                    @"http://creativecommons.org/licenses/by-nc-nd/[m].0",
+                    @"",
+                    @"",
                     @"",
                     ];
     
     licenseNames = @[@"Unspecified",
-                     @"Attribution 4.0",
-                     @"Attribution-ShareAlike 4.0",
-                     @"Attribution-NoDerivs 4.0",
-                     @"Attribution-NonCommercial 4.0",
-                     @"Attribution-NonCommercial-ShareAlike 4.0",
-                     @"Attribution-NonCommercial-NoDerivs 4.0",
+                     @"Attribution", // "Attribution 4.0"
+                     @"Attribution-ShareAlike",
+                     @"Attribution-NoDerivs",
+                     @"Attribution-NonCommercial",
+                     @"Attribution-NonCommercial-ShareAlike",
+                     @"Attribution-NonCommercial-NoDerivs",
                      @"Commercial",
+                     @"Public Domain",
+                     @"Custom",
                      ];
+    
+    licenseDefaultMajors = @[@"",
+                             @"4",
+                             @"4",
+                             @"4",
+                             @"4",
+                             @"4",
+                             @"4",
+                             @"",
+                             @"",
+                             @"",
+                             ];
+    
+    licenseAliases = @{@"attribution": @"Attribution",
+                       @"attribution-sharealike": @"Attribution-ShareAlike",
+                       @"attribution-noderivs": @"Attribution-NoDerivs",
+                       @"attribution-noncommercial": @"Attribution-NonCommercial",
+                       @"attribution-noncommercial-sharealike": @"Attribution-NonCommercial-ShareAlike",
+                       @"attribution-noncommercial-noderivs": @"Attribution-NonCommercial-NoDerivs",
+                       @"commercial": @"Commercial",
+                       @"public domain": @"Public Domain",
+                       
+                       @"by": @"Attribution",
+                       @"by-sa": @"Attribution-ShareAlike",
+                       @"by-nd": @"Attribution-NoDerivs",
+                       @"by-nc": @"Attribution-NonCommercial",
+                       @"by-nc-nd": @"Attribution-NonCommercial-NoDerivs",
+                       @"by-nd-nc": @"Attribution-NonCommercial-NoDerivs",
+                       @"by-nc-sa": @"Attribution-NonCommercial-ShareAlike",
+                       @"by-sa-nc": @"Attribution-NonCommercial-ShareAlike",
+
+                       @"all-rights-reserved": @"Commercial",
+                       @"cc-by-nc-nd": @"Attribution-NonCommercial-NoDerivs",
+                       @"cc-by-nc-sa": @"Attribution-NonCommercial-ShareAlike",
+                       @"cc-by-nc": @"Attribution-NonCommercial",
+                       @"cc-by-nd": @"Attribution-NoDerivs", 
+                       @"cc-by-sa": @"Attribution-ShareAlike",
+                       @"cc-by": @"Attribution",
+                       @"cc-pd": @"Public Domain",
+                       };
+    
+    
+    assert(licenseUrls.count==__PDIXMPLicenseEndMarker__);
+    assert(licenseNames.count==__PDIXMPLicenseEndMarker__);
+    assert(licenseDefaultMajors.count==__PDIXMPLicenseEndMarker__);
     
     /*
      adaptions  sharealike  commercial  code
@@ -89,16 +142,6 @@ static inline void PDIXMPTemplateSetup()
                       @(PDIXMPLicenseAttributionNoDerivs),
                       @(PDIXMPLicenseAttributionShareAlike),
                       ];
-    
-#if 0
-    PDIXMPLicenseNone = 0,                              ///< license undefined (not same as public domain)
-    PDIXMPLicenseAttribution,                           ///< CC BY --- This license lets others distribute, remix, tweak, and build upon your work, even commercially, as long as they credit you for the original creation. This is the most accommodating of licenses offered. Recommended for maximum dissemination and use of licensed materials. 
-    PDIXMPLicenseAttributionShareAlike,                 ///< CC BY-SA --- This license lets others remix, tweak, and build upon your work even for commercial purposes, as long as they credit you and license their new creations under the identical terms. This license is often compared to “copyleft” free and open source software licenses. All new works based on yours will carry the same license, so any derivatives will also allow commercial use. This is the license used by Wikipedia, and is recommended for materials that would benefit from incorporating content from Wikipedia and similarly licensed projects. 
-    PDIXMPLicenseAttributionNoDerivs,                   ///< CC BY-ND --- This license allows for redistribution, commercial and non-commercial, as long as it is passed along unchanged and in whole, with credit to you. 
-    PDIXMPLicenseAttributionNonCommercial,              ///< CC BY-NC --- This license lets others remix, tweak, and build upon your work non-commercially, and although their new works must also acknowledge you and be non-commercial, they don’t have to license their derivative works on the same terms.
-    PDIXMPLicenseAttributionNonCommercialShareAlike,    ///< CC BY-NC-SA --- This license lets others remix, tweak, and build upon your work non-commercially, as long as they credit you and license their new creations under the identical terms.
-    PDIXMPLicenseAttributionNonCommercialNoDerivs,      ///< CC BY-NC-ND --- This license is the most restrictive of our six main licenses, only allowing others to download your works and share them with others as long as they credit you, but they can’t change them in any way or use them commercially.
-#endif
 }
 
 + (NSArray *)licenseNames
@@ -107,13 +150,54 @@ static inline void PDIXMPTemplateSetup()
     return licenseNames;
 }
 
-+ (id)templateForLicense:(PDIXMPLicense)license
++ (NSString *)defaultMajorVersionStringForLicense:(PDIXMPLicense)license
+{
+    return licenseDefaultMajors[license];
+}
+
+- (NSString *)resolvedLicenseURL
+{
+    return (_licenseMajorVersionString.length
+            ? [_licenseUrl stringByReplacingOccurrencesOfString:@"[m]" withString:_licenseMajorVersionString]
+            : [_licenseUrl stringByReplacingOccurrencesOfString:@"[m].0" withString:@""]);
+}
+
++ (id)templateForLicense:(PDIXMPLicense)license major:(NSString *)major
 {
     if (licenseUrls == nil) PDIXMPTemplateSetup();
     PDIXMPTemplate *template = [[PDIXMPTemplate alloc] init];
     template.license = license;
+    template.licenseMajorVersionString = major;
     template.licenseName = licenseNames[license];
     template.licenseUrl = licenseUrls[license];
+    return template;
+}
+
++ (id)templateForLicense:(PDIXMPLicense)license
+{
+    return [self templateForLicense:license major:licenseDefaultMajors[license]];
+}
+
++ (id)templateForLicenseWithName:(NSString *)licenseName URL:(NSString *)licenseURL
+{
+    if (licenseUrls == nil) PDIXMPTemplateSetup();
+    NSInteger index = [licenseNames indexOfObject:licenseName];
+    if (index == NSNotFound) {
+        // try alias
+        NSString *alias = licenseAliases[licenseName.lowercaseString];
+        if (alias) {
+            index = [licenseNames indexOfObject:alias];
+        }
+    }
+
+    PDIXMPTemplate *template;
+    if (index != NSNotFound) {
+        template = [self templateForLicense:index];
+    } else {
+        template = [self templateForLicense:PDIXMPLicenseCustom];
+        template.licenseName = licenseName;
+    }
+    if (licenseURL) template.licenseUrl = licenseURL;
     return template;
 }
 
@@ -138,10 +222,12 @@ static inline void PDIXMPTemplateSetup()
 
 + (id)templateForXMPArchive:(PDIXMPArchive *)archive
 {
-    PDIXMPLicense license = [self licenseForXMPArchive:archive];
+    NSString *mvs;
+    PDIXMPLicense license = [self licenseForXMPArchive:archive mvs:&mvs];
     if (license == PDIXMPLicenseUndefined) license = PDIXMPLicenseCommercial;
     
     PDIXMPTemplate *template = [self templateForLicense:license];
+    if (mvs) template.licenseMajorVersionString = mvs;
     
     [archive selectRoot];
     [archive selectElement:@"x:xmpmeta"];
@@ -152,7 +238,7 @@ static inline void PDIXMPTemplateSetup()
     return template;
 }
 
-+ (PDIXMPLicense)licenseForXMPArchive:(PDIXMPArchive *)archive
++ (PDIXMPLicense)licenseForXMPArchive:(PDIXMPArchive *)archive mvs:(NSString *__autoreleasing *)mvs
 {
     if (licenseUrls == nil) PDIXMPTemplateSetup();
     
@@ -166,36 +252,24 @@ static inline void PDIXMPTemplateSetup()
         //  http://creativecommons.org/licenses/LICENSE_NAME/VERSION"
         NSString *url = [archive stringForAttribute:@"rdf:resource"];
         if (url) {
-            // first we see if we have an exact match
-            NSInteger index = [licenseUrls indexOfObject:url];
-            if (index != NSNotFound) {
-                // we do
-                return (PDIXMPLicense) index;
+            // get version 
+            NSString *vcomp = [url lastPathComponent]; // /by/4.0 -> 4.0
+            NSString *nonvUrl = [url substringToIndex:url.length - vcomp.length];
+            NSArray *mmc = [vcomp componentsSeparatedByString:@"."]; // 4.0 -> [4, 0]
+            if (mmc.count > 1) {
+                if (mvs) *mvs = mmc[0];
+                url = [url substringToIndex:url.length - vcomp.length]; // /by/4.0 -> /by/
+                url = [url stringByAppendingString:@"[m].0"]; // /by/ -> /by/[m].0
             }
             
-            /*if ([url hasPrefix:@"http://creativecommons.org/licenses/"]) {
-                url = [url substringFromIndex:@"http://creativecommons.org/licenses/".length];
-            } else {
-                NSArray *comps = [url componentsSeparatedByString:@"licenses"];
-                url = nil;
-                if (comps.count == 2) {
-                    url = [comps objectAtIndex:1];
-                    if ([url hasPrefix:@"/"]) url = [url substringFromIndex:1];
-                }
+            // see if we have an exact match
+            
+            NSInteger index = [licenseUrls indexOfObject:nonvUrl];
+            if (index != NSNotFound) {
+                // we do; use default MVS unless one was defined above
+                if (mvs && !*mvs) *mvs = [self defaultMajorVersionStringForLicense:index];
+                return (PDIXMPLicense) index;
             }
-            if (url) {
-                // we now have a cropped string in the format
-                //  LICENSE_NAME/VERSION
-                NSMutableArray *comps = [[url componentsSeparatedByString:@"/"] mutableCopy];
-                NSString *license, *version;
-
-                version = nil;
-                if (comps.count > 1) {
-                    licenseUrls = [comps lastObject];
-                    [comps removeLastObject];
-                }
-                license = [comps componentsJoinedByString:@"/"];
-            }*/
         }
         [archive selectParent];
     } 
@@ -203,9 +277,10 @@ static inline void PDIXMPTemplateSetup()
     if ([archive selectElement:@"rdf:Description"]) {
         // look for a dc:rights entry
         if ([archive selectElement:@"dc:rights"] && [archive selectElement:@"rdf:Alt"] && [archive selectElement:@"rdf:li"]) {
-            //               <rdf:li xml:lang="x-default">Copyright © 2014, Corp. All rights reserved.</rdf:li>
+            // <rdf:li xml:lang="x-default">Copyright © 2014, Corp. All rights reserved.</rdf:li>
             NSString *rights = [archive elementContent];
             if ([rights rangeOfString:@"all rights reserved" options:NSCaseInsensitiveSearch].location != NSNotFound) {
+                if (mvs) *mvs = nil;
                 return PDIXMPLicenseCommercial;
             }
         }
@@ -221,20 +296,35 @@ static inline void PDIXMPTemplateSetup()
         NSString *string = [xmpString substringFromIndex:ccRange.location + ccRange.length];
         for (NSInteger i = 0; i < licenseNames.count; i++) {
             if ([string hasPrefix:licenseNames[i]]) {
+                if (mvs) {
+                    // use default version for license
+                    *mvs = [self defaultMajorVersionStringForLicense:i];
+                    
+                    // see if we have a version as well
+                    NSInteger offset = [licenseNames[i] length] + 1;
+                    if (offset + 1 < string.length) {
+                        NSString *vstr = [string substringWithRange:(NSRange){offset, offset + 10 > string.length ? string.length - offset : 10}];
+                        NSArray *mmc = [vstr componentsSeparatedByString:@"."];
+                        if (mmc.count > 1) {
+                            *mvs = mmc[0];
+                        }
+                    }
+                }
                 return (PDIXMPLicense) i;
             }
         }
     }
     
+    if (mvs) *mvs = nil;
     return PDIXMPLicenseUndefined;
 }
 
-+ (NSString *)defaultRightsForLicense:(PDIXMPLicense)license withAuthor:(NSString *)author
++ (NSString *)defaultRightsForLicense:(PDIXMPLicense)license major:(NSString *)major withAuthor:(NSString *)author
 {
     NSInteger year = [[[NSCalendar currentCalendar] components:NSCalendarUnitYear fromDate:[NSDate date]] year];
     return (license == PDIXMPLicenseCommercial
             ? [NSString stringWithFormat:@"Copyright %ld, %@. All rights reserved.", (long)year, author]
-            : [NSString stringWithFormat:@"Copyright %ld, %@. Licensed to the public under Creative Commons %@", (long)year, author, licenseNames[license]]);
+            : [NSString stringWithFormat:@"Copyright %ld, %@. Licensed to the public under Creative Commons %@ %@", (long)year, author, licenseNames[license], major.length ? [NSString stringWithFormat:@"%@.0", major] : @""]);
 }
 
 - (NSString *)declarationWithAuthorName:(NSString *)authorName extra:(NSDictionary *)extra
@@ -250,7 +340,7 @@ static inline void PDIXMPTemplateSetup()
     
     if (_license == PDIXMPLicenseCommercial && ! extra[@"dc:rights"]) {
         NSMutableDictionary *d = extra ? extra.mutableCopy : [NSMutableDictionary dictionary];
-        d[@"dc:rights"] = [PDIXMPTemplate defaultRightsForLicense:_license withAuthor:authorName];
+        d[@"dc:rights"] = [PDIXMPTemplate defaultRightsForLicense:_license major:_licenseMajorVersionString withAuthor:authorName];
         extra = d;
     }
     
@@ -317,7 +407,7 @@ static inline void PDIXMPTemplateSetup()
         [result appendString:@"</rdf:Description>\n"];
     }
 
-    if (_license != PDIXMPLicenseCommercial) {
+    if (ccLicense[_license]) {
         [result appendString:@"<rdf:Description rdf:about=''\
                          xmlns:xapRights='http://ns.adobe.com/xap/1.0/rights/'>\
             <xapRights:Marked>True</xapRights:Marked> \
@@ -328,7 +418,7 @@ static inline void PDIXMPTemplateSetup()
             <dc:rights>\
                 <rdf:Alt>\
                     <rdf:li xml:lang='x-default' >"];
-        [result appendString:[PDIXMPTemplate defaultRightsForLicense:_license withAuthor:authorName]];
+        [result appendString:[PDIXMPTemplate defaultRightsForLicense:_license major:_licenseMajorVersionString withAuthor:authorName]];
         [result appendString:@".</rdf:li>\
                 </rdf:Alt>\
             </dc:rights>\
@@ -337,7 +427,7 @@ static inline void PDIXMPTemplateSetup()
         <rdf:Description rdf:about=''\
                          xmlns:cc='http://creativecommons.org/ns#'>\
             <cc:license rdf:resource='"];
-        [result appendString:_licenseUrl];
+        [result appendString:[self resolvedLicenseURL]];
         [result appendString:@"'/>\
         </rdf:Description>\
         \
@@ -359,9 +449,7 @@ static inline void PDIXMPTemplateSetup()
             id rdfRoot = [archive cursorReference];
             assert(rdfRoot);
     
-            while ([archive selectElement:@"rdf:Description"]) {
-                [archive deleteElement]; // delete includes -selectParent
-            }
+            [[archive findElements:@"rdf:Description"] makeObjectsPerformSelector:@selector(removeFromParent)];
         }
     }
 }
@@ -402,7 +490,7 @@ static inline void PDIXMPTemplateSetup()
     d[@"xmp:MetadataDate"] = datetimeString;
 
     if (! extra[@"xmp:ModifyDate"])     d[@"xmp:ModifyDate"] = datetimeString;
-    if (! extra[@"dc:rights"])          d[@"dc:rights"] = _rights ? _rights : [PDIXMPTemplate defaultRightsForLicense:_license withAuthor:authorName];
+    if (! extra[@"dc:rights"])          d[@"dc:rights"] = _rights ? _rights : [PDIXMPTemplate defaultRightsForLicense:_license major:_licenseMajorVersionString withAuthor:authorName];
     if (! extra[@"xmp:CreatorTool"])    d[@"xmp:CreatorTool"] = [NSString stringWithFormat:@"Pajdeg Ob-C (Pajdeg v. " PAJDEG_VERSION ")"];
 
     extra = d;
@@ -413,8 +501,6 @@ static inline void PDIXMPTemplateSetup()
     BOOL hasDC = NO; // purl.org/dc/elements/1.1/
     BOOL hasPDF = NO; // ns.adobe.com/pdf/1.3/
     BOOL hasXMP = NO; 
-    //        BOOL hasXMPMM = NO;
-    //        BOOL hasXMPRights = NO;
     BOOL hasPDFX = NO; // ns.adobe.com/pdfx/1.3/
     /*
      xmlns:dc="http://purl.org/dc/elements/1.1/"
@@ -502,10 +588,10 @@ static inline void PDIXMPTemplateSetup()
 
     assert([archive cursorReference] == rdfRoot);
     
-    if (_license != PDIXMPLicenseCommercial) {
+    if (ccLicense[_license]) {
         [archive createElement:@"rdf:Description" withAttributes:@{@"rdf:about":       @"",
                                                                    @"xmlns:cc":        @"http://creativecommons.org/ns#"}]; {
-            [archive createElement:@"cc:license" withAttributes:@{@"rdf:resource":     _licenseUrl}];
+            [archive createElement:@"cc:license" withAttributes:@{@"rdf:resource":     [self resolvedLicenseURL]}];
             [archive selectParent];
         } [archive selectParent];
     }
@@ -517,6 +603,7 @@ static inline void PDIXMPTemplateSetup()
     _license = newLicense;
     _licenseName = licenseNames[newLicense];
     _licenseUrl = licenseUrls[newLicense];
+    _licenseMajorVersionString = licenseDefaultMajors[newLicense];
 }
 
 @end
