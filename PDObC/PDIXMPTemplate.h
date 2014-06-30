@@ -80,6 +80,15 @@ typedef enum {
 + (NSString *)defaultRightsForLicense:(PDIXMPLicense)license major:(NSString *)major withAuthor:(NSString *)author;
 
 /**
+ *  Obtain the default rights string for the template instance, for the given author.
+ *
+ *  @param author The author name
+ *
+ *  @return Rights string that will be used if no rights are provided
+ */
+- (NSString *)defaultRightsWithAuthor:(NSString *)author;
+
+/**
  Create a Creative Commons license template based on restrictions. 
  
  Note that allowsAdaptions and ifSharedAlike are in reality a 3-value switch Yes, No, and Yes, if ShareAlike. This is interpreted internally as 

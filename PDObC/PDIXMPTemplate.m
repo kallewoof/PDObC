@@ -114,7 +114,7 @@ static inline void PDIXMPTemplateSetup()
                        @"cc-by-nd": @"Attribution-NoDerivs", 
                        @"cc-by-sa": @"Attribution-ShareAlike",
                        @"cc-by": @"Attribution",
-                       @"cc-pd": @"Public Domain",
+                       @"cc-pd": @"CC0 (Public Domain)",
                        };
     
     
@@ -326,6 +326,11 @@ static inline void PDIXMPTemplateSetup()
     return (license == PDIXMPLicenseCommercial
             ? [NSString stringWithFormat:@"Copyright %ld%@. All rights reserved.", (long)year, author.length > 0 ? [NSString stringWithFormat:@", %@", author] : @""]
             : [NSString stringWithFormat:@"Copyright %ld%@. Licensed to the public under Creative Commons %@ %@", (long)year, author.length > 0 ? [NSString stringWithFormat:@", %@", author] : @"", licenseNames[license], major.length ? [NSString stringWithFormat:@"%@.0", major] : @""]);
+}
+
+- (NSString *)defaultRightsWithAuthor:(NSString *)author
+{
+    return [PDIXMPTemplate defaultRightsForLicense:_license major:_licenseMajorVersionString withAuthor:author];
 }
 
 - (NSString *)declarationWithAuthorName:(NSString *)authorName extra:(NSDictionary *)extra
