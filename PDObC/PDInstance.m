@@ -407,8 +407,8 @@
         PDArrayRef a = idValue;
         {
             NSInteger count = PDArrayGetCount(a);
-            _documentID = count > 0 ? [NSString objectWithPDString:PDArrayGetElement(a, 0)] : nil;
-            _documentInstanceID = count > 1 ? [NSString objectWithPDString:PDArrayGetElement(a, 1)] : nil;
+            _documentID = count > 0 ? [NSString stringWithUTF8String:PDStringHexValue(PDArrayGetElement(a, 0), false)] : nil;
+            _documentInstanceID = count > 1 ? [NSString stringWithUTF8String:PDStringHexValue(PDArrayGetElement(a, 1), false)] : nil;
         }
 //        pd_array_destroy(a);
     }
