@@ -192,7 +192,7 @@ static inline void PDIXMPTemplateSetup()
 
     PDIXMPTemplate *template;
     if (index != NSNotFound) {
-        template = [self templateForLicense:index];
+        template = [self templateForLicense:(PDIXMPLicense)index];
     } else {
         template = [self templateForLicense:PDIXMPLicenseCustom];
         template.licenseName = licenseName;
@@ -267,12 +267,12 @@ static inline void PDIXMPTemplateSetup()
             NSInteger index = [licenseUrls indexOfObject:nonvUrl];
             if (index != NSNotFound) {
                 // we do; use default MVS unless one was defined above
-                if (mvs && !*mvs) *mvs = [self defaultMajorVersionStringForLicense:index];
+                if (mvs && !*mvs) *mvs = [self defaultMajorVersionStringForLicense:(PDIXMPLicense)index];
                 return (PDIXMPLicense) index;
             }
         }
         [archive selectParent];
-    } 
+    }
     
     if ([archive selectElement:@"rdf:Description"]) {
         // look for a dc:rights entry
@@ -298,7 +298,7 @@ static inline void PDIXMPTemplateSetup()
             if ([string hasPrefix:licenseNames[i]]) {
                 if (mvs) {
                     // use default version for license
-                    *mvs = [self defaultMajorVersionStringForLicense:i];
+                    *mvs = [self defaultMajorVersionStringForLicense:(PDIXMPLicense)i];
                     
                     // see if we have a version as well
                     NSInteger offset = [licenseNames[i] length] + 1;
@@ -322,9 +322,10 @@ static inline void PDIXMPTemplateSetup()
 + (NSString *)defaultRightsForLicense:(PDIXMPLicense)license major:(NSString *)major withAuthor:(NSString *)author
 {
     NSInteger year = [[[NSCalendar currentCalendar] components:NSCalendarUnitYear fromDate:[NSDate date]] year];
+    if (major == nil || major.length == 0) major = licenseDefaultMajors[license];
     return (license == PDIXMPLicenseCommercial
-            ? [NSString stringWithFormat:@"Copyright %ld, %@. All rights reserved.", (long)year, author]
-            : [NSString stringWithFormat:@"Copyright %ld, %@. Licensed to the public under Creative Commons %@ %@", (long)year, author, licenseNames[license], major.length ? [NSString stringWithFormat:@"%@.0", major] : @""]);
+            ? [NSString stringWithFormat:@"Copyright %ld%@. All rights reserved.", (long)year, author.length > 0 ? [NSString stringWithFormat:@", %@", author] : @""]
+            : [NSString stringWithFormat:@"Copyright %ld%@. Licensed to the public under Creative Commons %@ %@", (long)year, author.length > 0 ? [NSString stringWithFormat:@", %@", author] : @"", licenseNames[license], major.length ? [NSString stringWithFormat:@"%@.0", major] : @""]);
 }
 
 - (NSString *)declarationWithAuthorName:(NSString *)authorName extra:(NSDictionary *)extra
