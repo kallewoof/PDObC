@@ -94,12 +94,12 @@
         _pipe = PDPipeCreateWithFilePaths([sourcePDFPath cStringUsingEncoding:NSUTF8StringEncoding], 
                                           [destPDFPath cStringUsingEncoding:NSUTF8StringEncoding]);
         if (NULL == _pipe) {
-            PDWarn("PDPipeCreateWithFilePaths() failure");
+            PDError("PDPipeCreateWithFilePaths() failure");
             return nil;
         }
         
         if (! PDPipePrepare(_pipe)) {
-            PDWarn("PDPipePrepare() failure");
+            PDError("PDPipePrepare() failure");
             return nil;
         }
         
@@ -107,7 +107,7 @@
         
         // to avoid issues later on, we also set up the catalog here
         if ([self numberOfPages] == 0) {
-            PDWarn("numberOfPages == 0 (this is considered a failure)");
+            PDError("numberOfPages == 0 (this is considered a failure)");
             return nil;
         }
         

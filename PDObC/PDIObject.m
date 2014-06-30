@@ -492,7 +492,7 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
 #ifdef PDI_DISALLOW_KEYPATHS
 - (void)setValue:(id)value forKeyPath:(NSString *)keyPath
 {
-    NSLog(@"Notice: setValue:forKeyPath: reroutes to setValue:forKey: -- if you require the key path functionality, remove the PDI_DISALLOW_KEYPATHS #define from PDIObject.h (chances are high that you only meant to write setValue:forKey:)");
+    PDError("Notice: setValue:forKeyPath: reroutes to setValue:forKey: -- if you require the key path functionality, remove the PDI_DISALLOW_KEYPATHS #define from PDIObject.h (chances are high that you only meant to write setValue:forKey:)");
     [self setValue:value forKey:keyPath];
 }
 #endif
