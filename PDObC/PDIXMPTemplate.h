@@ -26,6 +26,7 @@ extern NSString * const kPDIXMPLicenseCCBYNC;
 extern NSString * const kPDIXMPLicenseCCBYNCSA;
 extern NSString * const kPDIXMPLicenseCCBYNCND;
 extern NSString * const kPDIXMPLicenseCC0;
+extern NSString * const kPDIXMPLicensePD;
 extern NSString * const kPDIXMPLicenseCommercial;
 extern NSString * const kPDIXMPLicenseCustom;
 
@@ -38,6 +39,7 @@ typedef enum {
     PDIXMPLicenseAttributionNonCommercialShareAlike,    ///< CC BY-NC-SA --- This license lets others remix, tweak, and build upon your work non-commercially, as long as they credit you and license their new creations under the identical terms.
     PDIXMPLicenseAttributionNonCommercialNoDerivs,      ///< CC BY-NC-ND --- This license is the most restrictive of our six main licenses, only allowing others to download your works and share them with others as long as they credit you, but they can’t change them in any way or use them commercially.
     PDIXMPLicenseCommercial,                            ///< Commercial license
+    PDIXMPLicenseCC0,                                   ///< CC0 (Public Domain style license)
     PDIXMPLicensePublicDomain,                          ///< Public Domain
     PDIXMPLicenseCustom,                                ///< A custom (unknown) license
     
@@ -83,6 +85,15 @@ typedef enum {
  *  @return A template using the given license, if found, or the PDIXMPLicenseCustom, if not found
  */
 + (id)templateForLicenseWithName:(NSString *)licenseName URL:(NSString *)licenseURL;
+
+/**
+ *  Returns YES if license is "custom", i.e. where the URL, rights string, etc. are not predefined.
+ *  This applies (currently) to undefined, public domain, commercial, and custom. I.e. any license not a CC
+ *  license is considered a freeform license.
+ *
+ *  @return YES if license has no predefined values for URL and/or rights string.
+ */
++ (BOOL)freeformLicense:(PDIXMPLicense)license;
 
 /**
  *  Obtain the default rights string for the given license, if any.

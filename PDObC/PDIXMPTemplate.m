@@ -29,7 +29,7 @@ static NSArray *licenseNames = nil;
 static NSDictionary *licenseAliases = nil;
 static NSArray *codedLicenses = nil;
 static NSArray *licenseDefaultMajors = nil;
-static BOOL ccLicense[__PDIXMPLicenseEndMarker__] = {NO, YES, YES, YES, YES, YES, YES, NO, NO, NO};
+static BOOL ccLicense[__PDIXMPLicenseEndMarker__] = {NO, YES, YES, YES, YES, YES, YES, NO, YES, NO, NO};
 
 @interface PDIXMPTemplate ()
 
@@ -57,7 +57,8 @@ NSString * const kPDIXMPLicenseCCBYND = @"Attribution-NoDerivs";
 NSString * const kPDIXMPLicenseCCBYNC = @"Attribution-NonCommercial";
 NSString * const kPDIXMPLicenseCCBYNCSA = @"Attribution-NonCommercial-ShareAlike";
 NSString * const kPDIXMPLicenseCCBYNCND = @"Attribution-NonCommercial-NoDerivs";
-NSString * const kPDIXMPLicenseCC0 = @"CC0 (Public Domain)";
+NSString * const kPDIXMPLicenseCC0 = @"CC0";
+NSString * const kPDIXMPLicensePD = @"Public Domain";
 NSString * const kPDIXMPLicenseCommercial = @"Commercial";
 NSString * const kPDIXMPLicenseCustom = @"Custom";
 
@@ -71,6 +72,7 @@ static inline void PDIXMPTemplateSetup()
                     @"http://creativecommons.org/licenses/by-nc-sa/[m].0",
                     @"http://creativecommons.org/licenses/by-nc-nd/[m].0",
                     @"",
+                    @"http://creativecommons.org/publicdomain/zero/[m].0/legalcode",
                     @"",
                     @"",
                     ];
@@ -84,6 +86,7 @@ static inline void PDIXMPTemplateSetup()
                      kPDIXMPLicenseCCBYNCND,
                      kPDIXMPLicenseCommercial,
                      kPDIXMPLicenseCC0,
+                     kPDIXMPLicensePD,
                      kPDIXMPLicenseCustom,
                      ];
     
@@ -95,6 +98,7 @@ static inline void PDIXMPTemplateSetup()
                              @"4",
                              @"4",
                              @"",
+                             @"1",
                              @"",
                              @"",
                              ];
@@ -106,7 +110,8 @@ static inline void PDIXMPTemplateSetup()
                        @"attribution-noncommercial-sharealike": kPDIXMPLicenseCCBYNCSA,
                        @"attribution-noncommercial-noderivs": kPDIXMPLicenseCCBYNCND,
                        @"commercial": kPDIXMPLicenseCommercial,
-                       @"public domain": kPDIXMPLicenseCC0,
+                       @"public domain": kPDIXMPLicensePD,
+                       @"pd": kPDIXMPLicensePD,
                        
                        @"by": kPDIXMPLicenseCCBY,
                        @"by-sa": kPDIXMPLicenseCCBYSA,
@@ -246,6 +251,11 @@ static inline void PDIXMPTemplateSetup()
     if (rights) template.rights = rights;
     
     return template;
+}
+
++ (BOOL)freeformLicense:(PDIXMPLicense)license
+{
+    return !ccLicense[license];
 }
 
 + (PDIXMPLicense)licenseForXMPArchive:(PDIXMPArchive *)archive mvs:(NSString *__autoreleasing *)mvs
@@ -592,14 +602,6 @@ static inline void PDIXMPTemplateSetup()
             } [archive selectParent];
         }
         
-//        [archive createElement:@"dc:rights"]; {
-//            [archive createElement:@"rdf:Alt"]; {
-//                [archive createElement:@"rdf:li" withAttributes:@{@"xml:lang":     @"x-default"}]; {
-//                    [archive setElementContent:[NSString stringWithFormat:@"Copyright %ld, %@. Licensed to the public under Creative Commons %@.", (long)year, authorName, _licenseName]];
-//                } [archive selectParent];
-//            } [archive selectParent];
-//        } [archive selectParent];
-
     } [archive selectParent];
 
     assert([archive cursorReference] == rdfRoot);
