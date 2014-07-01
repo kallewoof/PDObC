@@ -51,6 +51,16 @@ static BOOL ccLicense[__PDIXMPLicenseEndMarker__] = {NO, YES, YES, YES, YES, YES
  CC0 = Owned by me, given as public domain
  */
 
+NSString * const kPDIXMPLicenseCCBY = @"Attribution";
+NSString * const kPDIXMPLicenseCCBYSA = @"Attribution-ShareAlike";
+NSString * const kPDIXMPLicenseCCBYND = @"Attribution-NoDerivs";
+NSString * const kPDIXMPLicenseCCBYNC = @"Attribution-NonCommercial";
+NSString * const kPDIXMPLicenseCCBYNCSA = @"Attribution-NonCommercial-ShareAlike";
+NSString * const kPDIXMPLicenseCCBYNCND = @"Attribution-NonCommercial-NoDerivs";
+NSString * const kPDIXMPLicenseCC0 = @"CC0 (Public Domain)";
+NSString * const kPDIXMPLicenseCommercial = @"Commercial";
+NSString * const kPDIXMPLicenseCustom = @"Custom";
+
 static inline void PDIXMPTemplateSetup()
 {
     licenseUrls = @[@"",
@@ -66,15 +76,15 @@ static inline void PDIXMPTemplateSetup()
                     ];
     
     licenseNames = @[@"Unspecified",
-                     @"Attribution", // "Attribution 4.0"
-                     @"Attribution-ShareAlike",
-                     @"Attribution-NoDerivs",
-                     @"Attribution-NonCommercial",
-                     @"Attribution-NonCommercial-ShareAlike",
-                     @"Attribution-NonCommercial-NoDerivs",
-                     @"Commercial",
-                     @"Public Domain",
-                     @"Custom",
+                     kPDIXMPLicenseCCBY,
+                     kPDIXMPLicenseCCBYSA,
+                     kPDIXMPLicenseCCBYND,
+                     kPDIXMPLicenseCCBYNC,
+                     kPDIXMPLicenseCCBYNCSA,
+                     kPDIXMPLicenseCCBYNCND,
+                     kPDIXMPLicenseCommercial,
+                     kPDIXMPLicenseCC0,
+                     kPDIXMPLicenseCustom,
                      ];
     
     licenseDefaultMajors = @[@"",
@@ -89,32 +99,32 @@ static inline void PDIXMPTemplateSetup()
                              @"",
                              ];
     
-    licenseAliases = @{@"attribution": @"Attribution",
-                       @"attribution-sharealike": @"Attribution-ShareAlike",
-                       @"attribution-noderivs": @"Attribution-NoDerivs",
-                       @"attribution-noncommercial": @"Attribution-NonCommercial",
-                       @"attribution-noncommercial-sharealike": @"Attribution-NonCommercial-ShareAlike",
-                       @"attribution-noncommercial-noderivs": @"Attribution-NonCommercial-NoDerivs",
-                       @"commercial": @"Commercial",
-                       @"public domain": @"Public Domain",
+    licenseAliases = @{@"attribution": kPDIXMPLicenseCCBY,
+                       @"attribution-sharealike": kPDIXMPLicenseCCBYSA,
+                       @"attribution-noderivs": kPDIXMPLicenseCCBYND,
+                       @"attribution-noncommercial": kPDIXMPLicenseCCBYNC,
+                       @"attribution-noncommercial-sharealike": kPDIXMPLicenseCCBYNCSA,
+                       @"attribution-noncommercial-noderivs": kPDIXMPLicenseCCBYNCND,
+                       @"commercial": kPDIXMPLicenseCommercial,
+                       @"public domain": kPDIXMPLicenseCC0,
                        
-                       @"by": @"Attribution",
-                       @"by-sa": @"Attribution-ShareAlike",
-                       @"by-nd": @"Attribution-NoDerivs",
-                       @"by-nc": @"Attribution-NonCommercial",
-                       @"by-nc-nd": @"Attribution-NonCommercial-NoDerivs",
-                       @"by-nd-nc": @"Attribution-NonCommercial-NoDerivs",
-                       @"by-nc-sa": @"Attribution-NonCommercial-ShareAlike",
-                       @"by-sa-nc": @"Attribution-NonCommercial-ShareAlike",
+                       @"by": kPDIXMPLicenseCCBY,
+                       @"by-sa": kPDIXMPLicenseCCBYSA,
+                       @"by-nd": kPDIXMPLicenseCCBYND,
+                       @"by-nc": kPDIXMPLicenseCCBYNC,
+                       @"by-nc-nd": kPDIXMPLicenseCCBYNCND,
+                       @"by-nd-nc": kPDIXMPLicenseCCBYNCND,
+                       @"by-nc-sa": kPDIXMPLicenseCCBYNCSA,
+                       @"by-sa-nc": kPDIXMPLicenseCCBYNCSA,
 
-                       @"all-rights-reserved": @"Commercial",
-                       @"cc-by-nc-nd": @"Attribution-NonCommercial-NoDerivs",
-                       @"cc-by-nc-sa": @"Attribution-NonCommercial-ShareAlike",
-                       @"cc-by-nc": @"Attribution-NonCommercial",
-                       @"cc-by-nd": @"Attribution-NoDerivs", 
-                       @"cc-by-sa": @"Attribution-ShareAlike",
-                       @"cc-by": @"Attribution",
-                       @"cc-pd": @"CC0 (Public Domain)",
+                       @"all-rights-reserved": kPDIXMPLicenseCommercial,
+                       @"cc-by-nc-nd": kPDIXMPLicenseCCBYNCND,
+                       @"cc-by-nc-sa": kPDIXMPLicenseCCBYNCSA,
+                       @"cc-by-nc": kPDIXMPLicenseCCBYNC,
+                       @"cc-by-nd": kPDIXMPLicenseCCBYND, 
+                       @"cc-by-sa": kPDIXMPLicenseCCBYSA,
+                       @"cc-by": kPDIXMPLicenseCCBY,
+                       @"cc-pd": kPDIXMPLicenseCC0,
                        };
     
     
@@ -323,9 +333,9 @@ static inline void PDIXMPTemplateSetup()
 {
     NSInteger year = [[[NSCalendar currentCalendar] components:NSCalendarUnitYear fromDate:[NSDate date]] year];
     if (major == nil || major.length == 0) major = licenseDefaultMajors[license];
-    return (license == PDIXMPLicenseCommercial
-            ? [NSString stringWithFormat:@"Copyright %ld%@. All rights reserved.", (long)year, author.length > 0 ? [NSString stringWithFormat:@", %@", author] : @""]
-            : [NSString stringWithFormat:@"Copyright %ld%@. Licensed to the public under Creative Commons %@ %@", (long)year, author.length > 0 ? [NSString stringWithFormat:@", %@", author] : @"", licenseNames[license], major.length ? [NSString stringWithFormat:@"%@.0", major] : @""]);
+    return (ccLicense[license] 
+            ? [NSString stringWithFormat:@"Copyright %ld%@. Licensed to the public under Creative Commons %@ %@", (long)year, author.length > 0 ? [NSString stringWithFormat:@", %@", author] : @"", licenseNames[license], major.length ? [NSString stringWithFormat:@"%@.0", major] : @""]
+            : [NSString stringWithFormat:@"Copyright %ld%@. All rights reserved.", (long)year, author.length > 0 ? [NSString stringWithFormat:@", %@", author] : @""]);
 }
 
 - (NSString *)defaultRightsWithAuthor:(NSString *)author

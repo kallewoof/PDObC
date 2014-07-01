@@ -19,6 +19,16 @@
 
 #import <Foundation/Foundation.h>
 
+extern NSString * const kPDIXMPLicenseCCBY;
+extern NSString * const kPDIXMPLicenseCCBYSA;
+extern NSString * const kPDIXMPLicenseCCBYND;
+extern NSString * const kPDIXMPLicenseCCBYNC;
+extern NSString * const kPDIXMPLicenseCCBYNCSA;
+extern NSString * const kPDIXMPLicenseCCBYNCND;
+extern NSString * const kPDIXMPLicenseCC0;
+extern NSString * const kPDIXMPLicenseCommercial;
+extern NSString * const kPDIXMPLicenseCustom;
+
 typedef enum {
     PDIXMPLicenseUndefined = 0,                         ///< license undefined (not same as public domain)
     PDIXMPLicenseAttribution,                           ///< CC BY --- This license lets others distribute, remix, tweak, and build upon your work, even commercially, as long as they credit you for the original creation. This is the most accommodating of licenses offered. Recommended for maximum dissemination and use of licensed materials. 
