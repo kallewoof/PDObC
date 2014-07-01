@@ -75,7 +75,7 @@ typedef enum {
 + (id)templateForLicenseWithName:(NSString *)licenseName URL:(NSString *)licenseURL;
 
 /**
- Obtain the default rights string for the given license, if any.
+ *  Obtain the default rights string for the given license, if any.
  */
 + (NSString *)defaultRightsForLicense:(PDIXMPLicense)license major:(NSString *)major withAuthor:(NSString *)author;
 
@@ -89,21 +89,21 @@ typedef enum {
 - (NSString *)defaultRightsWithAuthor:(NSString *)author;
 
 /**
- Create a Creative Commons license template based on restrictions. 
- 
- Note that allowsAdaptions and ifSharedAlike are in reality a 3-value switch Yes, No, and Yes, if ShareAlike. This is interpreted internally as 
-    "allows adaptions" if and only if allowsAdaptions is YES and ifSharedAlike is NO, 
-    "allows adaptions if share alike" if and only if allowsAdaptions is YES and ifSharedAlike is YES.
- That is, if allowsAdaptions is NO, ifSharedAlike is ignored and no adaptions are allowed.
- 
- @param allowsAdaptions Whether users are allowed to adapt the licensed work and make derivatives of it.
- @param ifSharedAlike (only applies if allowsAdaptions is YES) If users who make derivatives must license their new creations under the identical terms.
- @param allowsCommercialUse Whether commercial use of the work is allowed, i.e. if people can make money off of it.
+ *  Create a Creative Commons license template based on restrictions. 
+ *  
+ *  Note that allowsAdaptions and ifSharedAlike are in reality a 3-value switch Yes, No, and Yes, if ShareAlike. This is interpreted internally as 
+ *     "allows adaptions" if and only if allowsAdaptions is YES and ifSharedAlike is NO, 
+ *     "allows adaptions if share alike" if and only if allowsAdaptions is YES and ifSharedAlike is YES.
+ *  That is, if allowsAdaptions is NO, ifSharedAlike is ignored and no adaptions are allowed.
+ *  
+ *  @param allowsAdaptions     Whether users are allowed to adapt the licensed work and make derivatives of it.
+ *  @param ifSharedAlike       (only applies if allowsAdaptions is YES) If users who make derivatives must license their new creations under the identical terms.
+ *  @param allowsCommercialUse Whether commercial use of the work is allowed, i.e. if people can make money off of it.
  */
 + (id)templateWhichAllowsAdaptions:(BOOL)allowsAdaptions ifSharedAlike:(BOOL)ifSharedAlike allowsCommercialUse:(BOOL)allowsCommercialUse;
 
 /**
- XMP declaration with given author name, used in copyright sentence, and an optional dictionary of key/values where each key/value pair translates into
+ *  XMP declaration with given author name, used in copyright sentence, and an optional dictionary of key/values where each key/value pair translates into
  <KEY>
     <rdf:Alt>
         <rdf:li xml:lang="x-default">VALUE</rdf:li>
@@ -121,23 +121,23 @@ typedef enum {
     -if VALUE is an array-
     </rdf:Bag>
  </KEY>
- if the key begins with "dc:"; otherwise the pair is stored as a regular value in which case non-strings are -description'ed.
+ *  if the key begins with "dc:"; otherwise the pair is stored as a regular value in which case non-strings are -description'ed.
  */
 - (NSString *)declarationWithAuthorName:(NSString *)authorName extra:(NSDictionary *)extra;
 
 /**
- Apply the template to the given PDIXMPArchive instance, updating or inserting rdf:Description entries as appropriate.
- 
- @param archive The XMP archive into which license related content should be inserted.
+ *  Apply the template to the given PDIXMPArchive instance, updating or inserting rdf:Description entries as appropriate.
+ *  
+ *  @param archive The XMP archive into which license related content should be inserted.
  */
 - (void)applyToArchive:(PDIXMPArchive *)archive withAuthorName:(NSString *)authorName extra:(NSDictionary *)extra;
 
 /**
- Remove licensing information from the given archive.
- 
- This method is called by -applyToArchive:withAuthorName: if the license is PDIXMPLicenseUndefined.
-
- @param archive The XMP archive from which all license related content should be removed.
+ *  Remove licensing information from the given archive.
+ *  
+ *  This method is called by -applyToArchive:withAuthorName: if the license is PDIXMPLicenseUndefined.
+ *  
+ *  @param archive The XMP archive from which all license related content should be removed.
  */
 - (void)removeFromArchive:(PDIXMPArchive *)archive;
 
@@ -159,19 +159,34 @@ typedef enum {
 @property (nonatomic, readonly) NSString *licenseMajorVersionString;
 
 /**
- License name.
+ *  License name.
  */
 @property (nonatomic, readonly, strong) NSString *licenseName;
 
 /**
- License URL.
+ *  License URL (potentially templated to include version string).
  */
 @property (nonatomic, readonly, strong) NSString *licenseUrl;
 
 /**
- Rights string, e.g. "Copyright © 2014, Company. All rights reserved."
- 
- A PDF with a "rights" string containing the sentence "all rights reserved" has the license PDIXMPLicenseCommercial.
+ *  License URL, resolved with version.
+ */
+@property (nonatomic, readonly, strong) NSString *resolvedLicenseURL;
+
+/**
+ *  Specify a license URL to use for this license. The URL will replace the default, if any.
+ *  The string may optionally contain the sequence "[m]". This will be replaced with the value of licenseMajorVersionString. E.g.
+ *  the licenseUrl "http://my-licenses.org/[m].0/" with the licenseMajorVersionString "1" will result in "http://my-licenses.org/1.0/"
+ *  A value of nil or @"" will reset to the default license URL, if any.
+ *
+ *  @param licenseUrl New URL to use for the license.
+ */
+- (void)specifyLicenseUrl:(NSString *)licenseUrl;
+
+/**
+ *  Rights string, e.g. "Copyright © 2014, Company. All rights reserved."
+ *  
+ *  A PDF with a "rights" string containing the sentence "all rights reserved" has the license PDIXMPLicenseCommercial.
  */
 @property (nonatomic, strong) NSString *rights;
 
@@ -190,12 +205,12 @@ typedef enum {
 + (PDIXMPLicense)licenseForXMPArchive:(PDIXMPArchive *)XMPArchive mvs:(NSString *__autoreleasing *)mvs;
 
 /**
- Generate a template for the given archive.
- 
- @param XMPArchive The archive for an existing PDF whose XMP data should be used to determine the PDF's license.
- @return PDIXMPTemplate which inherits the license used by the given XMP archive, or nil if the license could not be determined or is not supported.
+ *  Generate a template for the given archive.
+ *  
+ *  @param XMPArchive The archive for an existing PDF whose XMP data should be used to determine the PDF's license.
+ *  
+ *  @return PDIXMPTemplate which inherits the license used by the given XMP archive, or nil if the license could not be determined or is not supported.
  */
 + (id)templateForXMPArchive:(PDIXMPArchive *)XMPArchive;
-
 
 @end

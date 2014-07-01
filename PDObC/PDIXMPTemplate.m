@@ -612,4 +612,9 @@ static inline void PDIXMPTemplateSetup()
     _licenseMajorVersionString = licenseDefaultMajors[newLicense];
 }
 
+- (void)specifyLicenseUrl:(NSString *)licenseUrl
+{
+    _licenseUrl = licenseUrl.length > 0 ? licenseUrl : licenseUrls[_license];
+}
+
 @end
