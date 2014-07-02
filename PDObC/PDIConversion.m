@@ -108,7 +108,12 @@
 
 + (id<PDIEntity>)string:(void *)pdob depth:(NSInteger)depth
 {
-    return [NSString objectWithPDString:pdob];
+    PDStringRef str = pdob;
+    if (PDStringIsEncrypted(str)) {
+        // we dont want to store encrypted strings as NSString objects; and besides, the encrypted flag will not be preserved so we can't, really
+        str = PDAutorelease(PDStringCreateDecrypted(str));
+    }
+    return [NSString objectWithPDString:str];
 }
 
 @end

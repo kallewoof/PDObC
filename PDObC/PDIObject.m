@@ -153,6 +153,9 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
 
 - (void)mimic:(PDIObject *)target
 {
+    if (_objectID == 28773) {
+        printf("");
+    }
     if (_type != target.type) {
         _type = target.type;
     }
@@ -205,6 +208,7 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
     }
     if (tobj->ovrStream) {
         s = _obj->ovrStream; _obj->ovrStream = tobj->ovrStream; tobj->ovrStream = s;
+        i = _obj->ovrStreamAlloc; _obj->ovrStreamAlloc = tobj->ovrStreamAlloc; tobj->ovrStreamAlloc = i;
     }
     if (tobj->ovrStreamLen) {
         i = _obj->ovrStreamLen; _obj->ovrStreamLen = tobj->ovrStreamLen; tobj->ovrStreamLen = i;
@@ -328,9 +332,9 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
     return (_instance && PDPipeGetParser([_instance pipe])->obid == _objectID);
 }
 
-- (void)setStreamContent:(NSData *)content
+- (void)setStreamContent:(NSData *)content encrypted:(BOOL)encrypted
 {
-    PDObjectSetStreamFiltered(_obj, (char *)[content bytes], [content length]);
+    PDObjectSetStreamFiltered(_obj, (char *)[content bytes], [content length], encrypted);
 //    PDObjectSetStream(_obj, (char *)[content bytes], [content length], true, false);
     [self scheduleMimicking];
 }

@@ -36,7 +36,6 @@ static BOOL ccLicense[__PDIXMPLicenseEndMarker__] = {NO, YES, YES, YES, YES, YES
 @property (nonatomic, readwrite) PDIXMPLicense license;
 @property (nonatomic, strong) NSString *licenseUrl;
 @property (nonatomic, strong) NSString *licenseName;
-@property (nonatomic, strong) NSString *licenseMajorVersionString;
 
 @end
 
@@ -193,7 +192,7 @@ static inline void PDIXMPTemplateSetup()
     return [self templateForLicense:license major:licenseDefaultMajors[license]];
 }
 
-+ (id)templateForLicenseWithName:(NSString *)licenseName URL:(NSString *)licenseURL
++ (PDIXMPLicense)licenseForName:(NSString *)licenseName
 {
     if (licenseUrls == nil) PDIXMPTemplateSetup();
     NSInteger index = [licenseNames indexOfObject:licenseName];
@@ -204,9 +203,15 @@ static inline void PDIXMPTemplateSetup()
             index = [licenseNames indexOfObject:alias];
         }
     }
+    return (index == NSNotFound ? PDIXMPLicenseUndefined : (PDIXMPLicense)index);
+}
+
++ (id)templateForLicenseWithName:(NSString *)licenseName URL:(NSString *)licenseURL
+{
+    PDIXMPLicense license = [self licenseForName:licenseName];
 
     PDIXMPTemplate *template;
-    if (index != NSNotFound) {
+    if (license != PDIXMPLicenseUndefined) {
         template = [self templateForLicense:(PDIXMPLicense)index];
     } else {
         template = [self templateForLicense:PDIXMPLicenseCustom];
@@ -267,30 +272,51 @@ static inline void PDIXMPTemplateSetup()
     [archive selectElement:@"rdf:RDF"];
     
     if ([archive selectElement:@"rdf:Description" withAttributes:@{@"xmlns:cc": @"http://creativecommons.org/ns#"}]) {
-        // we got a CC license expression in the form of a URL
-        // the URL is in the format
-        //  http://creativecommons.org/licenses/LICENSE_NAME/VERSION"
-        NSString *url = [archive stringForAttribute:@"rdf:resource"];
-        if (url) {
-            // get version 
-            NSString *vcomp = [url lastPathComponent]; // /by/4.0 -> 4.0
-            NSString *nonvUrl = [url substringToIndex:url.length - vcomp.length];
-            NSArray *mmc = [vcomp componentsSeparatedByString:@"."]; // 4.0 -> [4, 0]
-            if (mmc.count > 1) {
-                if (mvs) *mvs = mmc[0];
-                url = [url substringToIndex:url.length - vcomp.length]; // /by/4.0 -> /by/
-                url = [url stringByAppendingString:@"[m].0"]; // /by/ -> /by/[m].0
+        if ([archive selectElement:@"cc:license"]) {
+            // we got a CC license expression in the form of a URL
+            // the URL is in the format
+            //  http://creativecommons.org/licenses/LICENSE_NAME/VERSION"
+            // or it is equal to
+            //  http://creativecommons.org/publicdomain/zero/[m].0/legalcode
+            NSString *url = [archive stringForAttribute:@"rdf:resource"];
+            if (url) {
+                // see which version it is
+                if ([url hasSuffix:@"/legalcode"]) {
+                    // latter?
+                    url = [url substringToIndex:url.length - 10];
+                    // -> http://creativecommons.org/publicdomain/zero/[m].0
+                    // version
+                    NSString *vcomp = [url lastPathComponent]; // /zero/1.0 -> 1.0
+                    NSArray *mmc = [vcomp componentsSeparatedByString:@"."]; // 4.0 -> [4, 0]
+                    if (mmc.count > 1) {
+                        if (mvs) *mvs = mmc[0];
+                    }
+                    // this is CC0 if the last path comp of url (without vcomp) is "zero"
+                    if ([@"zero" isEqualToString:url.stringByDeletingLastPathComponent.lastPathComponent]) {
+                        return PDIXMPLicenseCC0;
+                    }
+                    
+                }
+                // get version 
+                NSString *vcomp = [url lastPathComponent]; // /by/4.0 -> 4.0
+                NSArray *mmc = [vcomp componentsSeparatedByString:@"."]; // 4.0 -> [4, 0]
+                if (mmc.count > 1) {
+                    if (mvs) *mvs = mmc[0];
+                    url = [url substringToIndex:url.length - vcomp.length]; // /by/4.0 -> /by/
+                    url = [url stringByAppendingString:@"[m].0"]; // /by/ -> /by/[m].0
+                }
+                
+                // see if we have an exact match
+                
+                NSInteger index = [licenseUrls indexOfObject:url];
+                if (index != NSNotFound) {
+                    // we do; use default MVS unless one was defined above
+                    if (mvs && !*mvs) *mvs = [self defaultMajorVersionStringForLicense:(PDIXMPLicense)index];
+                    return (PDIXMPLicense) index;
+                }
             }
-            
-            // see if we have an exact match
-            
-            NSInteger index = [licenseUrls indexOfObject:nonvUrl];
-            if (index != NSNotFound) {
-                // we do; use default MVS unless one was defined above
-                if (mvs && !*mvs) *mvs = [self defaultMajorVersionStringForLicense:(PDIXMPLicense)index];
-                return (PDIXMPLicense) index;
-            }
-        }
+            [archive selectParent];
+        } 
         [archive selectParent];
     }
     
@@ -622,6 +648,17 @@ static inline void PDIXMPTemplateSetup()
     _licenseName = licenseNames[newLicense];
     _licenseUrl = licenseUrls[newLicense];
     _licenseMajorVersionString = licenseDefaultMajors[newLicense];
+}
+
+- (void)relicenseWithName:(NSString *)newLicenseName
+{
+    PDIXMPLicense newLicense = [PDIXMPTemplate licenseForName:newLicenseName];
+    if (newLicense == PDIXMPLicenseUndefined) {
+        [self relicense:PDIXMPLicenseCustom];
+        _licenseName = newLicenseName;
+    } else {
+        [self relicense:newLicense];
+    }
 }
 
 - (void)specifyLicenseUrl:(NSString *)licenseUrl

@@ -64,10 +64,21 @@
         }
         
         [self selectRoot];
+        
+        // we may have an rdf:RDF in the root; we don't want it there, we want it inside x:xmpmeta
+        NSArray *rdfRDF = [self findElements:@"rdf:RDF"];
+        [rdfRDF makeObjectsPerformSelector:@selector(removeFromParent)];
+        
         [self createElement:@"x:xmpmeta"];
         [self setString:@"adobe:ns:meta/" forAttribute:@"xmlns:x"];
         [self setString:@"Pajdeg " PAJDEG_VERSION forAttribute:@"x:xmptk"];
-        [self createElement:@"rdf:RDF" withAttributes:@{@"xmlns:rdf": @"http://www.w3.org/1999/02/22-rdf-syntax-ns#"}];
+        if (rdfRDF.count == 1) {
+            PDIXMPElement *rdfRDFel = rdfRDF[0];
+            [rdfRDFel setString:@"http://www.w3.org/1999/02/22-rdf-syntax-ns#" forAttribute:@"xmlns:rdf"];
+            [_currentElement appendChild:rdfRDFel];
+        } else {
+            [self createElement:@"rdf:RDF" withAttributes:@{@"xmlns:rdf": @"http://www.w3.org/1999/02/22-rdf-syntax-ns#"}];
+        }
         [self selectRoot];
         
         _modified = data != nil;
@@ -107,7 +118,7 @@
 
 - (void)populateStreamInObject:(PDIObject *)object
 {
-    [object setStreamContent:[self XMPData]];
+    [object setStreamContent:[self XMPData] encrypted:NO];
 }
 
 #pragma mark - XML generation

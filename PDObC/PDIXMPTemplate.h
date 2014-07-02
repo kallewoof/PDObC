@@ -87,6 +87,15 @@ typedef enum {
 + (id)templateForLicenseWithName:(NSString *)licenseName URL:(NSString *)licenseURL;
 
 /**
+ *  Get the license for the given license name, or PDIXMPLicenseUndefined if not known
+ *
+ *  @param licenseName Name of license
+ *
+ *  @return License, defaulting to PDIXMPLicenseUndefined for all unknown license names
+ */
++ (PDIXMPLicense)licenseForName:(NSString *)licenseName;
+
+/**
  *  Returns YES if license is "custom", i.e. where the URL, rights string, etc. are not predefined.
  *  This applies (currently) to undefined, public domain, commercial, and custom. I.e. any license not a CC
  *  license is considered a freeform license.
@@ -170,6 +179,13 @@ typedef enum {
 - (void)relicense:(PDIXMPLicense)newLicense;
 
 /**
+ *  Relicense the target of the template to the given new license name.
+ *
+ *  @param newLicenseName Name of the new license. If unknown, PDIXMPLicenseCustom is used as the license type
+ */
+- (void)relicenseWithName:(NSString *)newLicenseName;
+
+/**
  *  License.
  */
 @property (nonatomic, readonly) PDIXMPLicense license;
@@ -177,7 +193,7 @@ typedef enum {
 /**
  *  The license major version string. E.g. @"4" is the default for the CC licenses.
  */
-@property (nonatomic, readonly) NSString *licenseMajorVersionString;
+@property (nonatomic, strong) NSString *licenseMajorVersionString;
 
 /**
  *  License name.

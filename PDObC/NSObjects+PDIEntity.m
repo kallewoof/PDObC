@@ -117,7 +117,7 @@
 {
     return (PDStringGetType(PDString) == PDStringTypeName
             ? [PDIName nameWithPDString:PDString]
-            : [self stringWithPDFString:PDStringEscapedValue(PDString, false)]); //PDStringEscapedValue(PDString, false)];
+            : [self stringWithPDFString:PDStringEscapedValue(PDString, false)]);
 }
 
 - (NSString *)PXUString

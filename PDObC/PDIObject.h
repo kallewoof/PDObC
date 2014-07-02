@@ -317,11 +317,12 @@
  
  The "getter" is called -allocStream.
  
- @param content The stream data. 
- 
  @see setStreamIsEncrypted:
+ 
+ @param content   The stream data. 
+ @param encrypted Whether the data is currently encrypted (using the document's encryption method) or whether it needs to be encrypted before being written to the pipe.
  */
-- (void)setStreamContent:(NSData *)content;
+- (void)setStreamContent:(NSData *)content encrypted:(BOOL)encrypted;
 
 /**
  Indicate that this object's stream is or is not encrypted. 

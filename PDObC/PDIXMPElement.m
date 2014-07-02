@@ -63,6 +63,11 @@ static inline NSString *NSStringFromXMPAttributesDict(NSDictionary *attrs)
     return self;
 }
 
+- (NSString *)description
+{
+    return [NSString stringWithFormat:@"<%@: %p; el = %@; attrs = %@>", NSStringFromClass(self.class), self, _name, NSStringFromXMPAttributesDict(_attributes)];
+}
+
 - (void)appendChild:(PDIXMPElement *)child
 {
     if (! _children) _children = [[NSMutableArray alloc] init];
@@ -226,6 +231,9 @@ static inline NSString *NSStringFromXMPAttributesDict(NSDictionary *attrs)
         } else {
             [string appendFormat:@"%@<%@%@>\n", indent, _name, NSStringFromXMPAttributesDict(_attributes)];
             NSString *cindent = [indent stringByAppendingString:@"\t"];
+            [_children sortUsingComparator:^NSComparisonResult(PDIXMPElement *obj1, PDIXMPElement *obj2) {
+                return [obj1.name compare:obj2.name];
+            }];
             for (PDIXMPElement *c in _children) {
                 [c populateString:string withIndent:cindent];
             }

@@ -356,8 +356,8 @@
     if ([key isEqualToString:@"Metadata"]) {
         // We use the built-in verifiedMetadata method to do this; if we don't, we run the risk of double-tasking the metadata stream and overwriting requested changes.
         [self verifiedMetadataObject];
-        [_metadataObject setStreamIsEncrypted:NO];
-        [_metadataObject setStreamContent:data];
+//        [_metadataObject setStreamIsEncrypted:NO];
+        [_metadataObject setStreamContent:data encrypted:NO];
         return;
     }
     
@@ -368,15 +368,15 @@
             // got this already; we want to tweak it then
             if ([ref isKindOfClass:[PDIObject class]]) ref = [(PDIObject*)ref reference];
             [self forObjectWithID:[ref objectID] enqueueOperation:^PDTaskResult(PDInstance *instance, PDIObject *object) {
-                [object setStreamIsEncrypted:NO];
-                [object setStreamContent:data];
+//                [object setStreamIsEncrypted:NO];
+                [object setStreamContent:data encrypted:NO];
                 return PDTaskDone;
             }];
         } else {
             // don't have the key; we want to add an object then
             PDIObject *ob = [self appendObject];
-            [ob setStreamIsEncrypted:NO];
-            [ob setStreamContent:data];
+//            [ob setStreamIsEncrypted:NO];
+            [ob setStreamContent:data encrypted:NO];
             
             [_rootObject enableMutationViaMimicSchedulingWithInstance:self];
             [_rootObject setValue:ob forKey:key];
