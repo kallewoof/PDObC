@@ -211,6 +211,12 @@ typedef enum {
 @property (nonatomic, readonly, strong) NSString *resolvedLicenseURL;
 
 /**
+ *  A related resource which describes additional permissions or alternative licenses for a Work which may be available. 
+ *  This is used in CC+. For more information, see http://wiki.creativecommons.org/CCPlus
+ */
+@property (nonatomic, strong) NSString *morePermissions;
+
+/**
  *  Specify a license URL to use for this license. The URL will replace the default, if any.
  *  The string may optionally contain the sequence "[m]". This will be replaced with the value of licenseMajorVersionString. E.g.
  *  the licenseUrl "http://my-licenses.org/[m].0/" with the licenseMajorVersionString "1" will result in "http://my-licenses.org/1.0/"
@@ -236,10 +242,11 @@ typedef enum {
  *
  *  @param XMPArchive The archive for an existing PDF whose XMP data should be used to determine the PDF's license.
  *  @param mvs        Major version string NSString pointer, or NULL if not needed
+ *  @param morePerms  More permissions NSString pointer, or NULL if not needed
  *
  *  @return PDIXMPLicense enum result; in addition, if mvs is non-null, *mvs is set to the major version string, if found
  */
-+ (PDIXMPLicense)licenseForXMPArchive:(PDIXMPArchive *)XMPArchive mvs:(NSString *__autoreleasing *)mvs;
++ (PDIXMPLicense)licenseForXMPArchive:(PDIXMPArchive *)XMPArchive mvs:(NSString *__autoreleasing *)mvs morePerms:(NSString *__autoreleasing *)morePerms;
 
 /**
  *  Generate a template for the given archive.

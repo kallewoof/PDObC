@@ -242,12 +242,13 @@ static inline void PDIXMPTemplateSetup()
 
 + (id)templateForXMPArchive:(PDIXMPArchive *)archive
 {
-    NSString *mvs;
-    PDIXMPLicense license = [self licenseForXMPArchive:archive mvs:&mvs];
+    NSString *mvs, *morePerms;
+    PDIXMPLicense license = [self licenseForXMPArchive:archive mvs:&mvs morePerms:&morePerms];
     if (license == PDIXMPLicenseUndefined) license = PDIXMPLicenseCommercial;
     
     PDIXMPTemplate *template = [self templateForLicense:license];
     if (mvs) template.licenseMajorVersionString = mvs;
+    if (morePerms) template.morePermissions = morePerms;
     
     [archive selectRoot];
     [archive selectElement:@"x:xmpmeta"];
@@ -263,15 +264,22 @@ static inline void PDIXMPTemplateSetup()
     return !ccLicense[license];
 }
 
-+ (PDIXMPLicense)licenseForXMPArchive:(PDIXMPArchive *)archive mvs:(NSString *__autoreleasing *)mvs
++ (PDIXMPLicense)licenseForXMPArchive:(PDIXMPArchive *)archive mvs:(NSString *__autoreleasing *)mvs morePerms:(NSString *__autoreleasing *)morePerms
 {
     if (licenseUrls == nil) PDIXMPTemplateSetup();
+    
+    if (morePerms) *morePerms = nil;
     
     [archive selectRoot];
     [archive selectElement:@"x:xmpmeta"];
     [archive selectElement:@"rdf:RDF"];
     
     if ([archive selectElement:@"rdf:Description" withAttributes:@{@"xmlns:cc": @"http://creativecommons.org/ns#"}]) {
+        if (morePerms && [archive selectElement:@"cc:morePermissions"]) {
+            // the more permissions expression is a URL pointing to a place where permissions beyond the active license may be obtained
+            *morePerms = [archive stringForAttribute:@"rdf:resource"];
+            [archive selectParent];
+        }
         if ([archive selectElement:@"cc:license"]) {
             // we got a CC license expression in the form of a URL
             // the URL is in the format
@@ -316,7 +324,7 @@ static inline void PDIXMPTemplateSetup()
                 }
             }
             [archive selectParent];
-        } 
+        }
         [archive selectParent];
     }
     
@@ -480,6 +488,11 @@ static inline void PDIXMPTemplateSetup()
                          xmlns:cc='http://creativecommons.org/ns#'>\
             <cc:license rdf:resource='"];
         [result appendString:[self resolvedLicenseURL]];
+        if (_morePermissions) {
+            [result appendString:@"'/>\
+            <cc:morePermissions rdf:resource='"];
+            [result appendString:_morePermissions];
+        }
         [result appendString:@"'/>\
         </rdf:Description>\
         \
