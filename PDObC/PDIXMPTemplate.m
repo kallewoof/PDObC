@@ -650,6 +650,10 @@ static inline void PDIXMPTemplateSetup()
                                                                    @"xmlns:cc":        @"http://creativecommons.org/ns#"}]; {
             [archive createElement:@"cc:license" withAttributes:@{@"rdf:resource":     [self resolvedLicenseURL]}];
             [archive selectParent];
+            if (_morePermissions) {
+                [archive createElement:@"cc:morePermissions" withAttributes:@{@"rdf:resource": _morePermissions}];
+                [archive selectParent];
+            }
         } [archive selectParent];
     }
     
