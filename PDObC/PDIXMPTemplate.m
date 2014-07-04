@@ -58,7 +58,7 @@ NSString * const kPDIXMPLicenseCCBYNCSA = @"Attribution-NonCommercial-ShareAlike
 NSString * const kPDIXMPLicenseCCBYNCND = @"Attribution-NonCommercial-NoDerivs";
 NSString * const kPDIXMPLicenseCC0 = @"CC0";
 NSString * const kPDIXMPLicensePD = @"Public Domain";
-NSString * const kPDIXMPLicenseCommercial = @"Commercial";
+NSString * const kPDIXMPLicenseCommercial = @"All Rights Reserved";
 NSString * const kPDIXMPLicenseCustom = @"Custom";
 
 static inline void PDIXMPTemplateSetup()
