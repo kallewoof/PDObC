@@ -21,7 +21,7 @@
 #import "pd_internal.h"
 #import "pd_pdf_implementation.h"
 
-#import "PDTaskBlocks.h"
+#import "PDITaskBlocks.h"
 #import "PDInstance.h"
 #import "PDIObject.h"
 #import "PDIPage.h"
@@ -321,7 +321,7 @@
     
     __weak PDInstance *bself = self;
     
-    task = PDTaskCreateBlockMutator(^PDTaskResult(PDPipeRef pipe, PDTaskRef task, PDObjectRef object) {
+    task = PDITaskCreateBlockMutator(^PDTaskResult(PDPipeRef pipe, PDTaskRef task, PDObjectRef object) {
         PDIObject *iob = [[PDIObject alloc] initWithObject:object];
         [iob markMutable];
         [iob setInstance:bself];
@@ -345,7 +345,7 @@
 {
     __weak PDInstance *bself = self;
 
-    PDPipeAddTask(_pipe, PDTaskCreateBlockMutator(^PDTaskResult(PDPipeRef pipe, PDTaskRef task, PDObjectRef object) {
+    PDPipeAddTask(_pipe, PDITaskCreateBlockMutator(^PDTaskResult(PDPipeRef pipe, PDTaskRef task, PDObjectRef object) {
         PDIObject *iob = [[PDIObject alloc] initWithObject:object];
         return operation(bself, iob);
     }));

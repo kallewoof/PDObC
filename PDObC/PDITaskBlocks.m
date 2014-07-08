@@ -1,5 +1,5 @@
 //
-// PDTaskBlocks.m
+// PDITaskBlocks.m
 //
 // Copyright (c) 2012 - 2014 Karl-Johan Alm (http://github.com/kallewoof)
 // 
@@ -17,14 +17,14 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#import "PDTaskBlocks.h"
+#import "PDITaskBlocks.h"
 #import "pd_internal.h"
 
 extern void PDTaskDealloc(void *ob);
 
 PDTaskResult PDBlockLauncher(PDPipeRef pipe, PDTaskRef task, PDObjectRef object, void *info)
 {
-    return as(__bridge PDTaskBlock, task->info)(pipe, task, object);
+    return as(__bridge PDITaskBlock, task->info)(pipe, task, object);
 }
 
 void PDBlockTaskDealloc(void *ob) 
@@ -33,7 +33,7 @@ void PDBlockTaskDealloc(void *ob)
     PDTaskDealloc(ob);
 }
 
-PDTaskRef PDTaskCreateBlockMutator(PDTaskBlock mutatorBlock)
+PDTaskRef PDITaskCreateBlockMutator(PDITaskBlock mutatorBlock)
 {
     PDTaskRef task = PDTaskCreateMutator(PDBlockLauncher);
     task->deallocator = PDBlockTaskDealloc;

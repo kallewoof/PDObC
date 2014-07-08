@@ -1,5 +1,5 @@
 //
-// PDTaskBlocks.h
+// PDITaskBlocks.h
 //
 // Copyright (c) 2012 - 2014 Karl-Johan Alm (http://github.com/kallewoof)
 // 
@@ -20,9 +20,9 @@
 #import <Foundation/Foundation.h>
 #import "PDTask.h"
 
-typedef PDTaskResult (^PDTaskBlock)(PDPipeRef pipe, PDTaskRef task, PDObjectRef object);
+typedef PDTaskResult (^PDITaskBlock)(PDPipeRef pipe, PDTaskRef task, PDObjectRef object);
 
 /**
  * Create a mutator task using blocks, if available.
  */
-extern PDTaskRef PDTaskCreateBlockMutator(PDTaskBlock mutatorBlock);
+extern PDTaskRef PDITaskCreateBlockMutator(PDITaskBlock mutatorBlock);
