@@ -212,7 +212,7 @@ static inline void PDIXMPTemplateSetup()
 
     PDIXMPTemplate *template;
     if (license != PDIXMPLicenseUndefined) {
-        template = [self templateForLicense:(PDIXMPLicense)index];
+        template = [self templateForLicense:license];
     } else {
         template = [self templateForLicense:PDIXMPLicenseCustom];
         template.licenseName = licenseName;
