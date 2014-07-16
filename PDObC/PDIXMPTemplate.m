@@ -436,10 +436,26 @@ static inline void PDIXMPTemplateSetup()
 
         [result appendString:@">\n"];
         
+        NSDictionary *info;
+        NSString *resource;
         for (NSString *key in extra.allKeys) {
             [result appendFormat:@"<%@>", key];
             id val = extra[key];
             if ([key hasPrefix:@"dc:"]) {
+                info = nil;
+                resource = nil;
+                if ([val isKindOfClass:[NSDictionary class]]) {
+                    // backtrack on result, removing ending >: <dc:foo> -> <dc:foo
+                    [result deleteCharactersInRange:(NSRange){result.length-1,1}];
+                    info = val;
+                    val = info[@"value"];
+                    resource = info[@"source"];
+                    if (resource) [result appendFormat:@" rdf:resource=\"%@\"", resource];
+                    
+                    // put > back again
+                    [result appendString:@">"];
+                }
+                
                 if ([val isKindOfClass:[NSString class]]) {
                     [result appendFormat:@"<rdf:Alt><rdf:li xml:lang=\"x-default\">%@</rdf:li></rdf:Alt>", [val stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]]];
                 }
@@ -593,6 +609,9 @@ static inline void PDIXMPTemplateSetup()
     
     [archive createElement:@"rdf:Description" withAttributes:nslist]; {
 
+        NSDictionary *info;
+        NSString *resource;
+        
         for (NSString *key in extra.allKeys) {
             // we don't want to get duplicate entries so we remove existing values with the same key
             if ([archive selectElement:key]) 
@@ -603,6 +622,16 @@ static inline void PDIXMPTemplateSetup()
                     // dc:format is special; it doesn't have the rdf:Alt/Seq/etc stuff so we ignore that one here
                 if ([key hasPrefix:@"dc:"] && ! [key isEqualToString:@"dc:format"]) {
                     BOOL includeLang = YES;
+                    
+                    info = nil;
+                    resource = nil;
+                    if ([val isKindOfClass:[NSDictionary class]]) {
+                        info = val;
+                        val = info[@"value"];
+                        resource = info[@"resource"];
+                        if (resource) [archive setString:resource forAttribute:@"rdf:resource"];
+                    }
+                    
                     // specialized keys exist and require specific handling
                     if ([key isEqualToString:@"dc:creator"]) {
                         // creator requires a Seq and does not have a lang
@@ -610,8 +639,8 @@ static inline void PDIXMPTemplateSetup()
                         includeLang = NO;
                         if ([val isKindOfClass:[NSString class]]) val = @[val];
                     }
-                    else if ([key isEqualToString:@"dc:subject"]) {
-                        // subject is a bag and does not include lang
+                    else if ([key isEqualToString:@"dc:subject"] || [key isEqualToString:@"dc:publisher"]) {
+                        // subject / publisher is a bag and does not include lang
                         [archive createElement:@"rdf:Bag"];
                         includeLang = NO;
                         if ([val isKindOfClass:[NSString class]]) val = @[val];

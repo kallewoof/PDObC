@@ -66,7 +66,7 @@
         subPath = [path subarrayWithRange:(NSRange){1, path.count-1}];
     }
     for (PDIXMPElement *e in self) {
-        if (path.count) 
+        if (subPath) 
             [[e findChildrenWithName:name] populateElementValues:values withPath:subPath];
         else if (e.value)
             [values addObject:e.value];

@@ -173,6 +173,8 @@ static inline NSString *NSStringFromXMPAttributesDict(NSDictionary *attrs)
 
 - (NSArray *)findChildrenWithName:(NSString *)name
 {
+    if ([name isEqualToString:@"*"]) return _children;
+    
     NSMutableArray *a = [[NSMutableArray alloc] init];
     
     for (PDIXMPElement *e in _children) {

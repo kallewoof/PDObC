@@ -40,6 +40,11 @@
 
 @implementation PDIXMPArchive
 
+- (id)init
+{
+    return [self initWithData:nil];
+}
+
 - (id)initWithData:(NSData *)data
 {
     self = [super init];
