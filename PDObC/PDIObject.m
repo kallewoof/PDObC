@@ -153,9 +153,6 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
 
 - (void)mimic:(PDIObject *)target
 {
-    if (_objectID == 28773) {
-        printf("");
-    }
     if (_type != target.type) {
         _type = target.type;
     }
