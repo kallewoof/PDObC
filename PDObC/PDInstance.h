@@ -51,7 +51,6 @@
 @class PDIObject;
 @class PDIReference;
 @class PDIPage;
-@class PDIXMPArchive;
 
 #import "PDDefines.h"
 
@@ -244,14 +243,6 @@ typedef PDTaskResult (^PDIObjectOperation)(PDInstance *instance, PDIObject *obje
 - (PDIObject *)verifiedInfoObject;
 
 /**
- Obtain the metadata object stream as an XMP archive, or nil if it's non-existent or 
- if it's not a XMP archive.
- 
- @warning This method will use Core Graphics PDF support (CGPDF) to extract data from PDFs encrypted in a way that Pajdeg does not support (AES encrypted PDFs, for example). Do note however that PDFs encrypted in unsupported formats do not result in valid PDF output.
- */
-- (PDIXMPArchive *)metadataXMPArchive;
-
-/**
  Reference to the PDF root object.
  */
 @property (nonatomic, readonly, strong) PDIReference *rootReference;
@@ -334,5 +325,10 @@ typedef PDTaskResult (^PDIObjectOperation)(PDInstance *instance, PDIObject *obje
  *  of all the entries in the file's document information (/Info) dictionary.
  */
 @property (nonatomic, strong) NSString *documentInstanceID;
+
+/**
+ *  A dictionary for storing arbitrary information (e.g. in a category on PDInstance).
+ */
+@property (nonatomic, readonly) NSMutableDictionary *sessionDict;
 
 @end

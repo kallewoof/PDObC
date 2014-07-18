@@ -29,7 +29,6 @@
 #import "PDCatalog.h"
 #import "PDPage.h"
 #import "PDIReference.h"
-#import "PDIXMPArchive.h"
 #import "NSObjects+PDIEntity.h"
 
 #import "PDString.h"
@@ -42,7 +41,6 @@
     PDIObject *_infoObject;
     PDIObject *_trailerObject;
     PDIObject *_metadataObject;
-    PDIXMPArchive *_metadataXMPArchive;
     PDParserRef _parser;
     PDIReference *_rootRef;
     PDIReference *_infoRef;
@@ -82,6 +80,8 @@
     self = [super init];
     if (self) {
         pd_pdf_conversion_use();
+        
+        _sessionDict = [[NSMutableDictionary alloc] init];
         
         if ([sourcePDFPath isEqualToString:destPDFPath]) {
             [NSException raise:NSInvalidArgumentException format:@"Input source and destination source must not be the same file."];
@@ -161,21 +161,6 @@
         [root setValue:_metadataObject forKey:@"Metadata"];
     }
     return _metadataObject;
-}
-
-- (PDIXMPArchive *)metadataXMPArchive
-{
-    if (_metadataXMPArchive) return _metadataXMPArchive;
-    PDIObject *mdo = [self verifiedMetadataObject];
-
-    _metadataXMPArchive = [[PDIXMPArchive alloc] initWithObject:mdo];
-    if (_metadataXMPArchive == nil) {
-        CGPDFDocumentRef doc = CGPDFDocumentCreateWithURL((CFURLRef)[NSURL fileURLWithPath:_sourcePDFPath]);
-        _metadataXMPArchive = [[PDIXMPArchive alloc] initWithCGPDFDocument:doc];
-        CGPDFDocumentRelease(doc);
-    }
-
-    return _metadataXMPArchive;
 }
 
 - (PDIReference *)rootReference
