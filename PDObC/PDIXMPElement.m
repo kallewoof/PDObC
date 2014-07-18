@@ -153,8 +153,10 @@ static inline NSString *NSStringFromXMPAttributesDict(NSDictionary *attrs)
 
 - (PDIXMPElement *)findChild:(NSString *)name withAttributes:(NSDictionary *)attributes
 {
+    BOOL wildcard = [name isEqualToString:@"*"];
+    
     for (PDIXMPElement *e in _children) {
-        if ([e.name isEqualToString:name]) {
+        if (wildcard || [e.name isEqualToString:name]) {
             BOOL proceed = YES;
             NSDictionary *eattr = e.attributes;
             for (NSString *key in attributes.allKeys) {

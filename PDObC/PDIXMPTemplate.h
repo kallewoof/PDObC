@@ -153,7 +153,7 @@ typedef enum {
  </KEY>
  *  if the key begins with "dc:"; otherwise the pair is stored as a regular value in which case non-strings are -description'ed.
  */
-- (NSString *)declarationWithAuthorName:(NSString *)authorName extra:(NSDictionary *)extra;
+//- (NSString *)declarationWithAuthorName:(NSString *)authorName extra:(NSDictionary *)extra;
 
 /**
  *  Apply the template to the given PDIXMPArchive instance, updating or inserting rdf:Description entries as appropriate.
@@ -233,6 +233,16 @@ typedef enum {
  */
 @property (nonatomic, strong) NSString *rights;
 
+@property (nonatomic, strong) NSString *attributionName;
+@property (nonatomic, strong) NSString *attributionURL;
+
+/**
+ *  Use guidelines URL.
+ *
+ *  This is defined by Creative Commons as "A related resource which defines non-binding use guidelines for the work."
+ */
+@property (nonatomic, strong) NSString *useGuidelinesURL;
+
 ///////////////
 ///! Evaluating
 ///////////////
@@ -240,20 +250,19 @@ typedef enum {
 /**
  *  Determine the license used in the given (pre-existing) XMP archive.
  *
- *  @param XMPArchive The archive for an existing PDF whose XMP data should be used to determine the PDF's license.
- *  @param mvs        Major version string NSString pointer, or NULL if not needed
- *  @param morePerms  More permissions NSString pointer, or NULL if not needed
+ *  @param XMPArchive The archive for an existing PDF whose XMP data should be used to determine the PDF's license
+ *  @param extras     Dictionary in which extra information parsed from the archive is written, such as major version string, etc
  *
- *  @return PDIXMPLicense enum result; in addition, if mvs is non-null, *mvs is set to the major version string, if found
+ *  @return PDIXMPLicense enum result; in addition, if extras is non-null, it is populated with various information from the archive
  */
-+ (PDIXMPLicense)licenseForXMPArchive:(PDIXMPArchive *)XMPArchive mvs:(NSString *__autoreleasing *)mvs morePerms:(NSString *__autoreleasing *)morePerms;
++ (PDIXMPLicense)licenseForXMPArchive:(PDIXMPArchive *)XMPArchive extras:(NSMutableDictionary *)extras;
 
 /**
  *  Generate a template for the given archive.
  *  
- *  @param XMPArchive The archive for an existing PDF whose XMP data should be used to determine the PDF's license.
+ *  @param XMPArchive The archive for an existing PDF whose XMP data should be used to determine the PDF's license
  *  
- *  @return PDIXMPTemplate which inherits the license used by the given XMP archive, or nil if the license could not be determined or is not supported.
+ *  @return PDIXMPTemplate which inherits the license used by the given XMP archive, or nil if the license could not be determined or is not supported
  */
 + (id)templateForXMPArchive:(PDIXMPArchive *)XMPArchive;
 

@@ -240,6 +240,171 @@
     return [self selectElement:element withAttributes:nil];
 }
 
+- (NSDictionary *)attributesFromAttributeExpression:(NSString *)attributeExpression
+{
+    if ([attributeExpression isKindOfClass:[NSDictionary class]]) 
+        return (id) attributeExpression;
+    
+    // attribute expressions are of the form "attrib1=value1&attrib2=value2&..." but may contain additional & expressions in the form &entity;
+    // accepted entities: &amp;, &nbsp;, &lt;, &gt;, &quot;, &apos;
+    // to insert other entities, replace & with "  AND SIGN  " (two spaces followed by "AND SIGN" followed by two spaces)
+    static NSSet *acceptedEntities = nil;
+    if (! acceptedEntities) acceptedEntities = [[NSSet alloc] initWithObjects:@"amp", @"nbsp", @"lt", @"gt", @"quot", @"apos", nil];
+    
+    NSArray *comps = [attributeExpression componentsSeparatedByString:@"&"];
+    NSMutableString *expression = [NSMutableString stringWithCapacity:attributeExpression.length];
+    BOOL first = YES;
+    for (NSString *comp in comps) {
+        if (first) {
+            [expression appendString:comp];
+            first = NO;
+        } else {
+            BOOL include = YES;
+            NSRange semi = [comp rangeOfString:@";"];
+            if (semi.location != NSNotFound) {
+                // this may be an entity
+                if ([acceptedEntities containsObject:[comp substringToIndex:semi.location]]) {
+                    // it is
+                    include = NO;
+                    [expression appendString:@"  AND STRING  "];
+                }
+            }
+            [expression appendString:include ? comp : [comp substringFromIndex:1]];
+        }
+    }
+    
+    // expression is now a "safe" expression (in terms of splitting by &)
+    comps = [expression componentsSeparatedByString:@"&"];
+    NSMutableDictionary *attribs = [NSMutableDictionary dictionaryWithCapacity:comps.count];
+    for (NSString *comp in comps) {
+        // comp is in the format "foo=bar"
+        NSRange eq = [comp rangeOfString:@"="];
+        if (eq.location == NSNotFound) {
+            [NSException raise:@"PDIXMPArchiveInvalidAttributeExpression" format:@"Invalid attribute expression \"%@\": missing \"=\" in component \"%@\".", expression, comp];
+        }
+        attribs[[comp substringToIndex:eq.location]] = [comp substringFromIndex:eq.location+1];
+    }
+    return attribs;
+}
+
+- (BOOL)selectElementFromExpression:(NSString *)expression attributes:(NSArray *)attributes satisfy:(BOOL)satisfy
+{
+    // firstly we check if this is /...; if it is, we select root and trim out /.
+    if ([expression hasPrefix:@"/"]) {
+        expression = [expression substringFromIndex:1];
+        [self selectRoot];
+    }
+    
+    if (attributes.count == 1 && [expression rangeOfString:@"*"].location == NSNotFound) 
+        expression = [expression stringByAppendingString:@"*"];
+    
+    NSArray *comps = [expression componentsSeparatedByString:@"/"];
+    PDIXMPElement *startingElement = _currentElement;
+    NSInteger directiveIndex = 0;
+    for (NSString *comp in comps) {
+        NSDictionary *attribs = nil;
+        NSString *realPath = comp;
+        if ([comp hasSuffix:@"*"]) {
+            realPath = [realPath substringToIndex:realPath.length-1];
+            attribs = [self attributesFromAttributeExpression:attributes[directiveIndex++]];
+        }
+        if (! [self selectElement:realPath withAttributes:attribs]) {
+            if (satisfy) {
+                [self createElement:realPath withAttributes:attribs];
+            } else {
+                _currentElement = startingElement;
+                return NO;
+            }
+        }
+    }
+    
+    return YES;
+}
+
+- (BOOL)selectElementFromExpression:(NSString *)expression satisfy:(BOOL)satisfy
+{
+    // we start by cutting out [] chunks, as these may contain /'s.
+    NSArray *comps = [expression componentsSeparatedByString:@"["];
+    NSMutableString *path = [NSMutableString stringWithCapacity:expression.length];
+    NSMutableArray *directives = [[NSMutableArray alloc] initWithCapacity:comps.count];
+    BOOL first = YES;
+    for (NSString *comp in comps) {
+        if (first) {
+            // this is simply the prefix leading to the first [
+            first = NO;
+            [path appendString:comp];
+        } else {
+            // ("path/path2") ([) "directives]/path3"
+            //                    ^^^^^^ comp ^^^^^^^
+            NSRange range = [comp rangeOfString:@"]"];
+            if (range.location == NSNotFound) {
+                [NSException raise:@"PDIXMPArchiveInvalidExpression" format:@"Invalid expression \"%@\": missing \"]\" in component \"%@\".", expression, comp];
+            }
+            [path appendFormat:@"*%@", [comp substringFromIndex:range.location+1]];
+            [directives addObject:[comp substringToIndex:range.location]];
+        }
+    }
+    
+    // we now have "path*/path/path*/path..." which means we can safely chop by "/"
+    return [self selectElementFromExpression:path attributes:directives satisfy:satisfy];
+}
+
+- (void)in:(NSString *)expression do:(dispatch_block_t)block
+{
+    PDIXMPElement *originalElement = _currentElement;
+    [self selectElementFromExpression:expression satisfy:YES];
+    if (block) block();
+    _currentElement = originalElement;
+}
+
+- (void)in:(NSString *)expression attributes:(NSArray *)attributes do:(dispatch_block_t)block
+{
+    PDIXMPElement *originalElement = _currentElement;
+    [self selectElementFromExpression:expression attributes:attributes satisfy:YES];
+    if (block) block();
+    _currentElement = originalElement;
+}
+
+- (void)if:(NSString *)expression do:(dispatch_block_t)block
+{
+    PDIXMPElement *originalElement = _currentElement;
+    if ([self selectElementFromExpression:expression satisfy:NO]) {
+        if (block) block();
+        _currentElement = originalElement;
+    }
+}
+
+- (void)if:(NSString *)expression attributes:(NSArray *)attributes do:(dispatch_block_t)block
+{
+    PDIXMPElement *originalElement = _currentElement;
+    if ([self selectElementFromExpression:expression attributes:attributes satisfy:NO]) {
+        if (block) block();
+        _currentElement = originalElement;
+    }
+}
+
+- (void)in:(NSString *)expression do:(dispatch_block_t)elementExists or:(dispatch_block_t)elementNotFound
+{
+    PDIXMPElement *originalElement = _currentElement;
+    if ([self selectElementFromExpression:expression satisfy:NO]) {
+        if (elementExists) elementExists();
+        _currentElement = originalElement;
+    } else {
+        if (elementNotFound) elementNotFound();
+    }
+}
+
+- (void)in:(NSString *)expression attributes:(NSArray *)attributes do:(dispatch_block_t)elementExists or:(dispatch_block_t)elementNotFound
+{
+    PDIXMPElement *originalElement = _currentElement;
+    if ([self selectElementFromExpression:expression attributes:attributes satisfy:NO]) {
+        if (elementExists) elementExists();
+        _currentElement = originalElement;
+    } else {
+        if (elementNotFound) elementNotFound();
+    }
+}
+
 - (BOOL)selectPath:(NSArray *)path
 {
     for (NSString *p in path) {

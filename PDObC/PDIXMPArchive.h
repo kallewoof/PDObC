@@ -116,6 +116,47 @@
 - (BOOL)selectElement:(NSString *)element;
 
 /**
+ *  Select the first applicable element for which expression applies. 
+ *  Expression can contain a path in the form parent/.../element
+ *  Expression can contain attribute directives in the form element[attrib=value&attrib2=value2&...]
+ *  Each path may have its own attribute directives.
+ *  A component applies to a given path if it contains at least the given attribute/value combinations,
+ *  even if it has additional attributes as well.
+ *  If the selection fails at any point, the archive current element is reset to its original state.
+ *  I.e. if the path is a/b and the expression is c/d/e and "d" or "e" is missing, the path will still be
+ *  a/b, not a/b/c or a/b/c/d.
+ *  If the expression has a leading slash (/), it is evaluated from the root element, otherwise it is evaluated relative to the current element.
+ *
+ *  @param expression An expression as described above
+ *  @param satisfy    If YES, elements that are missing in the expression are created to satisfy the request
+ *
+ *  @return YES if the expression was successfully executed, NO if not
+ */
+- (BOOL)selectElementFromExpression:(NSString *)expression satisfy:(BOOL)satisfy;
+
+/**
+ *  Select the first applicable element for which expression applies. 
+ *  Expression may only contain paths and asterixes (*). Each asterix corresponds to an
+ *  entry in the attributes array. I.e. the expression "path/path2*_/path3*_/" (_ are added to avoid end-comment lex fail)
+ *  the attributes array must contain 2 entries, one for path2 and one for path3.
+ *  The entries in the attributes array must be either strings in the format "attrib=value&attrib2=value2..." or dictionaries.
+ *
+ *  @param expression Expression (with attribute entries replaced by asterixes)
+ *  @param attributes Array of attribute dictionaries and/or strings
+ *  @param satisfy    If YES, elements that are missing in the expression are created to satisfy the request
+ *
+ *  @return YES if the expression was successfully executed, NO if not
+ */
+- (BOOL)selectElementFromExpression:(NSString *)expression attributes:(NSArray *)attributes satisfy:(BOOL)satisfy;
+
+- (void)in:(NSString *)expression do:(dispatch_block_t)block;
+- (void)in:(NSString *)expression attributes:(NSArray *)attributes do:(dispatch_block_t)block;
+- (void)in:(NSString *)expression do:(dispatch_block_t)elementExists or:(dispatch_block_t)elementNotFound;
+- (void)in:(NSString *)expression attributes:(NSArray *)attributes do:(dispatch_block_t)elementExists or:(dispatch_block_t)elementNotFound;
+- (void)if:(NSString *)expression do:(dispatch_block_t)block;
+- (void)if:(NSString *)expression attributes:(NSArray *)attributes do:(dispatch_block_t)block;
+
+/**
  *  Select the given path, that is call -selectElement: on each individual array entry until NO is returned or until the array is exhausted, and return NO in the former case and YES in the latter.
  *
  *  @param path Array of element names
