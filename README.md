@@ -20,7 +20,7 @@ it, simply add the following line to your Podfile:
 
 ## Author
 
-Kalle Alm, kalle.alm@gmail.com
+Kalle Alm, my name with dots at gmail.
 
 ## License
 
