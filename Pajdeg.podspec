@@ -9,7 +9,7 @@
 
 Pod::Spec.new do |s|
   s.name             = "Pajdeg"
-  s.version          = "0.1.0"
+  s.version          = "0.0.3"
   s.summary          = "Objective-C library for mutating PDF files"
   s.description      = <<-DESC
   Pajdeg is a self-contained library for mutating PDFs. 
@@ -22,7 +22,7 @@ Pod::Spec.new do |s|
   # s.screenshots     = "www.example.com/screenshots_1", "www.example.com/screenshots_2"
   s.license          = 'MIT'
   s.author           = { "Karl-Johan Alm" => "kalle.alm@gmail.com" }
-  s.source           = { :git => "https://github.com/kallewoof/Pajdeg.git", :tag => s.version.to_s }
+  s.source           = { :git => "https://github.com/kallewoof/PDObC.git", :tag => s.version.to_s }
   # s.social_media_url = 'https://twitter.com/kallewoof'
 
   s.ios.deployment_target = '6.0'
