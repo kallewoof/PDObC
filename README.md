@@ -1,6 +1,6 @@
 # Pajdeg
 
-[![CI Status](http://img.shields.io/travis/Kalle Alm/Pajdeg.svg?style=flat)](https://travis-ci.org/Kalle Alm/Pajdeg)
+[![CI Status](http://img.shields.io/travis/kallewoof/PDObC.svg?style=flat)](https://travis-ci.org/kallewoof/PDObC)
 [![Version](https://img.shields.io/cocoapods/v/Pajdeg.svg?style=flat)](http://cocoadocs.org/docsets/Pajdeg)
 [![License](https://img.shields.io/cocoapods/l/Pajdeg.svg?style=flat)](http://cocoadocs.org/docsets/Pajdeg)
 [![Platform](https://img.shields.io/cocoapods/p/Pajdeg.svg?style=flat)](http://cocoadocs.org/docsets/Pajdeg)
