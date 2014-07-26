@@ -10,27 +10,30 @@
 Pod::Spec.new do |s|
   s.name             = "Pajdeg"
   s.version          = "0.1.0"
-  s.summary          = "A short description of Pajdeg."
+  s.summary          = "Objective-C library for mutating PDF files"
   s.description      = <<-DESC
-                       An optional longer description of Pajdeg
-
-                       * Markdown format.
-                       * Don't worry about the indent, we strip it!
+  Pajdeg is a self-contained library for mutating PDFs. 
+  
+  It's built around the principles of a pipe, where the original PDF is examined, needed changes are determined and tasks are "attached" based on page number, object ID, etc. and then simply sent through a pipe into a new PDF with the desired modifications. 
+  
+  This is the Objective-C wrapper for Pajdeg, which includes a number of improvements over the C core library.
                        DESC
-  s.homepage         = "https://github.com/<GITHUB_USERNAME>/Pajdeg"
+  s.homepage         = "https://github.com/kallewoof/PDObC"
   # s.screenshots     = "www.example.com/screenshots_1", "www.example.com/screenshots_2"
   s.license          = 'MIT'
-  s.author           = { "Kalle Alm" => "kalle.alm@gmail.com" }
-  s.source           = { :git => "https://github.com/<GITHUB_USERNAME>/Pajdeg.git", :tag => s.version.to_s }
-  # s.social_media_url = 'https://twitter.com/<TWITTER_USERNAME>'
+  s.author           = { "Karl-Johan Alm" => "kalle.alm@gmail.com" }
+  s.source           = { :git => "https://github.com/kallewoof/Pajdeg.git", :tag => s.version.to_s }
+  # s.social_media_url = 'https://twitter.com/kallewoof'
 
-  s.platform     = :ios, '7.0'
+  s.ios.deployment_target = '6.0'
+  s.osx.deployment_target = '10.7'
+  # s.platform     = :ios, '6.0'
   s.requires_arc = true
 
   s.source_files = 'Pod/Classes'
-  s.resources = 'Pod/Assets/*.png'
+  # s.resources = 'Pod/Assets/*.png'
 
   # s.public_header_files = 'Pod/Classes/**/*.h'
   # s.frameworks = 'UIKit', 'MapKit'
-  # s.dependency 'AFNetworking', '~> 2.3'
+  s.dependency 'PajdegCore', '~> 0.0.3'
 end

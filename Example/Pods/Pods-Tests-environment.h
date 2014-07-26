@@ -30,6 +30,12 @@
 #define COCOAPODS_VERSION_MINOR_Pajdeg 1
 #define COCOAPODS_VERSION_PATCH_Pajdeg 0
 
+// PajdegCore
+#define COCOAPODS_POD_AVAILABLE_PajdegCore
+#define COCOAPODS_VERSION_MAJOR_PajdegCore 0
+#define COCOAPODS_VERSION_MINOR_PajdegCore 0
+#define COCOAPODS_VERSION_PATCH_PajdegCore 3
+
 // Specta
 #define COCOAPODS_POD_AVAILABLE_Specta
 #define COCOAPODS_VERSION_MAJOR_Specta 0
