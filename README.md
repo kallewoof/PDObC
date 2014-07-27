@@ -44,7 +44,7 @@ adds a number of new features:
 Quick Start
 ===========
 
-To use PDObC, you also need the core Pajdeg library. The easiest way to use it is to install the pod "Pajdeg" as mentioned above. This will install the dependency "PajdegCore" (the C library) automagically. If you want to set it up manually, here's how. 
+To use PDObC, you also need the core Pajdeg library. The easiest way to use it is to install the pod "PajdegPDF" as mentioned above. This will install the dependency "PajdegCore" (the C library) automagically. If you want to set it up manually, here's how. 
 
 Xcode set up:
 
