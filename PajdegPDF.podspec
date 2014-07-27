@@ -8,8 +8,8 @@
 #
 
 Pod::Spec.new do |s|
-  s.name             = "Pajdeg"
-  s.version          = "0.1.0"
+  s.name             = "PajdegPDF"
+  s.version          = "0.1.1"
   s.summary          = "Objective-C library for mutating PDF files"
   s.description      = <<-DESC
   Pajdeg is a self-contained library for mutating PDFs. 
