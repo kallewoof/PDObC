@@ -75,7 +75,7 @@
 
 - (void)dealloc
 {
-    if (_pipe) PDRelease(_pipe);
+    PDRelease(_pipe);
     
     pd_pdf_conversion_discard();
 }
@@ -105,6 +105,8 @@
         
         if (! PDPipePrepare(_pipe)) {
             PDError("PDPipePrepare() failure");
+            PDRelease(_pipe);
+            _pipe = NULL;
             return nil;
         }
         
