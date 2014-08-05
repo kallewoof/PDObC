@@ -31,6 +31,8 @@ PDObC
 
 Objective-C wrapper for [Pajdeg](https://github.com/kallewoof/Pajdeg).
 
+**See Upgrade Notes at the bottom**
+
 Features
 ========
 
@@ -59,18 +61,23 @@ Xcode set up:
 That should be everything. You can test if it works by putting a PDF file test.pdf in your user folder, and then adding this in your launch method (e.g. applicationDidLaunch:.. if iOS):
 
 ```objective-c
-PDInstance *instance = [[PDInstance alloc] initWithSourcePDFPath:[NSString stringWithFormat:@"/Users/%@/test.pdf", NSUserName()] 
+PDISession *session = [[PDISession alloc] initWithSourcePDFPath:[NSString stringWithFormat:@"/Users/%@/test.pdf", NSUserName()] 
                                               destinationPDFPath:[NSString stringWithFormat:@"/Users/%@/out.pdf", NSUserName()]];
-[instance forObjectWithID:[[instance infoReference] objectID] enqueueOperation:^PDTaskResult(PDInstance *instance, PDIObject *object) {
+[session forObjectWithID:[[session infoReference] objectID] enqueueOperation:^PDTaskResult(PDISession *session, PDIObject *object) {
     [object setValue:@"John Doe" forKey:@"Author"];
     return PDTaskDone;
 }];
-[instance execute];
+[session execute];
 ```
 
 After running the above, open the PDF in e.g. Preview and show the Inspector (cmd-i) and Author should now have been set to John Doe.
 
 Presuming that worked, you can check out [more examples](https://github.com/AlacritySoftware/PDObC/wiki/Examples).
+
+Upgrade Notes
+=============
+
+- 0.0.x → 0.1.x:
 
 Helping Out
 ===========
