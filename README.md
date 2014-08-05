@@ -9,6 +9,8 @@
 
 To run the example project, clone the repo, and run `pod install` from the Example directory first.
 
+**See Upgrade Notes at the bottom**
+
 ## Requirements
 
 ## Installation
@@ -30,8 +32,6 @@ PDObC
 =====
 
 Objective-C wrapper for [Pajdeg](https://github.com/kallewoof/Pajdeg).
-
-**See Upgrade Notes at the bottom**
 
 Features
 ========
@@ -77,7 +77,8 @@ Presuming that worked, you can check out [more examples](https://github.com/Alac
 Upgrade Notes
 =============
 
-- 0.0.x → 0.1.x:
+- 0.1.x → 0.2.x:
+ - `PDInstance` was renamed to `PDISession`, and several methods have been refactored to be consistent with this name change. The old method names will produce deprecation warnings.
 
 Helping Out
 ===========
