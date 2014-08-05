@@ -62,7 +62,7 @@ That should be everything. You can test if it works by putting a PDF file test.p
 
 ```objective-c
 PDISession *session = [[PDISession alloc] initWithSourcePDFPath:[NSString stringWithFormat:@"/Users/%@/test.pdf", NSUserName()] 
-                                              destinationPDFPath:[NSString stringWithFormat:@"/Users/%@/out.pdf", NSUserName()]];
+                                             destinationPDFPath:[NSString stringWithFormat:@"/Users/%@/out.pdf", NSUserName()]];
 [session forObjectWithID:[[session infoReference] objectID] enqueueOperation:^PDTaskResult(PDISession *session, PDIObject *object) {
     [object setValue:@"John Doe" forKey:@"Author"];
     return PDTaskDone;
