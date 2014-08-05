@@ -20,7 +20,7 @@ it, simply add the following line to your Podfile:
 
     pod "PajdegPDF"
 
-***Note that there is another pod called "Pajdeg" which is a deprecated clone of this pod.****
+***Note that there is another pod called "Pajdeg" which is a deprecated clone of this pod.***
 
 ## Author
 
