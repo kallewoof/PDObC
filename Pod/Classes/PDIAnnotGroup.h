@@ -24,7 +24,7 @@
 
 #import <Foundation/Foundation.h>
 
-@class PDInstance;
+@class PDISession;
 @class PDIObject;
 @class PDIAnnotation;
 
@@ -34,9 +34,9 @@
  Initialize a new annotations group for the given object, which is an /Annots entry e.g. from a page object.
  
  @param object The annots object.
- @param instance The PDInstance.
+ @param session The PDISession.
  */
-- (id)initWithObject:(PDIObject *)object inInstance:(PDInstance *)instance;
+- (id)initWithObject:(PDIObject *)object inSession:(PDISession *)session;
 
 /**
  Add an annotation object to this group.
@@ -56,5 +56,19 @@
 
 @property (nonatomic, readonly, strong) NSArray *annotations;   ///< Array of all annotations in this object.
 @property (nonatomic, readonly, strong) PDIObject *object;      ///< Object associated with this annots group.
+
+@end
+
+@interface PDIAnnotGroup (PDIDeprecated)
+
+/**
+ Initialize a new annotations group for the given object, which is an /Annots entry e.g. from a page object.
+ 
+ @warning Deprecated method. Use -initWithObject:inSession:.
+ 
+ @param object The annots object.
+ @param instance The PDInstance.
+ */
+- (id)initWithObject:(PDIObject *)object inInstance:(PDISession *)instance __deprecated;
 
 @end

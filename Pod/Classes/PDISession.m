@@ -1,5 +1,5 @@
 
-// PDInstance.m
+// PDISession.m
 //
 // Copyright (c) 2012 - 2014 Karl-Johan Alm (http://github.com/kallewoof)
 // 
@@ -27,7 +27,7 @@
 #import "pd_pdf_implementation.h"
 
 #import "PDITaskBlocks.h"
-#import "PDInstance.h"
+#import "PDISession.h"
 #import "PDIObject.h"
 #import "PDIPage.h"
 #import "PDPage.h"
@@ -40,7 +40,7 @@
 #import "PDDictionary.h"
 #import "PDArray.h"
 
-@interface PDInstance () {
+@interface PDISession () {
     PDPipeRef _pipe;
     PDIObject *_rootObject;
     PDIObject *_infoObject;
@@ -57,21 +57,21 @@
 
 @end
 
-@interface PDIPage (PDInstance)
+@interface PDIPage (PDISession)
 
-- (id)initWithPage:(PDPageRef)page inInstance:(PDInstance *)instance;
+- (id)initWithPage:(PDPageRef)page inSession:(PDISession *)session;
 
 @end
 
-@interface PDIObject (PDInstance)
+@interface PDIObject (PDISession)
 
 - (void)markImmutable;
 
-- (void)setInstance:(PDInstance *)instance;
+- (void)setSession:(PDISession *)session;
 
 @end
 
-@implementation PDInstance
+@implementation PDISession
 
 - (void)dealloc
 {
@@ -134,7 +134,7 @@
 
 - (BOOL)execute
 {
-    NSAssert(_pipe, @"-execute called more than once, or initialization failed in PDInstance");
+    NSAssert(_pipe, @"-execute called more than once, or initialization failed in PDISession");
     
     _objectSum = PDPipeExecute(_pipe);
     
@@ -160,11 +160,11 @@
             _metadataObject = [self fetchReadonlyObjectWithID:[(PDIReference *)_metadataObject objectID]];
         }
 //        _metadataObject = [self fetchReadonlyObjectWithID:[PDIReference objectIDFromString:md]];
-        [_metadataObject enableMutationViaMimicSchedulingWithInstance:self];
+        [_metadataObject enableMutationViaMimicSchedulingWithSession:self];
     } else {
         _metadataObject = [self appendObject];
         _metadataObject.type = PDObjectTypeDictionary; // we set the type explicitly, because the metadata object isn't always modified; if it isn't modified, Pajdeg considers it illegal to add it, as it requires that new objects have a type
-        [root enableMutationViaMimicSchedulingWithInstance:self];
+        [root enableMutationViaMimicSchedulingWithSession:self];
         [root setValue:_metadataObject forKey:@"Metadata"];
     }
     return _metadataObject;
@@ -190,7 +190,7 @@
 {
     if (_rootObject == nil) {
         _rootObject = [[PDIObject alloc] initWithObject:PDParserGetRootObject(_parser)];
-        [_rootObject setInstance:self];
+        [_rootObject setSession:self];
     }
     return _rootObject;
 }
@@ -211,7 +211,7 @@
     if (_trailerObject == nil) {
         PDObjectRef trailerObj = PDParserGetTrailerObject(_parser);
         _trailerObject = [[PDIObject alloc] initWithObject:trailerObj];
-        [_trailerObject setInstance:self];
+        [_trailerObject setSession:self];
         [_trailerObject markMutable];
     }
     return _trailerObject;
@@ -226,7 +226,7 @@
     
     PDObjectRef trailer = _parser->trailer;
     PDIObject *trailerOb = [[PDIObject alloc] initWithObject:trailer];
-    //[trailerOb setInstance:self];
+    //[trailerOb setSession:self];
     [trailerOb setValue:_infoObject forKey:@"Info"];
 
     return _infoObject;
@@ -255,8 +255,7 @@
 {
     NSAssert(objectID != 0, @"Zero is not a valid object ID");
     PDObjectRef obj = PDParserLocateAndCreateObject(_parser, objectID, true);
-    //pd_stack defs = PDParserLocateAndCreateDefinitionForObject(_parser, objectID, true);
-    PDIObject *object = [[PDIObject alloc] initWithObject:obj];//WithInstance:self forDefinitionStack:defs objectID:objectID generationID:0];
+    PDIObject *object = [[PDIObject alloc] initWithObject:obj];
     PDRelease(obj);
     return object;
 }
@@ -282,7 +281,7 @@
     if (page) return page;
     
     PDPageRef pageRef = PDPageCreateForPageWithNumber(_parser, pageNumber);
-    page = [[PDIPage alloc] initWithPage:pageRef inInstance:self];
+    page = [[PDIPage alloc] initWithPage:pageRef inSession:self];
     PDRelease(pageRef);
     
     _pageDict[@(pageNumber)] = page;
@@ -293,7 +292,7 @@
 - (PDIPage *)insertPage:(PDIPage *)page atPageNumber:(NSInteger)pageNumber
 {
     PDPageRef nativePage = PDPageInsertIntoPipe(page.pageRef, _pipe, pageNumber);
-    PDIPage *newPage = [[PDIPage alloc] initWithPage:nativePage inInstance:self];
+    PDIPage *newPage = [[PDIPage alloc] initWithPage:nativePage inSession:self];
 
     NSMutableDictionary *newPageDict = [[NSMutableDictionary alloc] initWithCapacity:_pageDict.count + 1];
     for (NSNumber *n in _pageDict.allKeys) {
@@ -311,12 +310,12 @@
     
     filter = PDTaskCreateFilterWithValue(type, value);
     
-    __weak PDInstance *bself = self;
+    __weak PDISession *bself = self;
     
     task = PDITaskCreateBlockMutator(^PDTaskResult(PDPipeRef pipe, PDTaskRef task, PDObjectRef object) {
         PDIObject *iob = [[PDIObject alloc] initWithObject:object];
         [iob markMutable];
-        [iob setInstance:bself];
+        [iob setSession:bself];
         return operation(bself, iob);
     });
     
@@ -335,7 +334,7 @@
 
 - (void)enqueueOperation:(PDIObjectOperation)operation
 {
-    __weak PDInstance *bself = self;
+    __weak PDISession *bself = self;
 
     PDPipeAddTask(_pipe, PDITaskCreateBlockMutator(^PDTaskResult(PDPipeRef pipe, PDTaskRef task, PDObjectRef object) {
         PDIObject *iob = [[PDIObject alloc] initWithObject:object];
@@ -359,7 +358,7 @@
         if (ref) {
             // got this already; we want to tweak it then
             if ([ref isKindOfClass:[PDIObject class]]) ref = [(PDIObject*)ref reference];
-            [self forObjectWithID:[ref objectID] enqueueOperation:^PDTaskResult(PDInstance *instance, PDIObject *object) {
+            [self forObjectWithID:[ref objectID] enqueueOperation:^PDTaskResult(PDISession *session, PDIObject *object) {
 //                [object setStreamIsEncrypted:NO];
                 [object setStreamContent:data encrypted:NO];
                 return PDTaskDone;
@@ -370,10 +369,10 @@
 //            [ob setStreamIsEncrypted:NO];
             [ob setStreamContent:data encrypted:NO];
             
-            [_rootObject enableMutationViaMimicSchedulingWithInstance:self];
+            [_rootObject enableMutationViaMimicSchedulingWithSession:self];
             [_rootObject setValue:ob forKey:key];
             
-            /*[self forObjectWithID:_rootObject.objectID enqueueOperation:^PDTaskResult(PDInstance *instance, PDIObject *object) {
+            /*[self forObjectWithID:_rootObject.objectID enqueueOperation:^PDTaskResult(PDISession *session, PDIObject *object) {
                 [object setValue:ob forKey:key];
                 return PDTaskDone;
             }];*/

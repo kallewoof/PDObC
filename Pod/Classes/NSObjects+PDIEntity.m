@@ -165,7 +165,7 @@
 @end
 
 @interface PDIName () 
-@property (nonatomic, strong) NSString *s;
+@property (nonatomic, copy) NSString *s;
 @end
 
 @implementation PDIName 

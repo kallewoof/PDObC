@@ -33,7 +33,7 @@
 @interface PDIPage () {
     NSArray *_contentObjects;
     NSString *_text;
-    __weak PDInstance *_instance;
+    __weak PDISession *_session;
 }
 
 @end
@@ -45,7 +45,7 @@
     PDRelease(_pageRef);
 }
 
-- (id)initWithPage:(PDPageRef)page inInstance:(PDInstance *)instance
+- (id)initWithPage:(PDPageRef)page inSession:(PDISession *)session
 {
     self = [super init];
     _pageRef = PDRetain(page);
@@ -53,7 +53,7 @@
 
     PDRect r = PDPageGetMediaBox(_pageRef);
     _mediaBox = (CGRect) PDRectToOSRect(r);
-    _instance = instance;
+    _session = session;
     
     return self;
 }
@@ -84,7 +84,7 @@
     NSMutableString *result = [NSMutableString string];
     char *buf;
     for (PDIObject *contents in [self contentObjects]) {
-        [contents enableMutationViaMimicSchedulingWithInstance:_instance];
+        [contents enableMutationViaMimicSchedulingWithSession:_session];
         [contents prepareStream];
         PDContentStreamRef cs = PDContentStreamCreateTextExtractor(contents.objectRef, &buf);
         PDContentStreamExecute(cs);

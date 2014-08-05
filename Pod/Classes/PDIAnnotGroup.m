@@ -27,21 +27,21 @@
 #import "PDIObject.h"
 #import "PDIAnnotation.h"
 #import "NSObjects+PDIEntity.h"
-#import "PDInstance.h"
+#import "PDISession.h"
 #import "PDArray.h"
 #import "PDIReference.h"
 
 @implementation PDIAnnotGroup {
     NSMutableArray *_annotations;
-    PDInstance *_instance;
+    PDISession *_session;
 }
 
-- (id)initWithObject:(PDIObject *)object inInstance:(PDInstance *)instance
+- (id)initWithObject:(PDIObject *)object inSession:(PDISession *)session
 {
     assert([object isKindOfClass:PDIObject.class]);
     self = [super init];
     if (self) {
-        _instance = instance;
+        _session = session;
         
         _object = object;
         NSInteger count = object.count;
@@ -60,28 +60,28 @@
         for (NSInteger i = 0; i < acount; i++) {
             id entry = array[i];
             if ([entry isKindOfClass:[PDIReference class]]) {
-                obj = [_instance fetchReadonlyObjectWithID:[(PDIReference *)entry objectID]];
+                obj = [_session fetchReadonlyObjectWithID:[(PDIReference *)entry objectID]];
             } else {
                 obj = [[PDIObject alloc] initWrappingValue:entry PDValue:PDArrayGetElement(_object.objectRef->inst, i)];
-//                obj = [instance appendObject];
+//                obj = [session appendObject];
 //                [obj setObjectValue:entry];
 //                [object replaceValueAtIndex:i withValue:obj];
             }
             
-            PDIAnnotation *annot = [[PDIAnnotation alloc] initWithObject:obj inAnnotGroup:self withInstance:instance];
+            PDIAnnotation *annot = [[PDIAnnotation alloc] initWithObject:obj inAnnotGroup:self withSession:session];
             [_annotations addObject:annot];
         }
         
-        [_object enableMutationViaMimicSchedulingWithInstance:instance];
+        [_object enableMutationViaMimicSchedulingWithSession:session];
     }
     return self;
 }
 
 - (PDIAnnotation *)appendAnnotation
 {
-    PDIObject *annotObj = [_instance appendObject];
+    PDIObject *annotObj = [_session appendObject];
     [annotObj setValue:[PDIName nameWithString:@"/Annot"] forKey:@"Type"];
-    PDIAnnotation *annot = [[PDIAnnotation alloc] initWithObject:annotObj inAnnotGroup:self withInstance:_instance];
+    PDIAnnotation *annot = [[PDIAnnotation alloc] initWithObject:annotObj inAnnotGroup:self withSession:_session];
     [_object appendValue:annotObj];
     [_annotations addObject:annot];
     return annot;
@@ -99,6 +99,15 @@
     
     [_object removeValueAtIndex:index];
     [_annotations removeObjectAtIndex:index];
+}
+
+@end
+
+@implementation PDIAnnotGroup (PDIDeprecated)
+
+- (id)initWithObject:(PDIObject *)object inInstance:(PDISession *)instance
+{
+    return [self initWithObject:object inSession:instance];
 }
 
 @end

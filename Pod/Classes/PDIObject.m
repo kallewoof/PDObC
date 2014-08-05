@@ -24,7 +24,7 @@
 
 #import "PDIObject.h"
 #import "NSObjects+PDIEntity.h"
-#import "PDInstance.h"
+#import "PDISession.h"
 #import "PDIReference.h"
 #import "PDIConversion.h"
 
@@ -40,7 +40,7 @@
 @interface PDIObject () {
     NSMutableDictionary *_dict;
     NSMutableArray *_arr;
-    __weak PDInstance *_instance;
+    __weak PDISession *_instance;
     NSMutableSet *_syncHooks;
     PDObjectType _type;
     BOOL _mutable;
@@ -103,7 +103,7 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
     return self;
 }
 
-- (id)initWithInstance:(PDInstance *)instance forDefinitionStack:(pd_stack)stack objectID:(NSInteger)objectID generationID:(NSInteger)generationID
+- (id)initWithSession:(PDISession *)instance forDefinitionStack:(pd_stack)stack objectID:(NSInteger)objectID generationID:(NSInteger)generationID
 {
     self = [self initWithIsolatedDefinitionStack:stack objectID:objectID generationID:generationID];
     if (self) {
@@ -217,12 +217,12 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
     }
 }
 
-- (BOOL)enableMutationViaMimicSchedulingWithInstance:(PDInstance *)instance
+- (BOOL)enableMutationViaMimicSchedulingWithSession:(PDISession *)instance
 {
     if (_mutable) _instance = instance;
     if (_instance) return YES;
     
-    [self setInstance:instance];
+    [self setSession:instance];
     if (! _mutable && ! PDParserIsObjectStillMutable(PDPipeGetParser(instance.pipe), _objectID)) {
         PDWarn("object %ld has passed through pipe and can no longer be modified", (long)_objectID);
         return NO;
@@ -235,16 +235,16 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
 {
     if (_mutable || ! _instance) return;
     _mutable = YES;
-    [_instance forObjectWithID:_objectID enqueueOperation:^PDTaskResult(PDInstance *instance, PDIObject *object) {
+    [_instance forObjectWithID:_objectID enqueueOperation:^PDTaskResult(PDISession *session, PDIObject *object) {
         [object mimic:self];
         return PDTaskUnload;
     }];
 }
 
-- (void)scheduleMimicWithInstance:(PDInstance *)instance
+- (void)scheduleMimicWithSession:(PDISession *)instance
 {
     if (_mutable) return;
-    [self enableMutationViaMimicSchedulingWithInstance:instance];
+    [self enableMutationViaMimicSchedulingWithSession:instance];
     [self scheduleMimicking];
 }
 
@@ -253,7 +253,7 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
     _mutable = YES;
 }
 
-- (void)setInstance:(PDInstance *)instance
+- (void)setSession:(PDISession *)instance
 {
     _instance = instance;
 }
@@ -433,12 +433,12 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
 //        PDIObject *realOb = [_instance appendObject];
 //        void *v = [ob PDValue];
 //        switch (PDResolve(v)) {
-//            case PDInstanceTypeArray:
+//            case PDSessionTypeArray:
 //                for (id v in ob) {
 //                    [realOb appendValue:v];
 //                }
 //                break;
-//            case PDInstanceTypeDict:
+//            case PDSessionTypeDict:
 //                for (id v in [ob allKeys]) {
 //                    [realOb setValue:[ob objectForKey:v] forKey:v];
 //                }
@@ -469,7 +469,7 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
 //            object.obj->obclass = PDObjectClassCompressed; // this isn't strictly the case, but it will result in no object identifying headers (e.g. 'trailer' or '1 2 obj') which is what we want
 //            _dict[key] = object;
 //            if (_instance) {
-//                [object setInstance:_instance];
+//                [object setSession:_instance];
 //                [object markInherentlyMutable];
 //                
 //                [self addSynchronizeHook:^(PDIObject *myself) {
@@ -713,6 +713,25 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
 - (PDObjectRef)objectRef
 {
     return _obj;
+}
+
+@end
+
+@implementation PDIObject (PDIDeprecated)
+
+- (id)initWithInstance:(PDISession *)instance forDefinitionStack:(pd_stack)stack objectID:(NSInteger)objectID generationID:(NSInteger)generationID
+{
+    return [self initWithSession:instance forDefinitionStack:stack objectID:objectID generationID:generationID];
+}
+
+- (BOOL)enableMutationViaMimicSchedulingWithInstance:(PDISession *)instance
+{
+    return [self enableMutationViaMimicSchedulingWithSession:instance];
+}
+
+- (void)scheduleMimicWithInstance:(PDISession *)instance
+{
+    [self scheduleMimicWithSession:instance];
 }
 
 @end

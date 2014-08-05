@@ -27,7 +27,7 @@
 @class PDIObject;
 @class PDIReference;
 @class PDIAnnotGroup;
-@class PDInstance;
+@class PDISession;
 
 #define PDIAnnotationSubtypeLink    @"/Link"
 
@@ -52,10 +52,11 @@ typedef enum {
 /**
  Initialize an annotation associated with the given annotations group.
  
- @param object The object for the annotation.
- @param annotGroup Annotations group to which this annotation will be added.
+ @param object The object for the annotation
+ @param annotGroup Annotations group to which this annotation will be added
+ @param session Associated PDISession object
  */
-- (id)initWithObject:(PDIObject *)object inAnnotGroup:(PDIAnnotGroup *)annotGroup withInstance:(PDInstance *)instance;
+- (id)initWithObject:(PDIObject *)object inAnnotGroup:(PDIAnnotGroup *)annotGroup withSession:(PDISession *)session;
 
 /**
  Delete this annotation from the resulting PDF.
@@ -67,7 +68,7 @@ typedef enum {
 
 //@property (nonatomic, readwrite) CGRect border;                 ///< The border of the annotation (it's 3 digits i.e. not a rect; investigate & fix) (could it be x-offs, y-offs, width or some such?
 @property (nonatomic, readwrite) CGRect             rect;       ///< The rect of the annotation
-@property (nonatomic, strong)    NSString          *subtype;    ///< The sub type
+@property (nonatomic, copy)    NSString          *subtype;    ///< The sub type
 
 // Dest (Dest) properties
 
@@ -89,9 +90,24 @@ typedef enum {
 
 // Action (A) properties
 
-@property (nonatomic, strong)    NSString          *aType;      ///< The A type, which can be "action" and nothing else right now
-@property (nonatomic, strong)    NSString          *sType;      ///< The S type, which can be "URI" and nothing else right now
-@property (nonatomic, strong)    NSString          *uriString;  ///< The URI string; if set, it will result in subtype=Link, aType=action, sType=URI, and the potential creation of a new URI object
+@property (nonatomic, copy)    NSString          *aType;      ///< The A type, which can be "action" and nothing else right now
+@property (nonatomic, copy)    NSString          *sType;      ///< The S type, which can be "URI" and nothing else right now
+@property (nonatomic, copy)    NSString          *uriString;  ///< The URI string; if set, it will result in subtype=Link, aType=action, sType=URI, and the potential creation of a new URI object
+
+@end
+
+@interface PDIAnnotation (PDIDeprecated)
+
+/**
+ Initialize an annotation associated with the given annotations group.
+ 
+ @warning Deprecated method. Use -initWithObject:inAnnotGroup:withSession:.
+ 
+ @param object The object for the annotation.
+ @param annotGroup Annotations group to which this annotation will be added.
+ @param instance Instance.
+ */
+- (id)initWithObject:(PDIObject *)object inAnnotGroup:(PDIAnnotGroup *)annotGroup withInstance:(PDISession *)instance __deprecated;
 
 @end
 

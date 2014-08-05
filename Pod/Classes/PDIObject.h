@@ -38,7 +38,7 @@
  Because `Pajdeg` does not inherently support encryption, changing an object's stream content for a PDF that is encrypted will result in a broken PDF, because the PDF viewer will expect the (plaintext) content to be encrypted. To resolve this issue, setStreamIsEncrypted: must be called with `NO` for plaintext data. It is safe to call this method even if the input PDF is not encrypted.
  */
 
-@class PDInstance;
+@class PDISession;
 @class PDIReference;
 
 /**
@@ -71,16 +71,16 @@
 - (id)initWithIsolatedDefinitionStack:(pd_stack)stack objectID:(NSInteger)objectID generationID:(NSInteger)generationID;
 
 /**
- Initialize an instance object from a pd_stack, configuring it with parameters from the PDF via the instance object.
+ Initialize an instance object from a pd_stack, configuring it with parameters from the PDF via the session object.
  
  @note Does not enable mutation, despite being handed an instance reference.
  
- @param instance Instance.
+ @param instance Session.
  @param stack The pd_stack containing the object definitions.
  @param objectID The object ID.
  @param generationID The generation ID.
  */
-- (id)initWithInstance:(PDInstance *)instance forDefinitionStack:(pd_stack)stack objectID:(NSInteger)objectID generationID:(NSInteger)generationID;
+- (id)initWithSession:(PDISession *)session forDefinitionStack:(pd_stack)stack objectID:(NSInteger)objectID generationID:(NSInteger)generationID;
 
 /**
  *  Initialize a fake object wrapping the given value. Fake objects are handy when working with methods that require an object to work with.
@@ -119,17 +119,17 @@
  
  This is different from scheduling mimicking directly, in that the object will not schedule mimicking unless it is actually modified.
  
- @param instance The instance object.
+ @param session The session object.
  @return true if mutation was made possible; false if the object cannot be made mutable any longer
  */
-- (BOOL)enableMutationViaMimicSchedulingWithInstance:(PDInstance *)instance;
+- (BOOL)enableMutationViaMimicSchedulingWithSession:(PDISession *)session;
 
 /**
  Schedules mimicking of the object, which means readonly objects are made readwritable up until the object passes through the pipe into the output stream.
  
- @param instance The instance object.
+ @param session The session object.
  */
-- (void)scheduleMimicWithInstance:(PDInstance *)instance;
+- (void)scheduleMimicWithSession:(PDISession *)session;
 
 /**
  Get a PDIReference instance for this object.
@@ -375,5 +375,44 @@
  *  The internal PDObject reference.
  */
 @property (nonatomic, readonly) PDObjectRef objectRef;
+
+@end
+
+@interface PDIObject (PDIDeprecated)
+
+/**
+ Initialize an instance object from a pd_stack, configuring it with parameters from the PDF via the instance object.
+ 
+ @warning Deprecated method. Use -initWithSession:forDefinitionStack:objectID:generationID:.
+ 
+ @note Does not enable mutation, despite being handed an instance reference.
+ 
+ @param instance Instance.
+ @param stack The pd_stack containing the object definitions.
+ @param objectID The object ID.
+ @param generationID The generation ID.
+ */
+- (id)initWithInstance:(PDISession *)instance forDefinitionStack:(pd_stack)stack objectID:(NSInteger)objectID generationID:(NSInteger)generationID __deprecated;
+
+/**
+ Enable mutation via mimic scheduling for this object.
+ 
+ This is different from scheduling mimicking directly, in that the object will not schedule mimicking unless it is actually modified.
+ 
+ @warning Deprecated method. Use -enableMutationViaMimicSchedulingWithSession:.
+ 
+ @param instance The instance object.
+ @return true if mutation was made possible; false if the object cannot be made mutable any longer
+ */
+- (BOOL)enableMutationViaMimicSchedulingWithInstance:(PDISession *)instance __deprecated;
+
+/**
+ Schedules mimicking of the object, which means readonly objects are made readwritable up until the object passes through the pipe into the output stream.
+ 
+ @warning Deprecated method. Use -scheduleMimicWithInstance:.
+
+ @param instance The instance object.
+ */
+- (void)scheduleMimicWithInstance:(PDISession *)instance __deprecated;
 
 @end

@@ -26,7 +26,7 @@
 #import "PDIAnnotation.h"
 #import "PDIAnnotGroup.h"
 #import "PDIReference.h"
-#import "PDInstance.h"
+#import "PDISession.h"
 #import "NSObjects+PDIEntity.h"
 #import "PDIString.h"
 #import "PDIConversion.h"
@@ -38,21 +38,21 @@
     PDIObject *_uri;
     PDIObject *_dest;
     PDIReference *_dDest;
-    PDInstance *_instance;
+    PDISession *_session;
     PDIString *_directURI;
     PDIName *_subtype, *_aType, *_sType;
     NSMutableArray *_fit;
     CGRect _rect;
 }
 
-- (id)initWithObject:(PDIObject *)object inAnnotGroup:(PDIAnnotGroup *)annotGroup withInstance:(PDInstance *)instance
+- (id)initWithObject:(PDIObject *)object inAnnotGroup:(PDIAnnotGroup *)annotGroup withSession:(PDISession *)session
 {
     self = [super init];
     if (self) {
-        _instance = instance;
+        _session = session;
         _annotGroup = annotGroup;
         _object = object;
-        [_object enableMutationViaMimicSchedulingWithInstance:instance];
+        [_object enableMutationViaMimicSchedulingWithSession:session];
         
 //        PDIReference *ref;
         NSArray *arr = [_object valueForKey:@"Rect"];
@@ -69,7 +69,7 @@
         
         _dest = [_object objectForKey:@"Dest"];
         if (_dest) {
-            [_dest enableMutationViaMimicSchedulingWithInstance:_instance];
+            [_dest enableMutationViaMimicSchedulingWithSession:_session];
             if (_dest.type == PDObjectTypeString) {
                 // this is a named destination
                 // we don't deal with that right now
@@ -97,8 +97,8 @@
                     // it can be a ref or a direct URI
 //                    ref = [[PDIReference alloc] initWithString:s];
                     if ([uriValue isKindOfClass:[PDIReference class]]) {
-                        _uri = [_instance fetchReadonlyObjectWithID:[(PDIReference *)uriValue objectID]];
-                        //[_uri scheduleMimicWithInstance:_instance];
+                        _uri = [_session fetchReadonlyObjectWithID:[(PDIReference *)uriValue objectID]];
+                        //[_uri scheduleMimicWithSession:_session];
                         //_mutatingURI = YES;
                     } else {
                         _directURI = [PDIString stringWithPDFString:uriValue];
@@ -107,7 +107,7 @@
             }
         } else if (! _dest) {
             _ownsA = YES;
-            _a = [_instance appendObject];
+            _a = [_session appendObject];
             [_object setValue:_a forKey:@"A"];
             [_a setValue:[PDIName nameWithString:PDIAnnotationATypeAction] forKey:@"Type"];
         }
@@ -254,7 +254,7 @@
 
 - (void)setDDestByPageIndex:(NSInteger)pageIndex
 {
-    self.dDest = [[PDIReference alloc] initWithObjectID:[_instance objectIDForPageNumber:pageIndex] generationID:0];
+    self.dDest = [[PDIReference alloc] initWithObjectID:[_session objectIDForPageNumber:pageIndex] generationID:0];
 }
 
 - (NSArray *)fit
@@ -277,6 +277,15 @@
             [_dest removeValueAtIndex:count];
         }
     }
+}
+
+@end
+
+@implementation PDIAnnotation (PDIDeprecated)
+
+- (id)initWithObject:(PDIObject *)object inAnnotGroup:(PDIAnnotGroup *)annotGroup withInstance:(PDISession *)instance
+{
+    return [self initWithObject:object inAnnotGroup:annotGroup withSession:instance];
 }
 
 @end

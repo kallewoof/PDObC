@@ -6,7 +6,7 @@
 //  Copyright (c) 2014 Kalle Alm. All rights reserved.
 //
 
-#import "PDInstance.h"
+#import "PDISession.h"
 #import "PDIAnnotation.h"
 #import "PDIAnnotGroup.h"
 #import "PDIObject.h"
@@ -24,7 +24,7 @@ SpecBegin(InitialSpecs)
 
 NSFileManager *_fm = [NSFileManager defaultManager];
 NSFileManager *fm = _fm;
-__block PDInstance *_instance;
+__block PDISession *_session;
 
 void (^configInOut)(NSString *file_in, NSString *file_out) = ^(NSString *file_in, NSString *file_out) {
     assert(file_in);
@@ -33,7 +33,7 @@ void (^configInOut)(NSString *file_in, NSString *file_out) = ^(NSString *file_in
     [_fm createDirectoryAtPath:NSTemporaryDirectory() withIntermediateDirectories:YES attributes:nil error:nil];
     [_fm removeItemAtPath:file_out error:NULL];
     
-    _instance = [[PDInstance alloc] initWithSourcePDFPath:file_in destinationPDFPath:file_out];
+    _session = [[PDISession alloc] initWithSourcePDFPath:file_in destinationPDFPath:file_out];
 };
 
 //sharedExamplesFor(@"a regular PDF", ^(NSDictionary *data) {
@@ -57,15 +57,15 @@ void (^configInOut)(NSString *file_in, NSString *file_out) = ^(NSString *file_in
 //                
 //                it(@"should process original successfully", ^{
 //                    configInOut([path stringByAppendingString:pdf], out1);
-//                    [_instance execute];
+//                    [_session execute];
 //                    expect([_fm fileExistsAtPath:out1]).to.beTruthy();
 //                });
 //                
 //                it(@"should process generated PDF successfully", ^{
 //                    configInOut(out1, out2);
-//                    [_instance execute];
+//                    [_session execute];
 //                    expect([_fm fileExistsAtPath:out2]).to.beTruthy();
-//                    _instance = nil;
+//                    _session = nil;
 //                });
 //            }
 //        }
@@ -91,17 +91,17 @@ sharedExamplesFor(@"a PDF with annotations updated", ^(NSDictionary *data) {
 
             it(@"should replace annotations correctly", ^{
                 configInOut([path stringByAppendingString:pdf], out1);
-                NSInteger pages = [_instance numberOfPages];
+                NSInteger pages = [_session numberOfPages];
                 for (NSInteger i = 0; i < pages; i++) {
-                    PDIObject *pageOb = [_instance fetchReadonlyObjectWithID:[_instance objectIDForPageNumber:i+1]];
-                    [pageOb enableMutationViaMimicSchedulingWithInstance:_instance];
+                    PDIObject *pageOb = [_session fetchReadonlyObjectWithID:[_session objectIDForPageNumber:i+1]];
+                    [pageOb enableMutationViaMimicSchedulingWithSession:_session];
                     expect(pageOb).toNot.beNil();
                     PDIObject *annotsOb = [pageOb objectForKey:@"Annots"];
                     if (annotsOb) {
                         if ([annotsOb isKindOfClass:[PDIReference class]])
-                            annotsOb = [_instance fetchReadonlyObjectWithID:annotsOb.objectID];
+                            annotsOb = [_session fetchReadonlyObjectWithID:annotsOb.objectID];
                         expect(annotsOb).toNot.beNil();
-                        PDIAnnotGroup *annotsGrp = [[PDIAnnotGroup alloc] initWithObject:annotsOb inInstance:_instance];
+                        PDIAnnotGroup *annotsGrp = [[PDIAnnotGroup alloc] initWithObject:annotsOb inSession:_session];
                         expect(annotsGrp).toNot.beNil();
                         for (PDIAnnotation *annotation in annotsGrp.annotations) {
                             expect([annotation isKindOfClass:[PDIAnnotation class]]).to.beTruthy();
@@ -114,15 +114,15 @@ sharedExamplesFor(@"a PDF with annotations updated", ^(NSDictionary *data) {
             });
             
             it(@"should execute annotation tasks correctly", ^{
-                [_instance execute];
+                [_session execute];
                 expect([fm fileExistsAtPath:out1]).to.beTruthy();
             });
             
             it(@"should process resulting PDF without issues", ^{
                 configInOut(out1, out2);
-                [_instance execute];
+                [_session execute];
                 expect([fm fileExistsAtPath:out2]).to.beTruthy();
-                _instance = nil;
+                _session = nil;
             });
         }
     }
@@ -147,24 +147,24 @@ sharedExamplesFor(@"a PDF with annotations created", ^(NSDictionary *data) {
             
             it(@"should create annotations correctly", ^{
                 configInOut([path stringByAppendingString:pdf], out1);
-                NSInteger pages = [_instance numberOfPages];
+                NSInteger pages = [_session numberOfPages];
                 for (NSInteger i = 0; i < pages; i++) {
                     
                     PDIObject *annotsOb;
-                    PDIObject *pageOb = [_instance fetchReadonlyObjectWithID:[_instance objectIDForPageNumber:i+1]];
-                    [pageOb enableMutationViaMimicSchedulingWithInstance:_instance];
+                    PDIObject *pageOb = [_session fetchReadonlyObjectWithID:[_session objectIDForPageNumber:i+1]];
+                    [pageOb enableMutationViaMimicSchedulingWithSession:_session];
                     expect(pageOb).toNot.beNil();
                     annotsOb = [pageOb resolvedValueForKey:@"Annots"];
                     if (! annotsOb) {
-                        [pageOb enableMutationViaMimicSchedulingWithInstance:_instance];
-                        annotsOb = [_instance appendObject];
+                        [pageOb enableMutationViaMimicSchedulingWithSession:_session];
+                        annotsOb = [_session appendObject];
                         [pageOb setValue:annotsOb forKey:@"Annots"];
                     }
                     
                     if ([annotsOb isKindOfClass:[NSArray class]]) {
                         // we need a proper object because we want to modify it
-                        [pageOb enableMutationViaMimicSchedulingWithInstance:_instance];
-                        PDIObject *realOb = [_instance appendObject];
+                        [pageOb enableMutationViaMimicSchedulingWithSession:_session];
+                        PDIObject *realOb = [_session appendObject];
                         [pageOb setValue:realOb forKey:@"Annots"];
                         for (id v in (id) annotsOb) {
                             [realOb appendValue:v];
@@ -173,7 +173,7 @@ sharedExamplesFor(@"a PDF with annotations created", ^(NSDictionary *data) {
                     }
                     
                     expect(annotsOb).toNot.beNil();
-                    PDIAnnotGroup *annotsGrp = [[PDIAnnotGroup alloc] initWithObject:annotsOb inInstance:_instance];
+                    PDIAnnotGroup *annotsGrp = [[PDIAnnotGroup alloc] initWithObject:annotsOb inSession:_session];
                     expect(annotsGrp).toNot.beNil();
                     PDIAnnotation *annot = [annotsGrp appendAnnotation];
                     annot.rect = (CGRect){100,100,100,100};
@@ -183,15 +183,15 @@ sharedExamplesFor(@"a PDF with annotations created", ^(NSDictionary *data) {
             });
             
             it(@"should execute annotation tasks correctly", ^{
-                [_instance execute];
+                [_session execute];
                 expect([fm fileExistsAtPath:out1]).to.beTruthy();
             });
             
             it(@"should process resulting PDF without issues", ^{
                 configInOut(out1, out2);
-                [_instance execute];
+                [_session execute];
                 expect([fm fileExistsAtPath:out2]).to.beTruthy();
-                _instance = nil;
+                _session = nil;
             });
         }
     }

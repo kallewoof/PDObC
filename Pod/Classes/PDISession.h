@@ -1,5 +1,5 @@
 //
-// PDInstance.h
+// PDISession.h
 //
 // Copyright (c) 2012 - 2014 Karl-Johan Alm (http://github.com/kallewoof)
 // 
@@ -25,7 +25,7 @@
 #import <Foundation/Foundation.h>
 
 /**
- `PDInstance` is the main object for modifying PDF's in Objective-C via `Pajdeg`. It has a number of methods for performing common operations, and provides the means to do more fine grained operations via the operation enqueueing mechanism.
+ `PDISession` is the main object for modifying PDF's in Objective-C via `Pajdeg`. It has a number of methods for performing common operations, and provides the means to do more fine grained operations via the operation enqueueing mechanism.
  
  ## PDF modification via Pajdeg
  
@@ -35,9 +35,9 @@
  
  The simplest example does nothing except pass an existing PDF through `Pajdeg` out to a new file. 
  
-    PDInstance *instance = [[PDInstance alloc] initWithSourcePDFPath:@"/path/to/in.pdf" destinationPDFPath:@"/path/to/out.pdf"];
-    [instance execute];
-    [instance release];
+    PDISession *session = [[PDISession alloc] initWithSourcePDFPath:@"/path/to/in.pdf" destinationPDFPath:@"/path/to/out.pdf"];
+    [session execute];
+    [session release];
  
  The execute method performs all enqueued tasks and frees up the internal `Pajdeg` object, and should be called at most once.
  
@@ -45,14 +45,14 @@
  
  Adding metadata to a PDF can be done using the setRootStream:forKey: method directly. This is a convenience method which sets up tasks to perform the requested changes, including adding a `/Metadata` reference entry to the PDF root object. 
  
-    PDInstance *instance = [[PDInstance alloc] initWithSourcePDFPath:@"/path/to/in.pdf" destinationPDFPath:@"/path/to/out.pdf"];
-    [instance setRootStream:[@"Hello World" dataUsingEncoding:NSUTF8StringEncoding] forKey:@"Metadata"];
-    [instance execute];
-    [instance release];
+    PDISession *session = [[PDISession alloc] initWithSourcePDFPath:@"/path/to/in.pdf" destinationPDFPath:@"/path/to/out.pdf"];
+    [session setRootStream:[@"Hello World" dataUsingEncoding:NSUTF8StringEncoding] forKey:@"Metadata"];
+    [session execute];
+    [session release];
  
  */
 
-@class PDInstance;
+@class PDISession;
 @class PDIObject;
 @class PDIReference;
 @class PDIPage;
@@ -62,23 +62,23 @@
 /**
  Block method for object operations.
  
- Modifications to PDFs are exclusively done via PDIObjectOperation type blocks. Provided in the call are the instance and object references, and a PDTaskResult value must be returned (normally PDTaskDone).
+ Modifications to PDFs are exclusively done via PDIObjectOperation type blocks. Provided in the call are the session and object references, and a PDTaskResult value must be returned (normally PDTaskDone).
  
- @param instance The instance reference for the session.
+ @param session The session reference for the session.
  @param object   One of the mutable objects associated with the operation.
 
  @return The task result, one of PDTaskDone, PDTaskFailure, PDTaskSkipRest, and PDTaskUnload. 
  */
-typedef PDTaskResult (^PDIObjectOperation)(PDInstance *instance, PDIObject *object);
+typedef PDTaskResult (^PDIObjectOperation)(PDISession *session, PDIObject *object);
 
-@interface PDInstance : NSObject
+@interface PDISession : NSObject
 
 ///---------------------------------------
-/// @name Initializing a PDInstance object
+/// @name Initializing a PDISession object
 ///---------------------------------------
 
 /**
- Sets up a new PD instance for a source PDF (read) and a destination PDF (updated version). 
+ Sets up a new PD session for a source PDF (read) and a destination PDF (updated version). 
  
  @param sourcePDFPath   The input PDF file. File must exist and be readable.
  @param destPDFPath     The output PDF file. Location must be read-writable.
@@ -90,7 +90,7 @@ typedef PDTaskResult (^PDIObjectOperation)(PDInstance *instance, PDIObject *obje
 - (id)initWithSourcePDFPath:(NSString *)sourcePDFPath destinationPDFPath:(NSString *)destPDFPath;
 
 /**
- Sets up a new PD instance for a source PDF as a URL and a destination PDF (updated version) as a file path. 
+ Sets up a new PD session for a source PDF as a URL and a destination PDF (updated version) as a file path. 
  
  @param sourceURL       The input PDF source URL, which must be a file URL. The file must exist and be readable.
  @param destPDFPath     The output PDF file. Location must be read-writable.
@@ -117,14 +117,14 @@ typedef PDTaskResult (^PDIObjectOperation)(PDInstance *instance, PDIObject *obje
 /**
  Adds a new object to the PDF at the current position.
  
- @return PDIObject instance
+ @return PDIObject session
  */
 - (PDIObject *)insertObject;
 
 /**
  Adds a new object to the PDF at the end (recommended if object value is not defined on creation -- appended objects can be modified until the last existing object has been read from the input).
  
- @return PDIObject instance
+ @return PDIObject session
  */
 - (PDIObject *)appendObject;
 
@@ -158,7 +158,7 @@ typedef PDTaskResult (^PDIObjectOperation)(PDInstance *instance, PDIObject *obje
 /**
  *  Inserts the given page into the PDF document, so that it becomes the new page at pageNumber (and the old, and subsequent pages, become the pages of pageNumber + 1, ...).
  *
- *  @param page       The page to insert, which must not be native to the instance (i.e. it must be form a separate PDInstance)
+ *  @param page       The page to insert, which must not be native to the session (i.e. it must be form a separate PDISession)
  *  @param pageNumber Page number at which the page should be inserted in the PDF
  *
  *  @return The new native PDIPage object based on page
@@ -166,13 +166,13 @@ typedef PDTaskResult (^PDIObjectOperation)(PDInstance *instance, PDIObject *obje
 - (PDIPage *)insertPage:(PDIPage *)page atPageNumber:(NSInteger)pageNumber;
 
 ///---------------------------------------
-/// @name Random access readonly instances 
+/// @name Random access readonly sessions 
 ///---------------------------------------
 
 /**
  Fetch a read only copy of the object with the given ID.
  
- If modifications need to be made, the object's -scheduleMimicWithInstance: method must be called.
+ If modifications need to be made, the object's -scheduleMimicWithSession: method must be called.
 
  @param objectID The ID of the object to fetch.
  */
@@ -208,7 +208,7 @@ typedef PDTaskResult (^PDIObjectOperation)(PDInstance *instance, PDIObject *obje
  
  The `PDIObjectOperation` is a block defined as
  
-    typedef void (^PDIObjectOperation)(PDInstance *instance, PDIObject *object);
+    typedef void (^PDIObjectOperation)(PDISession *session, PDIObject *object);
  
  @param objectID  The ID of the object in question. No generation ID is included, because `Pajdeg` does not trigger for deprecated objects.
  @param operation The `PDIObjectOperation` that should trigger. 
@@ -277,12 +277,12 @@ typedef PDTaskResult (^PDIObjectOperation)(PDInstance *instance, PDIObject *obje
 /**
  The source PDF path.
  */
-@property (nonatomic, readonly, strong) NSString *sourcePDFPath;
+@property (nonatomic, readonly, copy) NSString *sourcePDFPath;
 
 /**
  The destination PDF path.
  */
-@property (nonatomic, readonly, strong) NSString *destPDFPath;
+@property (nonatomic, readonly, copy) NSString *destPDFPath;
 
 /**
  The number of (live) objects seen in the input PDF. This property is undefined until -execute has been called.
@@ -321,7 +321,7 @@ typedef PDTaskResult (^PDIObjectOperation)(PDInstance *instance, PDIObject *obje
  *  Setting the documentID for a nil-value documentID and/or documentInstanceID PDF will have the side effect of setting
  *  the documentInstanceID to the same value, according to the recommendation in the PDF spec.
  */
-@property (nonatomic, strong) NSString *documentID;
+@property (nonatomic, copy) NSString *documentID;
 
 /**
  *  16-byte (32-letter) HEX string uniquely (in theory) identifying this VERSION of this PDF document.
@@ -329,10 +329,10 @@ typedef PDTaskResult (^PDIObjectOperation)(PDInstance *instance, PDIObject *obje
  *  to base the value on the MD5 value of the current time, the file's path, the file's size in bytes, and the value
  *  of all the entries in the file's document information (/Info) dictionary.
  */
-@property (nonatomic, strong) NSString *documentInstanceID;
+@property (nonatomic, copy) NSString *documentInstanceID;
 
 /**
- *  A dictionary for storing arbitrary information (e.g. in a category on PDInstance).
+ *  A dictionary for storing arbitrary information (e.g. in a category on PDISession).
  */
 @property (nonatomic, readonly) NSMutableDictionary *sessionDict;
 

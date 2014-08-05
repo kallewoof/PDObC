@@ -25,7 +25,7 @@
 #import <Foundation/Foundation.h>
 #import "PDDefines.h"
 
-@class PDInstance;
+@class PDISession;
 @class PDIObject;
 
 /**
@@ -47,7 +47,7 @@
 /**
  *  A single string containing all the text on the page.
  */
-@property (nonatomic, readonly, strong) NSString *text;
+@property (nonatomic, readonly, copy) NSString *text;
 
 /**
  *  An array of PDIReference and/or PDIObjects, one per annotation on the page.
