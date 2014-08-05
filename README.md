@@ -20,6 +20,8 @@ it, simply add the following line to your Podfile:
 
     pod "PajdegPDF"
 
+***Note that there is another pod called "Pajdeg" which is a deprecated clone of this pod.****
+
 ## Author
 
 Kalle Alm, my name with dots at gmail.
