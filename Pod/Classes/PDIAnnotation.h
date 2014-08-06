@@ -107,7 +107,7 @@ typedef enum {
  @param annotGroup Annotations group to which this annotation will be added.
  @param instance Instance.
  */
-- (id)initWithObject:(PDIObject *)object inAnnotGroup:(PDIAnnotGroup *)annotGroup withInstance:(PDISession *)instance __deprecated;
+- (id)initWithObject:(PDIObject *)object inAnnotGroup:(PDIAnnotGroup *)annotGroup withInstance:(PDISession *)instance PD_DEPRECATED(0.0, 0.2);
 
 @end
 

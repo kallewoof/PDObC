@@ -392,7 +392,7 @@
  @param objectID The object ID.
  @param generationID The generation ID.
  */
-- (id)initWithInstance:(PDISession *)instance forDefinitionStack:(pd_stack)stack objectID:(NSInteger)objectID generationID:(NSInteger)generationID __deprecated;
+- (id)initWithInstance:(PDISession *)instance forDefinitionStack:(pd_stack)stack objectID:(NSInteger)objectID generationID:(NSInteger)generationID PD_DEPRECATED(0.0, 0.2);
 
 /**
  Enable mutation via mimic scheduling for this object.
@@ -404,7 +404,7 @@
  @param instance The instance object.
  @return true if mutation was made possible; false if the object cannot be made mutable any longer
  */
-- (BOOL)enableMutationViaMimicSchedulingWithInstance:(PDISession *)instance __deprecated;
+- (BOOL)enableMutationViaMimicSchedulingWithInstance:(PDISession *)instance PD_DEPRECATED(0.0, 0.2);
 
 /**
  Schedules mimicking of the object, which means readonly objects are made readwritable up until the object passes through the pipe into the output stream.
@@ -413,6 +413,6 @@
 
  @param instance The instance object.
  */
-- (void)scheduleMimicWithInstance:(PDISession *)instance __deprecated;
+- (void)scheduleMimicWithInstance:(PDISession *)instance PD_DEPRECATED(0.0, 0.2);
 
 @end

@@ -67,8 +67,8 @@
  @warning Deprecated method. Use -initWithObject:inSession:.
  
  @param object The annots object.
- @param instance The PDInstance.
+ @param instance The PDISession.
  */
-- (id)initWithObject:(PDIObject *)object inInstance:(PDISession *)instance __deprecated;
+- (id)initWithObject:(PDIObject *)object inInstance:(PDISession *)instance PD_DEPRECATED(0.0, 0.2);
 
 @end
