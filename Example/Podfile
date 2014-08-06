@@ -2,7 +2,7 @@
 
 target 'Pajdeg', :exclusive => true do
   pod "PajdegPDF", :path => "../"
-  pod "PajdegCore", "~> 0.0.3"
+  pod "PajdegCore", "~> 0.0.5"
 end
 
 target 'Tests', :exclusive => true do
