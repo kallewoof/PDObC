@@ -20,6 +20,8 @@ it, simply add the following line to your Podfile:
 
     pod "PajdegPDF"
 
+***Note that there is another pod called "Pajdeg" which is a deprecated clone of this pod.***
+
 ## Author
 
 Kalle Alm, my name with dots at gmail.
@@ -62,7 +64,7 @@ That should be everything. You can test if it works by putting a PDF file test.p
 
 ```objective-c
 PDISession *session = [[PDISession alloc] initWithSourcePDFPath:[NSString stringWithFormat:@"/Users/%@/test.pdf", NSUserName()] 
-                                              destinationPDFPath:[NSString stringWithFormat:@"/Users/%@/out.pdf", NSUserName()]];
+                                             destinationPDFPath:[NSString stringWithFormat:@"/Users/%@/out.pdf", NSUserName()]];
 [session forObjectWithID:[[session infoReference] objectID] enqueueOperation:^PDTaskResult(PDISession *session, PDIObject *object) {
     [object setValue:@"John Doe" forKey:@"Author"];
     return PDTaskDone;
