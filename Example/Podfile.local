@@ -1,5 +1,0 @@
-# Local dev pods
-
-# e.g.
-# pod 'DTFoundation', :path => '~/Documents/Projects/DTFoundation'
-pod 'PajdegCore', :path => '~/svnskotos/i/PajdegCore'
