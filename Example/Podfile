@@ -1,7 +1,4 @@
-# From: http://www.cocoanetics.com/2014/07/development-pods/
-# Allows per-dev overrides
-#local_podfile = "Podfile.local"
-#eval(File.open(local_podfile).read) if File.exist? local_podfile
+# No Podfile.local stuff in here, as it completely fubar's the pod setup.
 
 target 'Pajdeg', :exclusive => true do
   pod "PajdegPDF", :path => "../"
