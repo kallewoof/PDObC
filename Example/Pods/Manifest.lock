@@ -13,14 +13,11 @@ DEPENDENCIES:
   - Expecta
   - Expecta+Snapshots
   - FBSnapshotTestCase
-  - PajdegCore (from `~/svnskotos/i/PajdegCore`)
   - PajdegCore (~> 0.0.5)
   - PajdegPDF (from `../`)
   - Specta (~> 0.2.1)
 
 EXTERNAL SOURCES:
-  PajdegCore:
-    :path: ~/svnskotos/i/PajdegCore
   PajdegPDF:
     :path: ../
 
@@ -28,7 +25,7 @@ SPEC CHECKSUMS:
   Expecta: 03aabd0a89d8dea843baecb19a7fd7466a69a31d
   Expecta+Snapshots: 30c28e3d8104665ee70e32df1cfc030bb37a8a6c
   FBSnapshotTestCase: 9053afee1d66b4c7c313fcb0ae582a5e47bea9d0
-  PajdegCore: d257a3a454365d6141270a6918489c43c9dea7a0
+  PajdegCore: 0f968517402f03541d8173039df1793402bd37ef
   PajdegPDF: 68ed4e7a848c10dfd5564fd86b060ec58330bdbb
   Specta: 9141310f46b1f68b676650ff2854e1ed0b74163a
 

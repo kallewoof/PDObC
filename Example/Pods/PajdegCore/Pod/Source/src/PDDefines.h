@@ -123,6 +123,26 @@
 //#define DEBUG_PD_RELEASES
 
 /**
+ *  The __deprecated macro should be available.
+ */
+#ifndef __deprecated
+#    warning __deprecated macro was not defined; consider including <sys/cdefs.h>
+#    define __deprecated 
+#endif
+
+/**
+ *  Deprecation Pseudo-Macro, used to mark functions or methods as deprecated as of a given version.
+ *  The method also includes a version of introduction, indicating when the given method was added
+ *  to Pajdeg. 
+ *
+ *  @warning Deprecations are removed in each major version increment. I.e. if a method `-foo:` was deprecated in version 0.2.0, it will remain in the code base as a deprecated method through 0.3.0, 0.4.0, ... until 1.0.0, at which point it is removed from the code base completely (thus causing crashes for anyone going from 0.x to 1.0 without addressing deprecations).
+ *
+ *  @param introduce_version Version at which the deprecated method or function was added to Pajdeg
+ *  @param deprecate_version Version at which the deprecated method or function was first deprecated
+ */
+#define PD_DEPRECATED(introduce_version, deprecate_version) __deprecated
+
+/**
  @defgroup CORE_GRP Core types
  @brief Internal type definitions.
  

@@ -39,18 +39,26 @@
 
 static char *PDFTypeStrings[_PDFTypeCount] = {kPDFTypeStrings};
 
+static int PDPipeFileDescriptorBalance = 0;
+
 void PDPipeCloseFileStream(FILE *stream)
 {
+    PDPipeFileDescriptorBalance--;
+    if (PDPipeFileDescriptorBalance > 8) {
+        PDError("Excess file descriptors -- PDPipeRefs are probably leaking!");
+    }
     fclose(stream);
 }
 
 FILE *PDPipeOpenInputStream(const char *path)
 {
+    PDPipeFileDescriptorBalance++;
     return fopen(path, "r");
 }
 
 FILE *PDPipeOpenOutputStream(const char *path)
 {
+    PDPipeFileDescriptorBalance++;
     return fopen(path, "w+");
 }
 
@@ -255,10 +263,15 @@ PDBool PDPipePrepare(PDPipeRef pipe)
     }
     
     pipe->fi = PDPipeOpenInputStream(pipe->pi);
-    if (NULL == pipe->fi) return false;
+    if (NULL == pipe->fi) {
+        PDNotice("unable to open input stream for path: %s", pipe->pi);
+        return false;
+    }
     pipe->fo = PDPipeOpenOutputStream(pipe->po);
     if (NULL == pipe->fo) {
+        PDNotice("unable to open output stream for path: %s", pipe->po);
         PDPipeCloseFileStream(pipe->fi);
+        pipe->fi = NULL;
         return false;
     }
     
@@ -272,6 +285,7 @@ PDBool PDPipePrepare(PDPipeRef pipe)
         if (pipe->parser->crypto) {
             if (pipe->parser->crypto->cfMethod == pd_crypto_method_aesv2) {
                 // we don't support AES right now
+                PDWarn("AES unsupported; pipe prepare failed for input file %s", pipe->pi);
                 return false;
             }
         }

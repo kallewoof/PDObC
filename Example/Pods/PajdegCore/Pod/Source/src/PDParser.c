@@ -301,7 +301,7 @@ PDObjectRef PDParserLocateAndCreateObject(PDParserRef parser, PDInteger obid, PD
     
     pd_stack defs = PDParserLocateAndCreateDefinitionForObject(parser, obid, master);
     if (defs == NULL) {
-        PDNotice("unable to locate definitions for object %d (%s)", obid, master ? "master XREF" : "current XREF");
+        PDNotice("unable to locate definitions for object %ld (%s)", obid, master ? "master XREF" : "current XREF");
         return NULL;
     }
     
