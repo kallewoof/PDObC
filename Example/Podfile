@@ -5,7 +5,7 @@ eval(File.open(local_podfile).read) if File.exist? local_podfile
 
 target 'Pajdeg', :exclusive => true do
   pod "PajdegPDF", :path => "../"
-  pod "PajdegCore", "~> 0.0.5"
+  pod "PajdegCore", "~> 0.0.4"
 end
 
 target 'Tests', :exclusive => true do
