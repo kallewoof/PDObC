@@ -260,19 +260,19 @@
     return object;
 }
 
-- (NSInteger)numberOfPages
+- (NSUInteger)numberOfPages
 {
     PDCatalogRef catalog = PDParserGetCatalog(_parser);
     return (catalog ? PDCatalogGetPageCount(catalog) : 0);
 }
 
-- (NSInteger)objectIDForPageNumber:(NSInteger)pageNumber
+- (NSInteger)objectIDForPageNumber:(NSUInteger)pageNumber
 {
     PDCatalogRef catalog = PDParserGetCatalog(_parser);
     return PDCatalogGetObjectIDForPage(catalog, pageNumber);
 }
 
-- (PDIPage *)pageForPageNumber:(NSInteger)pageNumber
+- (PDIPage *)pageForPageNumber:(NSUInteger)pageNumber
 {
     if (pageNumber < 1 || pageNumber > [self numberOfPages]) {
         [NSException raise:@"PDInstanceBoundsException" format:@"The page number %ld is not within the bounds 1..%ld", (long)pageNumber, (long)[self numberOfPages]];
@@ -289,7 +289,7 @@
     return page;
 }
 
-- (PDIPage *)insertPage:(PDIPage *)page atPageNumber:(NSInteger)pageNumber
+- (PDIPage *)insertPage:(PDIPage *)page atPageNumber:(NSUInteger)pageNumber
 {
     PDPageRef nativePage = PDPageInsertIntoPipe(page.pageRef, _pipe, pageNumber);
     PDIPage *newPage = [[PDIPage alloc] initWithPage:nativePage inSession:self];

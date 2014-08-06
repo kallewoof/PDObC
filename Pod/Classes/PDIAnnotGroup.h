@@ -23,6 +23,7 @@
 //
 
 #import <Foundation/Foundation.h>
+#import "PDDefines.h"
 
 @class PDISession;
 @class PDIObject;

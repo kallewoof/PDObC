@@ -821,7 +821,6 @@ static inline PDBool PDXTableReadXRefContent(PDXI X)
         // convert into internal xref table
         src = buf;
         dst = &pdx->xrefs[pdx->width * startobid];
-//        freeLink = NULL;
         prevFreeID = -1;
         for (i = 0; i < count; i++) {
 #define PDXOffset(pdx)      fast_mutative_atol(pdx, 10)
@@ -834,13 +833,12 @@ static inline PDBool PDXTableReadXRefContent(PDXI X)
             // other PDF creators think dumping 000000000 00000 n (i.e. this object can be found at offset 0, and it's in use) means "this object is unused"; we address that as well
 #ifdef DEBUG
             if (PDXUsed(src) && (PDXGenId(src) == 65536 || offset == 0)) {
-                PDNotice("warning: marking object #%ld as unused, because its generation id is 65536 or its offset is 0\n", i);
+                PDNotice("warning: marking object #%ld as unused (gen = 65536 or offs = 0)", i);
             }
 #endif
             used = PDXUsed(src) && (PDXGenId(src) != 65536) && (offset != 0);
             
             _PDXSetOffsetForID(dst, pdx, i, offset);
-//            _PDXSetOffsetForID(dst, i, offset);
 
             if (used) {
                 _PDXSetTypeForID(dst, pdx, i, PDXTypeUsed);
@@ -852,10 +850,6 @@ static inline PDBool PDXTableReadXRefContent(PDXI X)
                     _PDXSetGenForID(dst, pdx, prevFreeID, startobid + i);
                 prevFreeID = i;
                 _PDXSetGenForID(dst, pdx, prevFreeID, 0);
-//                if (freeLink) 
-//                    *freeLink =  startobid + i;
-//                freeLink = (PDInteger*)&((dst)[PDXGenAlign+i*PDXWidth]);//PDXGetGenForID(dst, i);
-//                *freeLink = 0;
             }
             
             src += 20;
@@ -870,7 +864,6 @@ static inline PDBool PDXTableReadXRefContent(PDXI X)
 static inline void PDXTableParseTrailer(PDXI X)
 {
     // if we have no Root or Info yet, grab them if found
-//    pd_stack dictStack;
     PDDictionaryRef dict = PDInstanceCreateFromComplex(&X->stack);
     if (X->rootRef == NULL && PDDictionaryGetEntry(dict, "Root")) {
         X->rootRef = PDDictionaryGetEntry(dict, "Root");
@@ -881,57 +874,23 @@ static inline void PDXTableParseTrailer(PDXI X)
     if (X->encryptRef == NULL && PDDictionaryGetEntry(dict, "Encrypt")) {
         X->encryptRef = PDDictionaryGetEntry(dict, "Encrypt");
     }
-//    if (X->rootRef == NULL && (dictStack = pd_stack_get_dict_key(X->stack, "Root", false))) {
-//        X->rootRef = PDReferenceCreateFromStackDictEntry(dictStack->prev->prev->info);
-//    }
-//    if (X->infoRef == NULL && (dictStack = pd_stack_get_dict_key(X->stack, "Info", false))) {
-//        X->infoRef = PDReferenceCreateFromStackDictEntry(dictStack->prev->prev->info);
-//    }
-//    if (X->encryptRef == NULL && (dictStack = pd_stack_get_dict_key(X->stack, "Encrypt", false))) {
-//        X->encryptRef = PDReferenceCreateFromStackDictEntry(dictStack->prev->prev->info);
-//    }
     
     // a Prev key may or may not exist, in which case we want to hit it
     if (PDDictionaryGetEntry(dict, "Prev")) {
         pd_stack_push_identifier(&X->queue, (PDID)PDNumberGetSize(PDDictionaryGetEntry(dict, "Prev")));
     }
-//    pd_stack prev = pd_stack_get_dict_key(X->stack, "Prev", false);
-//    if (prev) {
-//        // e, Prev, 116
-//        char *s = prev->prev->prev->info;
-//        pd_stack_push_identifier(&X->queue, (PDID)PDSizeFromString(s));
-//    } 
     
     // For 1.5+ PDF:s, an XRefStm may exist; it takes precedence over Prev, but does not override Prev
     if (PDDictionaryGetEntry(dict, "XRefStm")) {
         pd_stack_push_identifier(&X->queue, (PDID)PDNumberGetSize(PDDictionaryGetEntry(dict, "XRefStm")));
     }
-//    if ((dictStack = pd_stack_get_dict_key(X->stack, "XRefStm", false))) {
-//        char *s = dictStack->prev->prev->info;
-//        PDSize xrefStreamOffs = PDSizeFromString(s);
-//        // X->queue is a queue of objects newer-to-older, which means pushing the XRefStm entry after pushing the Prev entry will do the right thing (XRefStm takes precedence, Prev is not skipped)
-//        pd_stack_push_identifier(&X->queue, (PDID)xrefStreamOffs);
-//    }
     
-    // update the trailer object in case additional info is included
-    // TODO: determine if spec requires this or if the last trailer is the whole truth (considering the inability to update (see below), this may have been resolved)
+    // update the trailer object in case additional info is included; note that we set def to the most recent object only and do not "append" like we do with XREF entries
     if (X->trailer->def == NULL) {
         X->trailer->obid = X->mtobid;
         X->trailer->def = X->stack;
         X->trailer->inst = dict;
     } else {
-        /// @todo Disabled this part; the master trailer has to contain vital stuff or Pajdeg loses it; this will e.g. put a bunch of stream related stuff into the regular trailer if a PDF has mixed XRef streams and plaintext XRefs
-#if 0
-        char *key;
-        char *value;
-        pd_stack iter = X->stack; 
-        while (pd_stack_get_next_dict_key(&iter, &key, &value)) {
-            if (NULL == PDDictionaryGetEntry(PDObjectGetDictionary(X->trailer), key)) {
-                PDDictionarySetEntry(PDObjectGetDictionary(X->trailer), key, value);
-            }
-            free(value);
-        }
-#endif
         pd_stack_destroy(&X->stack);
         PDRelease(dict);
     }
@@ -939,7 +898,7 @@ static inline void PDXTableParseTrailer(PDXI X)
 
 PDBool PDXTableFetchHeaders(PDXI X)
 {
-   PDBool success;
+    PDBool success;
     pd_stack osstack;
     
     X->tables = 0;

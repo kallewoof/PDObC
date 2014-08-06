@@ -23,6 +23,7 @@
 //
 
 #import <Foundation/Foundation.h>
+#import "PDDefines.h"
 
 @class PDIObject;
 @class PDIReference;
@@ -84,7 +85,7 @@ typedef enum {
  
  @param pageIndex Destination page.
  */
-- (void)setDDestByPageIndex:(NSInteger)pageIndex;
+- (void)setDDestByPageIndex:(NSUInteger)pageIndex;
 
 @property (nonatomic, strong)    NSArray           *fit;        ///< The fit value as an array starting with the fit type, followed by its arguments, e.g. @"/XYZ", @(36), @(661.68), @(0); using a helper macro is recommended (see bottom of this file)
 

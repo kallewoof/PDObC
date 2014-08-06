@@ -135,14 +135,14 @@ typedef PDTaskResult (^PDIObjectOperation)(PDISession *session, PDIObject *objec
 /**
  Get the number of pages in the input PDF.
  */
-- (NSInteger)numberOfPages;
+- (NSUInteger)numberOfPages;
 
 /**
  Get the object ID for the page object with the given page number.
  
  @param pageNumber The page number of the object whose ID should be returned.
  */
-- (NSInteger)objectIDForPageNumber:(NSInteger)pageNumber;
+- (NSInteger)objectIDForPageNumber:(NSUInteger)pageNumber;
 
 /**
  *  Get the page object for the page at the given page number. 
@@ -153,7 +153,7 @@ typedef PDTaskResult (^PDIObjectOperation)(PDISession *session, PDIObject *objec
  *
  *  @return The page object for the given page
  */
-- (PDIPage *)pageForPageNumber:(NSInteger)pageNumber;
+- (PDIPage *)pageForPageNumber:(NSUInteger)pageNumber;
 
 /**
  *  Inserts the given page into the PDF document, so that it becomes the new page at pageNumber (and the old, and subsequent pages, become the pages of pageNumber + 1, ...).
@@ -163,7 +163,7 @@ typedef PDTaskResult (^PDIObjectOperation)(PDISession *session, PDIObject *objec
  *
  *  @return The new native PDIPage object based on page
  */
-- (PDIPage *)insertPage:(PDIPage *)page atPageNumber:(NSInteger)pageNumber;
+- (PDIPage *)insertPage:(PDIPage *)page atPageNumber:(NSUInteger)pageNumber;
 
 ///---------------------------------------
 /// @name Random access readonly sessions 

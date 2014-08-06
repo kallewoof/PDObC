@@ -252,7 +252,7 @@
     }
 }
 
-- (void)setDDestByPageIndex:(NSInteger)pageIndex
+- (void)setDDestByPageIndex:(NSUInteger)pageIndex
 {
     self.dDest = [[PDIReference alloc] initWithObjectID:[_session objectIDForPageNumber:pageIndex] generationID:0];
 }

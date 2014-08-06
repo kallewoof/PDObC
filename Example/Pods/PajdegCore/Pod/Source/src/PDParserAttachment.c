@@ -136,7 +136,7 @@ void PDParserAttachmentImportStack(PDParserAttachmentRef attachment, pd_stack *d
                                 PDParserAttachmentPerformImport(attachment, iob, eob, NULL, 0);
                                 PDRelease(eob);
                             } else {
-                                PDNotice("NULL object for %d", refObID);
+                                PDNotice("NULL object for %ld", refObID);
                             }
                         }
                         pd_stack_push_identifier(&backward, s->info);
