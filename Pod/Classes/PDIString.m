@@ -37,7 +37,8 @@
 
 - (void *)PDValue
 {
-    return PDStringWithCString(strdup(_s.PDFString));
+//    return PDStringWithCString(strdup(_s.PDFString));
+    return PDStringEscapingCString(strdup(_s.PDFString));
 }
 
 - (id)initWithString:(NSString *)string
