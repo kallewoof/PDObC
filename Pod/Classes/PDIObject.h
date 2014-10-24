@@ -199,11 +199,9 @@
 // dictionary methods
 
 /**
- Get the string value of the given key.
+ Get the value of the given key. The value is of the corresponding Objective-C type, e.g. PDArrays are NSArrays, etc.
  
  @param key The dictionary key.
- 
- @note In the current implementation, all values are returned as strings, but can be set using e.g. NSStrings, PDIObjects, PDIReferences or NSDictionary/Arrays of conformant objects.
  */
 - (id)valueForKey:(NSString *)key;
 
