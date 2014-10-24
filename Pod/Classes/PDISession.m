@@ -75,6 +75,7 @@
 
 - (void)dealloc
 {
+    PDRelease(_parser);
     PDRelease(_pipe);
     
     pd_pdf_conversion_discard();
@@ -110,7 +111,7 @@
             return nil;
         }
         
-        _parser = PDPipeGetParser(_pipe);
+        _parser = PDRetain(PDPipeGetParser(_pipe));
         
         // to avoid issues later on, we also set up the catalog here
         if ([self numberOfPages] == 0) {
