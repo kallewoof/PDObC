@@ -333,8 +333,6 @@ PDBool PDObjectSetStreamFiltered(PDObjectRef object, char *str, PDInteger len, P
     PDDictionaryRef obdict = PDObjectGetDictionary(object);
     PDStringRef filter = PDDictionaryGetString(obdict, "Filter");
     
-//    const char *filter = PDDictionaryGetEntry(PDObjectGetDictionary(object), "Filter");
-    
     if (NULL == filter) {
         // no filter
         PDObjectSetStream(object, str, len, true, false, encrypted);

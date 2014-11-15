@@ -92,6 +92,18 @@ PDStringRef PDStringCreate(char *string)
     return res;
 }
 
+PDStringRef PDStringCreateUnescaped(char *unescapedString)
+{
+    PDSize len = strlen(unescapedString);
+#ifdef DEBUG
+    PDStringVerifyOwnership(unescapedString, len);
+#endif
+    
+    PDStringRef result = PDStringCreate(PDStringBinaryToEscaped(unescapedString, len, true, 0));
+    free(unescapedString);
+    return result;
+}
+
 PDStringRef PDStringCreateWithName(char *name)
 {
 #ifdef DEBUG
@@ -374,6 +386,8 @@ const char *PDStringHexValue(PDStringRef string, PDBool wrap)
 
 char *PDStringTransform(const char *string, PDSize len, PDBool hasPrefix, PDBool hasWrapping, char addPrefix, char addLeft, char addRight)
 {
+    PDAssert(hasPrefix == false || hasPrefix == true);
+    PDAssert(hasWrapping == false || hasWrapping == true);
     // determine offset for copying from string
     PDSize copyoffs = hasPrefix + hasWrapping;
     // determine bytes to copy from string
@@ -416,7 +430,7 @@ char *PDStringHexToBinary(char *string, PDSize len, PDBool wrapped, PDSize *outL
 {
     char *csr = string + (wrapped);
     PDSize ix = len - (wrapped<<1);
-    PDSize rescap = 2 + ix/2;
+    PDSize rescap = 2 + ix/2; // optim: ix/2 -> (ix>>1)
     PDSize reslen = 0;
     char *res = malloc(rescap);
     PDSize i;
@@ -553,6 +567,7 @@ char *PDStringBinaryToEscaped(char *string, PDSize len, PDBool addW, char prefix
     PDSize reslen = 0;
     char *res = malloc(rescap);
     char ch, e;
+    short ord;
     PDSize i;
     
     if (prefix) res[reslen++] = prefix;
@@ -560,12 +575,13 @@ char *PDStringBinaryToEscaped(char *string, PDSize len, PDBool addW, char prefix
     
     for (i = 0; i < len; i++) {
         ch = string[i];
-        e = PDOperatorSymbolGlobEscaping[ch];
+        ord = ch < 0 ? ch + 256 : ch;
+        e = PDOperatorSymbolGlobEscaping[ord];
         switch (e) {
             case 0: // needs escaping using code
-                reslen += sprintf(&res[reslen], "\\%s%d", ch < 10 ? "00" : ch < 100 ? "0" : "", ch);
+                reslen += sprintf(&res[reslen], "\\%s%d", ord < 10 ? "00" : ord < 100 ? "0" : "", ord);
                 break;
-            case '1': // needs no escaping
+            case 1: // needs no escaping
                 res[reslen++] = ch;
                 break;
             default: // can be escaped with a charcode
@@ -732,7 +748,7 @@ PDStringRef PDStringCreateEncrypted(PDStringRef string)
 
 PDStringRef PDStringCreateDecrypted(PDStringRef string)
 {
-    if (NULL == string || NULL == string->ci || ! string->encrypted) return PDRetain(string);
+    if (NULL == string || NULL == string->ci || ! string->encrypted || string->length == 0) return PDRetain(string);
     
     PDSize len;
     const char *data_in = PDStringBinaryValue(string, &len);

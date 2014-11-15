@@ -48,7 +48,8 @@ PDInteger fd_compress_init(PDStreamFilterRef filter)
                 memcpy(newSelf, filter, sizeof(struct PDStreamFilter));     // move us there
                 memcpy(filter, predictor, sizeof(struct PDStreamFilter));   // replace old us with predictor
                 filter->nextFilter = newSelf;                               // set new us as predictor's next
-                PDRelease(newSelf->options);                                // clear out options from our new self, otherwise we will create predictors forever and ever
+                // we have two references to ->options; one in newSelf and one in filter (old self). We do not release newSelf->options, or we would be causing a -1 retain imbalance
+                //PDRelease(newSelf->options);                                // clear out options from our new self, otherwise we will create predictors forever and ever
                 newSelf->options = NULL;
                 PDRelease(predictor);
                 return (*filter->init)(filter);                             // init predictor, not us

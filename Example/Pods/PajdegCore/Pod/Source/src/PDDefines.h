@@ -669,7 +669,7 @@ typedef enum {
  Tasks are chained together. When triggered, the first task in the list of tasks for the specific state is executed. Before moving on to the next task in the list, each task has a number of options specified in the task result.
  
  - A task has the option of canceling the entire PDF creation process due to some serious issue, via PDTaskFailure. 
- - It may also "filter" out its child tasks dynamically by returning PDTaskSkipRest for given conditions. This will stop the iterator, and any tasks remaining in the queue will be skipped. 
+ - It may also `filter' out its child tasks dynamically by returning PDTaskSkipRest for given conditions. This will stop the iterator, and any tasks remaining in the queue will be skipped. 
  
  Returning PDTaskDone means the task ended normally, and that the next task, if any, may execute. This is usually the preferred return value.
  */

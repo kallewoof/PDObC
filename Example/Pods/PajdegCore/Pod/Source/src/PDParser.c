@@ -29,6 +29,7 @@
 #include "PDObjectStream.h"
 #include "pd_internal.h"
 #include "PDState.h"
+#include "PDArray.h"
 #include "pd_pdf_implementation.h"
 #include "pd_stack.h"
 #include "PDTwinStream.h"
@@ -200,6 +201,12 @@ pd_stack PDParserLocateAndCreateDefinitionForObjectWithSize(PDParserRef parser, 
 //        PDTwinStreamCutBranch(stream, tb);
 //        PDScannerContextPop();
         
+        if (tb == NULL) {
+            PDWarn("NULL object stream in PDParserLocateAndCreateDefinitionForObjectWithSize() for object #%ld; aborting", obid);
+            PDRelease(obstmObject);
+            return NULL;
+        }
+        
         obstm = PDObjectStreamCreateWithObject(obstmObject);
         PDRelease(obstmObject);
         
@@ -348,6 +355,8 @@ void PDParserFetchStreamLengthFromObjectDictionary(PDParserRef parser, pd_stack 
 
 void PDParserPrepareStreamData(PDParserRef parser, PDObjectRef ob, PDInteger len, PDStringRef filterName, char *rawBuf)
 {
+    PDInteger elen = len;
+    
     if (parser->crypto) {
         pd_crypto_convert(parser->crypto, ob->obid, ob->genid, rawBuf, len);
     }
@@ -361,22 +370,30 @@ void PDParserPrepareStreamData(PDParserRef parser, PDObjectRef ob, PDInteger len
         } else {
             PDInteger allocated;
             char *extractedBuf;
-            PDStreamFilterApply(filter, (unsigned char *)rawBuf, (unsigned char **)&extractedBuf, len, &len, &allocated);
+            if (! PDStreamFilterApply(filter, (unsigned char *)rawBuf, (unsigned char **)&extractedBuf, len, &elen, &allocated)) {
+                PDNotice("PDStreamFilterApply(%s, <buf>, <&ebuf>, %ld, <olen>, <&alloc>) failed; aborting", PDStringEscapedValue(filterName, true), (unsigned long)len);
+                free(rawBuf);
+                ob->extractedLen = -1;
+                ob->streamBuf = NULL;
+                return;
+            } 
+            
             free(rawBuf);
             rawBuf = extractedBuf;
-            PDRelease(filter);
-            if (allocated == len) {
+            if (allocated == elen) {
                 // we need another byte for \0 in case this is a text stream; this happens very seldom but has to be dealt with
-                PDNotice("{ allocated == len } hit; notify Pajdeg devs if repeated");
-                rawBuf = realloc(rawBuf, len + 1);
+                PDNotice("{ allocated == elen } hit; notify Pajdeg devs if repeated");
+                rawBuf = realloc(rawBuf, elen + 1);
             }
+            
+            PDRelease(filter);
         }
     }
     
     // in order for this line not to sporadically crash, all mallocs of rawBuf (including extractedBuf for filtered streams above) must have used len + 1 up to this point
-    rawBuf[len] = 0;
+    rawBuf[elen] = 0;
     
-    ob->extractedLen = len;
+    ob->extractedLen = elen;
     ob->streamBuf = rawBuf;
 }
 
@@ -394,7 +411,36 @@ char *PDParserFetchCurrentObjectStream(PDParserRef parser, PDInteger obid)
     PDAssert(parser->state == PDParserStateObjectAppendix);
     
     PDInteger len = parser->streamLen;
-    PDStringRef filterName = PDDictionaryGetEntry(PDObjectGetDictionary(parser->construct), "Filter");
+    PDStringRef filterName = NULL;
+    void *filterValue = PDDictionaryGetEntry(PDObjectGetDictionary(parser->construct), "Filter");
+    PDInstanceType filterType = PDResolve(filterValue);
+    switch (filterType) {
+        case PDInstanceTypeArray:{
+            PDInteger count = PDArrayGetCount(filterValue);
+            if (count == 0) {
+                PDWarn("Null filter (empty array value) encountered");
+            } else {
+                if (count > 1) {
+                    PDInteger cap = 32;
+                    char *buf = malloc(32);
+                    PDArrayPrinter(filterValue, &buf, 0, &cap);
+                    PDWarn("Unsupported chained filter in %s", buf);
+                    free(buf);
+                }
+                filterValue = PDArrayGetElement(filterValue, 0);
+            }
+        } break;
+            
+        case PDInstanceTypeString:
+            break;
+            
+        default:
+            PDWarn("Unsupported filter type %d", filterType);
+            filterValue = NULL;
+            break;
+    }
+    
+    filterName = filterValue;
 
     char *rawBuf = malloc(len + 1);
     PDScannerReadStream(parser->scanner, len, rawBuf, len);

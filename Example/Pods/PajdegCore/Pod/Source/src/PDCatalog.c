@@ -142,6 +142,7 @@ PDCatalogRef PDCatalogCreateWithParserForObject(PDParserRef parser, PDObjectRef 
     catalog->count = 0;
     catalog->capacity = 0;
     catalog->kids = NULL;
+    catalog->pages.collection = false;
     
     // catalogObject has the form
     //  << /Type /Catalog /Pages 3 0 R >>

@@ -172,7 +172,7 @@
 /**
  @page minimal Minimal example
  
- From @c examples/minimal.c :
+ From @c samples/minimal.c :
  
  @include minimal.c
  
@@ -192,9 +192,9 @@
  
  @page addmetadata Adding metadata to a PDF
  
- From @c examples/add-metadata.c :
+ From @c samples/add-metadata.c :
  
- @dontinclude examples/add-metadata.c
+ @dontinclude add-metadata.c
  
  We now want to add metadata to an existing PDF. If the PDF has metadata already, we explode, but that's fine, we'll deal with that soon. The first new thing we have to do is declare a *mutator* task function above `main`.
  
@@ -212,7 +212,7 @@
  
  The object has been given a unique object ID and is set up, ready to be stuffed into the output PDF as soon as we hit `execute`. 
  
- We want to tweak it first, of course. Here, we're setting the metadata to our own string. The two flags at the end are used to tell the object if we want it to set the Length property using our provided length, and whether the passed buffer needs to be freed after the object is finished using it. If you `strdup()`'d a string and passed it in, you would give `true` as the last argument, unless you planned to `free()` it yourself once you knew the object was done with it.
+ We want to tweak it first, of course. Here, we're setting the metadata to our own string. The three flags at the end are used to tell the object if we want it to set the Length property using our provided length, whether the passed buffer needs to be freed after the object is finished using it, and whether the passed content is encrypted or not. If you `strdup()`'d a string and passed it in, you would give `true` as the second argument, unless you planned to `free()` it yourself once you knew the object was done with it.
  
  @skip char
  @until SetStream
@@ -251,27 +251,31 @@
  We could blindly change the root object's Metadata key to point to our new object. We could, but it would be very bad. We would leave a potentially huge abandoned object in the resulting PDF. Even worse, a PDF would have as many metadata objects as it had gone through our pipe, since we would be adding a new one every time.
  
  @until }
- 
- If PDObjectGetDictionaryEntry() returns a non-NULL value for the "Metadata" key, we explode. With that out of the way, setting the metadata is fairly straightforward.
 
- We get the reference string for the meta object,
+ Here, we are using a PDDictionary for the first time. It's simply a key/value pair container, used to represent dictionaries in PDFs. We can get the dictionary associated with a PDObject using PDObjectGetDictionary(). There is a corresponding PDObjectGetArray() for array type objects, and so on.
  
- @skip /
- @until metaRef
+ In any case, if PDDictionaryGetEntry() returns a non-NULL value for the "Metadata" key, we explode. With that out of the way, setting the metadata is fairly straightforward.
+
+ Our meta object is the info, passed to the task:
  
- stuff it into the root object,
- 
- @skip SetDict
- @until metaRef
- 
- and return PDTaskDone to signal that we're finished:
+ @skip PDObj
+ @until info
+
+ We put this into the dictionary as the Metadata value:
+
+ @skip PDDictionarySetEntry
+ @until meta
+
+ Note that while meta is a PDObject, by setting a PDDictionary entry's value to a PDObject, it will ultimately end up being a PDReference value. In other words, objects will translate into "<object id> <generation number> R" in a PDDictionary, when written to a PDF.
+
+ Finally we return PDTaskDone to signal that we're finished:
  
  @skip return
  @until }
  
  Put together, this is what it all looks like:
  
- @include examples/add-metadata.c
+ @include add-metadata.c
  
  You can check out a dissection of a `diff` resulting from a tiny PDF when piped using this program on the @subpage addmetadatadiff "Add metadata diff example" page.
  
@@ -289,7 +293,7 @@
  
  This demonstrates what the modifications Pajdeg make to a PDF end up looking like, byte-wise. You can check this out yourself by doing `diff -a` on the original and new PDF files after using Pajdeg.
  
- @dontinclude examples/output-example-add-metadata.diff
+ @dontinclude outputs/output-example-add-metadata.diff
  
  @until endobj
  
@@ -301,7 +305,7 @@
  
  @until 232c
  
- At the very top, `0 21` is replaced with `0 22`. This is the XREF (cross reference) header, which is changed because the PDF has an extra object (our metadata object). This follows by a chunk of lines being replaced. These are XREF entries, and almost all of them have been updated. 
+ At the very top, `0 21` is replaced with `0 22`. This is the XREF (cross reference) header, which is changed because the PDF has an extra object (our metadata object). This follows by a chunk of lines being replaced. These are XREF entries, and almost all of them have been updated, because almost every single object's byte position in the PDF has changed. That's unfortunate but normal. It can be alleviated to some extent when making small modifications by opting for the PDParserCreateAppendedObject() method over PDParserCreateNewObject(), but shouldn't be thought too hard into.
  
  @until 234c
  
@@ -321,9 +325,9 @@
  
  The code here builds on the @ref addmetadata "Adding metadata" example.
  
- From @c examples/replace-metadata.c :
+ From @c samples/replace-metadata.c :
  
- @dontinclude examples/replace-metadata.c
+ @dontinclude replace-metadata.c
  
  The idea is as follows: we check if there's a metadata entry; if there is, we update it, and if not, we create one and update the root object.
  
@@ -358,18 +362,18 @@
  
  The resulting file ends up looking like this:
 
- @include examples/replace-metadata.c
+ @include replace-metadata.c
  
  And this is what it looks like when used:
  
- @include examples/output-example-replace-metadata.txt
+ @include outputs/output-example-replace-metadata.txt
  
  */
 
 #ifndef INCLUDED_PAJDEG_H
 #   define INCLUDED_PAJDEG_H
 
-#   define PAJDEG_VERSION   "0.0.5"
+#   define PAJDEG_VERSION   "0.0.6"
 
 #   include "PDPipe.h"
 #   include "PDObject.h"

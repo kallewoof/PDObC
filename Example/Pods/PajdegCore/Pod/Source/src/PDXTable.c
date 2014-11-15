@@ -80,14 +80,14 @@ PDOffset PDXTableGetOffsetForID(PDXTableRef table, PDInteger obid)
 #undef shift
 #undef value
     
-    // if DEBUG, we ensure the above optimization actually matches the correct value by calculating it twice; this will go away in the near future
-#ifdef DEBUG
-    // note: requires that offs size <= 4
-#define O(index, value) (((value) * (index < table->offsSize)) << (8 * (table->offsSize - index - 1)))
-    PDOffset r2 = (PDOffset)(O(3,o[3]) | O(2,o[2]) | O(1,o[1]) | O(0,o[0]));
-    assert(r == r2);
-#undef O
-#endif
+//    // if DEBUG, we ensure the above optimization actually matches the correct value by calculating it twice; this will go away in the near future
+//#ifdef DEBUG
+//    // note: requires that offs size <= 4
+//#define O(index, value) (((value) * (index < table->offsSize)) << (8 * (table->offsSize - index - 1)))
+//    PDOffset r2 = (PDOffset)(O(3,o[3]) | O(2,o[2]) | O(1,o[1]) | O(0,o[0]));
+//    assert(r == r2);
+//#undef O
+//#endif
     
     return r;
 }
@@ -140,14 +140,14 @@ PDInteger PDXTableGetGenForID(PDXTableRef table, PDInteger obid)
 #undef shift
 #undef value
     
-    // if DEBUG, we ensure the above optimization actually matches the correct value by calculating it twice; this will go away in the near future
-#ifdef DEBUG
-    // note: requires that gen size <= 2
-#define O(index, value) (((value) * (index < table->genSize)) << (8 * (table->genSize - index - 1)))
-    PDInteger r2 = (PDInteger)(O(1,o[1]) | O(0,o[0]));
-    assert(r == r2);
-#undef O
-#endif
+//    // if DEBUG, we ensure the above optimization actually matches the correct value by calculating it twice; this will go away in the near future
+//#ifdef DEBUG
+//    // note: requires that gen size <= 2
+//#define O(index, value) (((value) * (index < table->genSize)) << (8 * (table->genSize - index - 1)))
+//    PDInteger r2 = (PDInteger)(O(1,o[1]) | O(0,o[0]));
+//    assert(r == r2);
+//#undef O
+//#endif
     
     return r;
 }
@@ -865,6 +865,11 @@ static inline void PDXTableParseTrailer(PDXI X)
 {
     // if we have no Root or Info yet, grab them if found
     PDDictionaryRef dict = PDInstanceCreateFromComplex(&X->stack);
+    if (dict == NULL) {
+        PDError("Unable to parse trailer (NULL dictionary)");
+        return;
+    }
+    
     if (X->rootRef == NULL && PDDictionaryGetEntry(dict, "Root")) {
         X->rootRef = PDDictionaryGetEntry(dict, "Root");
     }
@@ -1108,6 +1113,9 @@ PDBool PDXTableFetchXRefs(PDParserRef parser)
     
     // we've got all the xrefs so we can switch back to the readwritable method
     PDTWinStreamSetMethod(X.stream, PDTwinStreamReadWrite);
+    
+    // clean up X struct
+    PDRelease(X.dict);
     
     //#define DEBUG_PARSER_PRINT_XREFS
 //#ifdef DEBUG_PARSER_PRINT_XREFS

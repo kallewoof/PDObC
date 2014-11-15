@@ -44,7 +44,7 @@ static int PDPipeFileDescriptorBalance = 0;
 void PDPipeCloseFileStream(FILE *stream)
 {
     PDPipeFileDescriptorBalance--;
-    if (PDPipeFileDescriptorBalance > 8) {
+    if (PDPipeFileDescriptorBalance > 64) {
         PDError("Excess file descriptors -- PDPipeRefs are probably leaking!");
     }
     fclose(stream);

@@ -54,6 +54,15 @@
 extern PDStringRef PDStringCreate(char *string);
 
 /**
+ *  Create a PDString from an existing, unescaped string by escaping the string and keeping the resulting value.
+ *
+ *  @param unescapedString A string that needs to be, but is not currently, escaped.
+ *
+ *  @return New PDString instance for escaped variant of unescapedString
+ */
+extern PDStringRef PDStringCreateUnescaped(char *unescapedString);
+
+/**
  *  Create a PDString from an existing, escaped name. Names differ from regular strings in one single way: they have a slash prefix. Beyond that, they can be wrapped or non-wrapped, just like normal.
  *
  *  @param name Name string, with or without prefix slash, with or without wrapping.
@@ -119,6 +128,10 @@ extern void PDStringForceWrappedState(PDStringRef string, PDBool wrapped);
  *  @return Binary PDString object
  */
 #define PDStringCreateBinaryFromString(string) PDStringCreateFromStringWithType(string, PDStringTypeBinary, false)
+
+//#define PDStringWithUnescapedCString(unescapedCString) PDAutorelease(PDStringCreateBinary(unescapedCString, strlen(unescapedCString)))
+
+#define PDStringEscapingCString(unescapedCString) PDAutorelease(PDStringCreateUnescaped(unescapedCString))
 
 #define PDStringWithCString(cString) PDAutorelease(PDStringCreate(cString))
 
