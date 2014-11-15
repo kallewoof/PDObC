@@ -10,8 +10,8 @@ end
 target 'Tests', :exclusive => true do
   pod "PajdegPDF", :path => "../"
 
-  pod 'Specta', '~> 0.2.1'
+  pod 'Specta' #, '~> 0.2.1'
   pod 'Expecta'
   pod 'FBSnapshotTestCase'
-  pod 'Expecta+Snapshots'
+  # pod 'Expecta+Snapshots'
 end
