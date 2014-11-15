@@ -23,7 +23,7 @@ Pod::Spec.new do |s|
   s.license          = 'MIT'
   s.author           = { "Karl-Johan Alm" => "kalle.alm@gmail.com" }
   s.source           = { :git => "https://github.com/kallewoof/PDObC.git", :tag => s.version.to_s }
-  # s.social_media_url = 'https://twitter.com/kallewoof'
+  s.social_media_url = 'https://twitter.com/kallewoof'
 
   s.ios.deployment_target = '6.0'
   s.osx.deployment_target = '10.7'
