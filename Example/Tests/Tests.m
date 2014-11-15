@@ -16,9 +16,9 @@
 #import "PDCatalog.h"
 #import "NSArray+Sampling.h"
 
-// not sure what to do here; there are a ton of PDFs, some private, some copyrighted/purchased, that the library is tested against
-#define PAJDEG_PDFS [NSString stringWithFormat:@"/Users/%@/Workspace/pajdeg-sample-pdfs/", NSUserName()]
-#define PAJDEG_INFS [NSString stringWithFormat:@"/Users/%@/Workspace/pajdeg-inf-pdfs/", NSUserName()]
+// not sure what to do here; there are a ton of PDFs, some private, some copyrighted/purchased, that the library is tested against; can't likely require travis to download a bunch of PDFs online either..
+#define PAJDEG_PDFS @"/Users/user/Workspace/pajdeg-sample-pdfs/"
+#define PAJDEG_INFS @"/Users/user/Workspace/pajdeg-inf-pdfs/"
 
 SpecBegin(InitialSpecs)
 
