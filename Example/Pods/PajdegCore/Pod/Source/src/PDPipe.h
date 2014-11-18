@@ -92,6 +92,8 @@ extern PDPipeRef PDPipeCreateWithFilePaths(const char * inputFilePath, const cha
 /**
  Attach a task to a pipe. 
  
+ The task is attached to the end. This was not the case up until Pajdeg 0.0.7.
+ 
  @param pipe The pipe. If the pipe is not prepared, and the task is a filter on the root or info object, this will trigger PDPipePrepare().
  @param task The task to add.
  

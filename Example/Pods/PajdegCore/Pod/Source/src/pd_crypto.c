@@ -215,7 +215,7 @@ PDInteger pd_crypto_unescape_explicit_len(char *str, int iend)
                 if (str[i] >= '0' && str[i] <= '9') {
                     str[si] = 0;
                     for (escseq = 0; escseq < 3 && str[i] >= '0' && str[i] <= '9'; escseq++, i++)
-                        str[si] = (str[si] << 4) + (str[i] - '0');
+                        str[si] = (str[si] << 3) + (str[i] - '0');
                     i--;
                 } else switch (str[i]) {
                     case '\n':

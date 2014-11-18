@@ -471,7 +471,7 @@ char *PDStringEscapedToBinary(char *string, PDSize len, PDBool wrapped, PDSize *
                 if (str[i] >= '0' && str[i] <= '9') {
                     res[si] = 0;
                     for (escseq = 0; escseq < 3 && str[i] >= '0' && str[i] <= '9'; escseq++, i++)
-                        res[si] = (res[si] << 4) + (str[i] - '0');
+                        res[si] = (res[si] << 3) + (str[i] - '0');
                     i--;
                 } else switch (str[i]) {
                     case '\n':
@@ -578,8 +578,8 @@ char *PDStringBinaryToEscaped(char *string, PDSize len, PDBool addW, char prefix
         ord = ch < 0 ? ch + 256 : ch;
         e = PDOperatorSymbolGlobEscaping[ord];
         switch (e) {
-            case 0: // needs escaping using code
-                reslen += sprintf(&res[reslen], "\\%s%d", ord < 10 ? "00" : ord < 100 ? "0" : "", ord);
+            case 0: // needs escaping using octal code
+                reslen += sprintf(&res[reslen], "\\%s%o", ord < 8 ? "00" : ord < 128 ? "0" : "", ord);
                 break;
             case 1: // needs no escaping
                 res[reslen++] = ch;
@@ -597,6 +597,18 @@ char *PDStringBinaryToEscaped(char *string, PDSize len, PDBool addW, char prefix
     if (addW) res[reslen++] = ')';
     
     res[reslen] = 0;
+    
+#ifdef DEBUG_PD_STRINGS
+    // ensure the opposite is identical
+    PDSize opplen;
+    char *opp = PDStringEscapedToBinary(&res[prefix?1:0], reslen-(prefix?1:0), addW, &opplen);
+    PDAssert(opplen == len);
+    for (i = 0; i < opplen; i++) {
+        PDAssert(opp[i] == string[i]);
+    }
+    free(opp);
+#endif
+    
     return res;
 }
 

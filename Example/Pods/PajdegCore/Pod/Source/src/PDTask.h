@@ -61,10 +61,10 @@ extern PDTaskRef PDTaskCreateFilterWithValue(PDPropertyType propertyType, PDInte
 extern PDTaskRef PDTaskCreateMutator(PDTaskFunc mutatorFunc);
 
 /**
- Append a child task to a task. Child tasks are executed after their parent tasks, unless the parent decides to stop the chain. Note that childTask's child will be set to whatever value parentTask's child is, and parentTask will take childTask as its new child. Thus, adding child A then child B to parent P will result in the execution order
- 
-    P -> B -> A
- 
+ *  Append a child task to a task. Child tasks are executed after their parent tasks, unless the parent decides to stop the chain. 
+ *  The child is appended to the end, as one would intuitively expect. Adding child A, followed by adding child B, to parent P, will result in the execution order
+ *
+ *   P -> A -> B
  */
 extern void PDTaskAppendTask(PDTaskRef parentTask, PDTaskRef childTask);
 

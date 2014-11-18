@@ -123,6 +123,14 @@
 //#define DEBUG_PD_RELEASES
 
 /**
+ @def DEBUG_PD_STRINGS
+ Makes additional checks in reference to string manipulation.
+ 
+ This should be disabled unless you are debugging Pajdeg code.
+ */
+//#define DEBUG_PD_STRINGS
+
+/**
  *  The __deprecated macro should be available.
  */
 #ifndef __deprecated

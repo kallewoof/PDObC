@@ -9,7 +9,7 @@
 
 Pod::Spec.new do |s|
   s.name             = "PajdegPDF"
-  s.version          = "0.2.1"
+  s.version          = "0.2.2"
   s.summary          = "Objective-C library for mutating PDF files"
   s.description      = <<-DESC
   Pajdeg is a self-contained library for mutating PDFs. 
@@ -23,7 +23,7 @@ Pod::Spec.new do |s|
   s.license          = 'MIT'
   s.author           = { "Karl-Johan Alm" => "kalle.alm@gmail.com" }
   s.source           = { :git => "https://github.com/kallewoof/PDObC.git", :tag => s.version.to_s }
-  # s.social_media_url = 'https://twitter.com/kallewoof'
+  s.social_media_url = 'https://twitter.com/kallewoof'
 
   s.ios.deployment_target = '6.0'
   s.osx.deployment_target = '10.7'
@@ -35,6 +35,6 @@ Pod::Spec.new do |s|
 
   # s.public_header_files = 'Pod/Classes/**/*.h'
   # s.frameworks = 'UIKit', 'MapKit'
-  s.dependency 'PajdegCore', '~> 0.0.6'
+  s.dependency 'PajdegCore', '~> 0.1.0'
 
 end

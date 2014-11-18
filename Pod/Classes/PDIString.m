@@ -25,6 +25,7 @@
 #import "PDIString.h"
 #import "NSObjects+PDIEntity.h"
 #import "PDString.h"
+#import "pd_internal.h"
 
 @implementation PDIString {
     NSString *_s;

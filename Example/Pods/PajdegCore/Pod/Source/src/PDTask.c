@@ -115,10 +115,10 @@ PDTaskRef PDTaskCreateMutator(PDTaskFunc mutatorFunc)
 
 void PDTaskAppendTask(PDTaskRef parentTask, PDTaskRef childTask)
 {
-    while (childTask->child) 
-        childTask = childTask->child;
-    childTask->child = parentTask->child;
-    parentTask->child = PDRetain(childTask);
+    PDTaskRef childParentTask = parentTask;
+    while (childParentTask->child)
+        childParentTask = childParentTask->child;
+    childParentTask->child = PDRetain(childTask);
 }
 
 void PDTaskSetInfo(PDTaskRef task, void *info)

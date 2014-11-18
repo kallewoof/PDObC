@@ -337,7 +337,6 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
 - (void)setStreamContent:(NSData *)content encrypted:(BOOL)encrypted
 {
     PDObjectSetStreamFiltered(_obj, (char *)[content bytes], [content length], encrypted);
-//    PDObjectSetStream(_obj, (char *)[content bytes], [content length], true, false);
     [self scheduleMimicking];
 }
 
@@ -350,12 +349,10 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
 - (id)objectValue
 {
     return [PDIConversion fromPDType:PDObjectGetValue(_obj)];
-//    return [NSString stringWithPDFString:PDObjectGetValue(_obj)];
 }
 
 - (void)setObjectValue:(id)value
 {
-//    _type = PDObjectTypeString;
     PDObjectSetValue(_obj, [value PDValue]);
     _type = _obj->type;
     if ([value isKindOfClass:[NSDictionary class]]) [_dict setDictionary:value];
@@ -372,11 +369,6 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
             value = [PDIConversion fromPDType:pdv];
             _dict[key] = value;
         }
-//        const char *vstr = PDDictionaryGetEntry(PDObjectGetDictionary(_obj), [key cStringUsingEncoding:NSUTF8StringEncoding]);
-//        if (vstr) {
-//            value = [NSString stringWithPDFString:vstr];
-//            _dict[key] = value;
-//        }
     }
     if ([value isKindOfClass:[PDIValue class]]) {
         value = [PDIConversion fromPDType:[(PDIValue*)value PDValue]];
@@ -397,26 +389,6 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
             value = object;
         }
     }
-    
-//    if ([value isKindOfClass:[NSString class]]) {
-//        NSInteger obid = [PDIReference objectIDFromString:value];
-//        if (obid) {
-//            PDIObject *object = [_instance fetchReadonlyObjectWithID:obid];
-//            if (object) {
-//                _dict[key] = object;
-//                value = object;
-//            }
-//        }
-//    }
-    
-//    if (value && ! [value isKindOfClass:[NSString class]]) {
-//        if ([value isKindOfClass:[PDIObject class]]) {
-//            value = [value primitiveValue];
-//        } else {
-//            value = [NSString stringWithPDFString:[value PDFString]];
-//        }
-//    }
-
     return value;
 }
 
@@ -426,67 +398,10 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
     id ob = [self resolvedValueForKey:key];
     if (ob && ! [ob isKindOfClass:[PDIObject class]]) {
         // create fake object
-//        if (_obj->obclass == PDObjectClassCompressed) {
             PDIObject *wrapOb = [[PDIObject alloc] initWrappingValue:ob PDValue:PDDictionaryGetEntry(_obj->inst, [key UTF8String])];
             return wrapOb;
-//        }
-//        PDIObject *realOb = [_instance appendObject];
-//        void *v = [ob PDValue];
-//        switch (PDResolve(v)) {
-//            case PDSessionTypeArray:
-//                for (id v in ob) {
-//                    [realOb appendValue:v];
-//                }
-//                break;
-//            case PDSessionTypeDict:
-//                for (id v in [ob allKeys]) {
-//                    [realOb setValue:[ob objectForKey:v] forKey:v];
-//                }
-//                break;
-//            default:
-//                [realOb setObjectValue:ob];
-////                realOb.obj->inst = PDRetain(v);
-////                realOb.type = PDObjectDetermineType(realOb.obj);
-//        }
-////        realOb.obj->inst = [ob PDValue];
-//        [self setValue:realOb forKey:key];
-//        ob = realOb;
     }
     return ob;
-//    // use resolvedValue to fetch the object, if necessary
-//    [self resolvedValueForKey:key];
-//    
-//    PDDictionaryRef dict = PDObjectGetDictionary(_obj);
-//    PDIObject *object = _dict[key];
-//    if (object && ! [object isKindOfClass:[PDIObject class]]) {
-//        const char *ckey = [key cStringUsingEncoding:NSUTF8StringEncoding];
-//        // we probably have this value stored directly, hence we get a string back
-//        pd_stack defs = PDObjectGetDictionaryEntryRaw(_obj, ckey);
-//        if (defs) {
-//            // that does seem right; we got a definition
-//            object = [[PDIObject alloc] initWithIsolatedDefinitionStack:defs objectID:0 generationID:0];
-//            
-//            object.obj->obclass = PDObjectClassCompressed; // this isn't strictly the case, but it will result in no object identifying headers (e.g. 'trailer' or '1 2 obj') which is what we want
-//            _dict[key] = object;
-//            if (_instance) {
-//                [object setSession:_instance];
-//                [object markInherentlyMutable];
-//                
-//                [self addSynchronizeHook:^(PDIObject *myself) {
-//                    char *strdef = malloc(256);
-//                    PDObjectGenerateDefinition(object.obj, &strdef, 256);
-//                    [myself setValue:@(strdef) forKey:key];
-//                    free(strdef);
-//                }];
-//            }
-//        } else {
-//            // hum; let's just pretend this object does not exist then
-//            PDWarn("unexpected value in objectForKey:\"%s\"", ckey);
-//            object = NULL;
-//        }
-//    }
-//    
-//    return object;
 }
 
 #ifdef PDI_DISALLOW_KEYPATHS
@@ -512,7 +427,6 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
         pdv = [value PDValue];
     }
     PDDictionarySetEntry(PDObjectGetDictionary(_obj), [key PDFString], pdv);
-//    PDDictionarySetEntry(PDObjectGetDictionary(_obj), [key cStringUsingEncoding:NSUTF8StringEncoding], vstr);
     _dict[key] = value;
     _type = _obj->type;
     [self scheduleMimicking];
@@ -523,10 +437,6 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
     PDDictionaryRef dict = PDObjectGetDictionary(_obj);
     char **keys = PDDictionaryGetKeys(dict);
     PDInteger count = PDDictionaryGetCount(dict);
-    
-//    pd_dict dict = PDObjectGetDictionary(_obj);
-//    const char **keys = pd_dict_keys(dict);
-//    PDInteger count = pd_dict_get_count(dict);
     
     [_dict resolvePDValues];
     for (PDInteger i = 0; i < count; i++) {
@@ -539,7 +449,6 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
 - (void)removeValueForKey:(NSString *)key
 {
     PDDictionaryDeleteEntry(PDObjectGetDictionary(_obj), key.PDFString);
-//    PDDictionaryDeleteEntry(PDObjectGetDictionary(_obj), [key cStringUsingEncoding:NSUTF8StringEncoding]);
     [_dict removeObjectForKey:key];
     [self scheduleMimicking];
 }
@@ -551,10 +460,6 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
         [_dict removeAllObjects];
     else
         _dict = [[NSMutableDictionary alloc] initWithCapacity:dict.count];
-//    NSSet *keys = [NSSet setWithArray:[_dict allKeys]];
-//    for (NSString *key in keys) 
-//        [self removeValueForKey:key];
-//    NSSet *keys = [NSSet setWithArray:[dict allKeys]];
     for (NSString *key in dict.allKeys) {
         [self setValue:dict[key] forKey:key];
     }
@@ -571,21 +476,6 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
     for (id v in array) {
         [self appendValue:v];
     }
-//    if (_arr.count == 0) [self setupArray];
-//    NSInteger ix = _arr.count < array.count ? _arr.count : array.count;
-//    for (NSInteger i = 0; i < ix; i++) {
-//        [self replaceValueAtIndex:i withValue:array[i]];
-//    }
-//    for (NSInteger i = ix; i < array.count; i++) {
-//        [self appendValue:array[i]];
-//    }
-//    for (NSInteger i = _arr.count - 1; i > ix; i--) {
-//        [self removeValueAtIndex:i];
-//    }
-//    for (NSInteger i = _arr.count-1; i >= 0; i--)
-//        [self removeValueAtIndex:i];
-//    for (id value in array) 
-//        [self appendValue:value];
     [self scheduleMimicking];
 }
 
