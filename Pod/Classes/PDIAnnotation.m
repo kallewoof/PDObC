@@ -87,6 +87,7 @@
         
         _a = [_object objectForKey:@"A"];
         if (_a) {
+            [_a enableMutationViaMimicSchedulingWithSession:_session];
             _aType = [_a valueForKey:@"Type"];
             _sType = [_a valueForKey:@"S"];
             
@@ -98,6 +99,7 @@
 //                    ref = [[PDIReference alloc] initWithString:s];
                     if ([uriValue isKindOfClass:[PDIReference class]]) {
                         _uri = [_session fetchReadonlyObjectWithID:[(PDIReference *)uriValue objectID]];
+                        [_uri enableMutationViaMimicSchedulingWithSession:_session];
                         //[_uri scheduleMimicWithSession:_session];
                         //_mutatingURI = YES;
                     } else {

@@ -51,7 +51,7 @@
 
 - (void *)PDValue
 {
-    PDDictionaryRef dict = PDDictionaryCreateWithCapacity(self.count);
+    PDDictionaryRef dict = PDDictionaryCreate();
     for (NSString *key in self.allKeys) {
         void *pdv;
         id value = self[key];
@@ -60,7 +60,7 @@
         } else {
             pdv = [[value description] PDValue];
         }
-        PDDictionarySetEntry(dict, [key cStringUsingEncoding:NSUTF8StringEncoding], pdv);
+        PDDictionarySet(dict, [key cStringUsingEncoding:NSUTF8StringEncoding], pdv);
     }
     return PDAutorelease(dict);
 }

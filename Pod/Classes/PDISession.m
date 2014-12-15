@@ -157,17 +157,16 @@
     _metadataObject = [root resolvedValueForKey:@"Metadata"];
 //    NSString *md = [root valueForKey:@"Metadata"];
     if (_metadataObject) {
-        if ([_metadataObject isKindOfClass:[PDIReference class]]) {
-            _metadataObject = [self fetchReadonlyObjectWithID:[(PDIReference *)_metadataObject objectID]];
-        }
-//        _metadataObject = [self fetchReadonlyObjectWithID:[PDIReference objectIDFromString:md]];
         [_metadataObject enableMutationViaMimicSchedulingWithSession:self];
     } else {
         _metadataObject = [self appendObject];
-        _metadataObject.type = PDObjectTypeDictionary; // we set the type explicitly, because the metadata object isn't always modified; if it isn't modified, Pajdeg considers it illegal to add it, as it requires that new objects have a type
+//        _metadataObject.type = PDObjectTypeDictionary; // we set the type explicitly, because the metadata object isn't always modified; if it isn't modified, Pajdeg considers it illegal to add it, as it requires that new objects have a type
         [root enableMutationViaMimicSchedulingWithSession:self];
         [root setValue:_metadataObject forKey:@"Metadata"];
     }
+    
+    [_metadataObject setValue:@"Metadata" forKey:@"Type"];
+    [_metadataObject setValue:@"XML" forKey:@"Subtype"];
     return _metadataObject;
 }
 
@@ -394,7 +393,7 @@
 {
     _fetchedDocIDs = YES;
     PDDictionaryRef d = PDObjectGetDictionary(self.trailerObject.objectRef);
-    void *idValue = PDDictionaryGetEntry(d, "ID");
+    void *idValue = PDDictionaryGet(d, "ID");
     if (PDInstanceTypeArray == PDResolve(idValue)) {
         PDArrayRef a = idValue;
         {

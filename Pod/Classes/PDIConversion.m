@@ -62,22 +62,45 @@
     return arr;
 }
 
+typedef struct dictIteratorUI *dictIteratorUI;
+
+struct dictIteratorUI {
+    void *dict;
+    NSInteger depth;
+};
+
+void dictIterator(char *key, void *value, void *userInfo, PDBool *shouldStop)
+{
+    dictIteratorUI diui = userInfo;
+    id<PDIEntity> v = [PDIConversion fromPDType:value depth:diui->depth];
+    if (! v) v = [PDIValue valueWithPDValue:value];
+    if (v) {
+        ((__bridge NSMutableDictionary *)diui->dict)[[NSString stringWithPDFString:key]] = v;
+    } else {
+        PDWarn("NULL value in conversion for dictionary entry %s", key);
+    }
+}
+
 + (id<PDIEntity>)dict:(void *)pdob depth:(NSInteger)depth
 {
-    void *pdv;
-    id<PDIEntity> v;
     PDInteger count = PDDictionaryGetCount(pdob);
-    char **keys = PDDictionaryGetKeys(pdob);
     NSMutableDictionary *dict = [NSMutableDictionary dictionaryWithCapacity:count];
-    for (PDInteger i = 0; i < count; i++) {
-        pdv = PDDictionaryGetEntry(pdob, keys[i]);
-        v = [self fromPDType:pdv depth:depth-1];
-        if (! v) v = [PDIValue valueWithPDValue:pdv];
-        if (v) 
-            dict[[NSString stringWithPDFString:keys[i]]] = v;
-        else
-            PDWarn("NULL value in conversion for dictionary entry %s in %s", keys[i], PDDictionaryToString(pdob));
-    }
+    
+    struct dictIteratorUI diui;
+    diui.dict = (__bridge void*)dict;
+    diui.depth = depth - 1;
+    PDDictionaryIterate(pdob, dictIterator, &diui);
+    
+//    char **keys = PDDictionaryGetKeys(pdob);
+//    for (PDInteger i = 0; i < count; i++) {
+//        pdv = PDDictionaryGet(pdob, keys[i]);
+//        v = [self fromPDType:pdv depth:depth-1];
+//        if (! v) v = [PDIValue valueWithPDValue:pdv];
+//        if (v) 
+//            dict[[NSString stringWithPDFString:keys[i]]] = v;
+//        else
+//            PDWarn("NULL value in conversion for dictionary entry %s in %s", keys[i], PDDictionaryToString(pdob));
+//    }
     
     return dict;
 }

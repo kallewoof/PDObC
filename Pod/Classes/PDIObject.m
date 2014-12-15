@@ -233,7 +233,13 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
 
 - (void)scheduleMimicking
 {
-    if (_mutable || ! _instance) return;
+    if (_mutable || ! _instance) {
+        if (! _mutable && ! _instance) {
+            PDWarn("Request to schedule mimicking for object #%ld was ignored -- no PDISession available. To provide a PDISession, call -enableMutationViaMimicSchedulingWithSession: first.", (long)_objectID);
+        }
+        return;
+    }
+    
     _mutable = YES;
     [_instance forObjectWithID:_objectID enqueueOperation:^PDTaskResult(PDISession *session, PDIObject *object) {
         [object mimic:self];
@@ -364,7 +370,7 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
 {
     id value = _dict[key];
     if (! value) {
-        void *pdv = PDDictionaryGetEntry(PDObjectGetDictionary(_obj), [key cStringUsingEncoding:NSUTF8StringEncoding]);
+        void *pdv = PDDictionaryGet(PDObjectGetDictionary(_obj), [key cStringUsingEncoding:NSUTF8StringEncoding]);
         if (pdv) {
             value = [PDIConversion fromPDType:pdv];
             _dict[key] = value;
@@ -398,7 +404,7 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
     id ob = [self resolvedValueForKey:key];
     if (ob && ! [ob isKindOfClass:[PDIObject class]]) {
         // create fake object
-            PDIObject *wrapOb = [[PDIObject alloc] initWrappingValue:ob PDValue:PDDictionaryGetEntry(_obj->inst, [key UTF8String])];
+            PDIObject *wrapOb = [[PDIObject alloc] initWrappingValue:ob PDValue:PDDictionaryGet(_obj->inst, [key UTF8String])];
             return wrapOb;
     }
     return ob;
@@ -426,29 +432,32 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
         }
         pdv = [value PDValue];
     }
-    PDDictionarySetEntry(PDObjectGetDictionary(_obj), [key PDFString], pdv);
+    PDDictionarySet(PDObjectGetDictionary(_obj), [key PDFString], pdv);
     _dict[key] = value;
     _type = _obj->type;
     [self scheduleMimicking];
 }
 
+void dictIterConstruct(char *key, void *value, void *userInfo, PDBool *shouldStop)
+{
+    PDIObject *self = (__bridge PDIObject *)(userInfo);
+    [self valueForKey:[NSString stringWithPDFString:key]];
+}
+
 - (NSDictionary *)constructDictionary
 {
     PDDictionaryRef dict = PDObjectGetDictionary(_obj);
-    char **keys = PDDictionaryGetKeys(dict);
-    PDInteger count = PDDictionaryGetCount(dict);
     
     [_dict resolvePDValues];
-    for (PDInteger i = 0; i < count; i++) {
-        [self valueForKey:[NSString stringWithPDFString:keys[i]]];
-    }
+
+    PDDictionaryIterate(dict, dictIterConstruct, (__bridge void *)(self));
 
     return _dict;
 }
 
 - (void)removeValueForKey:(NSString *)key
 {
-    PDDictionaryDeleteEntry(PDObjectGetDictionary(_obj), key.PDFString);
+    PDDictionaryDelete(PDObjectGetDictionary(_obj), key.PDFString);
     [_dict removeObjectForKey:key];
     [self scheduleMimicking];
 }
