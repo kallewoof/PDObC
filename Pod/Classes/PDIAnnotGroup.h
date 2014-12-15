@@ -37,7 +37,7 @@
  @param object The annots object.
  @param session The PDISession.
  */
-- (id)initWithObject:(PDIObject *)object inSession:(PDISession *)session;
+- (id)initWithObject:(PDIObject *)object inSession:(PDISession *)session NS_DESIGNATED_INITIALIZER;
 
 /**
  Add an annotation object to this group.
