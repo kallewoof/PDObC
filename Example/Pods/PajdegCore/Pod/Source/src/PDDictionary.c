@@ -3,99 +3,219 @@
 //
 // Copyright (c) 2012 - 2014 Karl-Johan Alm (http://github.com/kallewoof)
 // 
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
 // 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WdictANTY; without even the implied wdictanty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
 // 
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
 //
 
-#include "Pajdeg.h"
+#include <math.h>
+
 #include "PDDictionary.h"
-#include "pd_stack.h"
-#include "pd_crypto.h"
-#include "pd_pdf_implementation.h"
-
-#include "PDString.h"
 #include "pd_internal.h"
+#include "pd_pdf_implementation.h"
+#include "pd_stack.h"
+#include "PDArray.h"
+#include "PDString.h"
 
-#define PDDictionaryFetchI(dict, key) \
-    PDInteger index; \
-    for (index = dict->count-1; index >= 0; index--) \
-        if (0 == strcmp(key, dict->keys[index])) \
-            break;\
+#ifdef PDHM_PROF
+#define prof_ctr_mask     1023 // the mask used to cycle
+static int prof_counter = 0;   // cycles 0..1023 and prints profile info at every 0
 
-void PDDictionaryDestroy(PDDictionaryRef dict)
+static unsigned long long 
+    operations = 0,             // # of operations in total
+    creations = 0,              // # of hash map creations
+    capCountSum = 0,            // the highest count seen on deletion
+    destroys = 0,               // # of hash map destructions
+    node_creations = 0,         // # of nodes created
+    node_destroys = 0,          // # of nodes deleted
+    totbucks = 0,               // total number of buckets created
+    totemptybucks = 0,          // total number of empty buckets (even after destruction)
+    totpopbucks = 0,            // total number of populated buckets (1 or more)
+    totcollbucks = 0,           // total number of buckets with > 1 node
+    totfinds = 0,               // total number of bucket find ops
+    totsets = 0,                // total number of set operations
+    totgets = 0,                // total number of get operations
+    totdels = 0,                // total number of delete operations
+    totreplaces = 0,            // total number of replacements (i.e. sets for pre-existing keys)
+    totcolls = 0,               // total number of collisions (insertions into populated buckets)
+    totsetcolls = 0,            // total number of collisions on set ops
+    totgetcolls = 0,            // total number of collisions on get ops
+    topbucksize = 0,            // biggest observed bucket size (in nodes)
+    cstring_hashgens = 0,       // number of c string hash generations
+    cstring_hashcomps = 0;      // number of c string hash comparisons
+
+#define BS_TRACK_CAP 8
+static unsigned long long buckets_sized[BS_TRACK_CAP] = {0};
+#define reg_buck_insert(bucket) do { \
+            PDSize bsize = PDArrayGetCount(bucket);\
+            PDSize bscapped = bsize > BS_TRACK_CAP-1 ? BS_TRACK_CAP-1 : bsize;\
+            if (bsize > 0) {\
+                totcolls++; \
+                totcollbucks += bsize == 1;\
+                if (bsize + 1 > topbucksize) topbucksize = bsize + 1; \
+                buckets_sized[bscapped]--; \
+            }\
+            buckets_sized[bscapped+1]++; \
+        } while(0)
+
+#define reg_buck_delete(bucket) do {\
+            PDSize bsize = PDArrayGetCount(bucket);\
+            if (bsize > BS_TRACK_CAP-1) bsize = BS_TRACK_CAP-1;\
+            PDAssert(bsize > 0); \
+            buckets_sized[bsize]--;\
+            buckets_sized[bsize-1]++;\
+        } while(0)
+
+static inline void prof_report()
 {
-    for (PDInteger i = dict->count-1; i >= 0; i--) {
-        free(dict->keys[i]);
-        PDRelease(dict->values[i]);
-        pd_stack_destroy(&dict->vstacks[i]);
+    printf("                     HASH MAP PROFILING\n"
+           "=================================================================================================\n"
+           "total operation count : %10llu\n"
+           "average count / dict  : %10lf\n"
+           "creations  : %10llu   destroys   : %10llu\n"
+           "nodes      : %10llu              : %10llu\n"
+           "bucket sum : %10llu   top sized  : %10llu\n"
+           "   empty   : %10llu   populated  : %10llu  w/ collisions : %10llu\n"
+           "set ops    : %10llu   get ops    : %10llu     deletions  : %10llu\n"
+           "find ops   : %10llu   replace ops: %10llu\n"
+           "C string g : %10llu   C string c : %10llu\n"
+           "collisions : %10llu\n"
+           "   on set  : %10llu   on get     : %10llu\n"
+           "collision ratio : %f\n"
+           "   set collisions : %f   get/del collisions : %f\n"
+           , operations
+           , (double)capCountSum / (double)destroys
+           , creations, destroys
+           , node_creations, node_destroys
+           , totbucks, topbucksize
+           , totemptybucks, totpopbucks, totcollbucks
+           , totsets, totgets, totdels
+           , totfinds, totreplaces
+           , cstring_hashgens, cstring_hashcomps
+           , totcolls
+           , totsetcolls, totgetcolls
+           , (float)totcolls / (float)(totsets + totgets + totdels)
+           , (float)totsetcolls / (float)totsets, (float)totgetcolls / (float)(totgets+totdels));
+    printf("bucket sizes:\n"
+           "        0        1        2        3        4        5        6        7+\n");
+    for (PDSize i = 0; i < BS_TRACK_CAP; i++) {
+        printf(" %8llu", buckets_sized[i]);
     }
-    
-#ifdef PD_SUPPORT_CRYPTO
-    PDRelease(dict->ci);
-#endif
-    
-    free(dict->keys);
-    free(dict->values);
-    free(dict->vstacks);
+    printf("\n"
+           "=================================================================================================\n");
 }
 
-PDDictionaryRef PDDictionaryCreateWithCapacity(PDInteger capacity)
-{
-    PDDictionaryRef dict = PDAllocTyped(PDInstanceTypeDict, sizeof(struct PDDictionary), PDDictionaryDestroy, false);
-    
-    if (capacity < 1) capacity = 1;
-    
-#ifdef PD_SUPPORT_CRYPTO
-    dict->ci = NULL;
+#   define  prof(args...) do {\
+                args;\
+                if (!(prof_counter = (prof_counter + 1) & prof_ctr_mask))\
+                prof_report();\
+            } while(0)
+#else
+#   define reg_buck_insert(bucket) 
+#   define reg_buck_delete(bucket) 
+#   define prof(args...) 
+#   define prof_report() 
 #endif
-    dict->count = 0;
-    dict->capacity = capacity;
-    dict->keys = malloc(sizeof(char *) * capacity);
-    dict->values = malloc(sizeof(void *) * capacity);
-    dict->vstacks = malloc(sizeof(pd_stack) * capacity);
-    return dict;
+
+void PDDictionaryDestroy(PDDictionaryRef hm)
+{
+    prof(capCountSum += hm->maxCount);
+    prof(destroys++);
+    free(hm->buckets);
+    PDRelease(hm->populated);
+}
+
+static inline PDSize PDHashGeneratorCString(const char *key) 
+{
+    prof(cstring_hashgens++);
+    // from http://c.learncodethehardway.org/book/ex37.html
+    size_t len = strlen(key);
+    PDSize hash = 0;
+    PDSize i = 0;
+    
+    for(hash = i = 0; i < len; ++i) {
+        hash += key[i];
+        hash += (hash << 10);
+        hash ^= (hash >> 6);
+    }
+    
+    hash += (hash << 3);
+    hash ^= (hash >> 11);
+    hash += (hash << 15);
+    
+    return hash;
+}
+
+#ifdef PDHM_PROF
+static inline int PDHashComparatorCString(const char *key1, const char *key2)
+{
+    prof(cstring_hashcomps++);
+    return strcmp(key1, key2);
+}
+#else
+#   define PDHashComparatorCString  strcmp
+#endif
+
+#define PD_HASHMAP_DEFAULT_BUCKETS  64
+
+PDDictionaryRef _PDDictionaryCreateWithSettings(PDSize bucketc)
+{
+    prof(creations++; totbucks += bucketc; totemptybucks += bucketc);
+    PDDictionaryRef hm = PDAllocTyped(PDInstanceTypeDict, sizeof(struct PDDictionary), PDDictionaryDestroy, false);
+    hm->count = 0;
+    prof(hm->maxCount = 0);
+    hm->bucketc = bucketc;   // 128 (0b10000000)
+    hm->bucketm = bucketc-1; // 127 (0b01111111)
+    hm->buckets = calloc(sizeof(PDArrayRef), hm->bucketc);
+    hm->populated = PDArrayCreateWithCapacity(bucketc);
+    hm->ci = NULL;
+    return hm;
+}
+
+PDDictionaryRef PDDictionaryCreateWithBucketCount(PDSize bucketCount)
+{
+    if (bucketCount < 16) bucketCount = 16;
+    PDAssert(bucketCount < 1 << 24); // crash = absurd bucket count (over 16777216)
+    PDSize bits = ceilf(log2f(bucketCount)); // ceil(log2(100)) == ceil(6.6438) == 7
+    PDSize bucketc = 1 << bits; // 1 << 7 == 128
+    return _PDDictionaryCreateWithSettings(bucketc);
+}
+
+PDDictionaryRef PDDictionaryCreate()
+{
+    return _PDDictionaryCreateWithSettings(PD_HASHMAP_DEFAULT_BUCKETS);
 }
 
 PDDictionaryRef PDDictionaryCreateWithComplex(pd_stack stack)
 {
+    PDDictionaryRef hm = _PDDictionaryCreateWithSettings(PD_HASHMAP_DEFAULT_BUCKETS);
+    PDDictionaryAddEntriesFromComplex(hm, stack);
+    return hm;
+}
+
+void PDDictionaryAddEntriesFromComplex(PDDictionaryRef hm, pd_stack stack)
+{
     if (stack == NULL) {
         // empty dictionary
-        return PDDictionaryCreateWithCapacity(1);
+        return;
     }
     
     // this may be an entry that is a dictionary inside another dictionary; if so, we should see something like
-    /*
-stack<0x15778480> {
-   0x532c24 ("de")
-   DecodeParms
-    stack<0x157785e0> {
-       0x532c20 ("dict")
-       0x532c1c ("entries")
-        stack<0x15778520> {
-            stack<0x15778510> {
-               0x532c24 ("de")
-               Columns
-               3
-            }
-            stack<0x15778590> {
-               0x532c24 ("de")
-               Predictor
-               12
-            }
-        }
-    }
-}
-     */
+
     if (PDIdentifies(stack->info, PD_DE)) {
         stack = stack->prev->prev->info;
     }
@@ -108,233 +228,257 @@ stack<0x15778480> {
             stack = stack->prev->prev->info;
     }
     
-    /*
- stack<0x1136ba20> {
-   0x3f9998 ("de")
-   Kids
-    stack<0x11368f20> {
-       0x3f999c ("array")
-       0x3f9990 ("entries")
-        stack<0x113ea650> {
-            stack<0x113c5c10> {
-               0x3f99a0 ("ae")
-                stack<0x113532b0> {
-                   0x3f9988 ("ref")
-                   557
-                   0
-                }
-            }
-            stack<0x113d49b0> {
-               0x3f99a0 ("ae")
-                stack<0x113efa50> {
-                   0x3f9988 ("ref")
-                   558
-                   0
-                }
-            }
-            stack<0x113f3c40> {
-               0x3f99a0 ("ae")
-                stack<0x1136df80> {
-                   0x3f9988 ("ref")
-                   559
-                   0
-                }
-            }
-            stack<0x113585b0> {
-               0x3f99a0 ("ae")
-                stack<0x11368e30> {
-                   0x3f9988 ("ref")
-                   560
-                   0
-                }
-            }
-            stack<0x1135df20> {
-               0x3f99a0 ("ae")
-                stack<0x113f3470> {
-                   0x3f9988 ("ref")
-                   1670
-                   0
-                }
-            }
-        }
-    }
-}
-     */
-    
-    // determine size of stack
-    PDInteger count;
     pd_stack s = stack;
     pd_stack entry;
     
-    for (count = 0; s; s = s->prev)
-        count++;
-    PDDictionaryRef dict = PDDictionaryCreateWithCapacity(count);
-//    dict->count = count;x/
-    
-    s = stack;
     pd_stack_set_global_preserve_flag(true);
-    for (count = 0; s; s = s->prev) {
+    while (s) {
         entry = as(pd_stack, s->info)->prev;
+        
         // entry must be a string; it's the key value
         char *key = entry->info;
-        PDBool exists = false;
-        for (int i = 0; !exists && i < count; i++) 
-            exists |= !strcmp(key, dict->keys[i]);
-        if (exists) {
-            PDNotice("skipping duplicate dictionary key %s", key);
+        entry = entry->prev;
+        if (entry->type == PD_STACK_STRING) {
+            PDDictionarySet(hm, key, PDStringCreate(strdup(entry->info)));
         } else {
-            dict->keys[count] = strdup(key);
-            entry = entry->prev;
-            if (entry->type == PD_STACK_STRING) {
-                dict->values[count] = PDStringCreate(strdup(entry->info));
-                dict->vstacks[count] = NULL;
-            } else {
-                dict->vstacks[count] = /*entry =*/ pd_stack_copy(entry->info);
-                //            entry->info = NULL;
-                //            entry = dict->vstacks[count];
-                dict->values[count] = NULL; // PDStringFromComplex(&entry);
-            }
-            count++;
-        }
-    }
-    dict->count = count;
-    pd_stack_set_global_preserve_flag(false);
-    
-    return dict;
-}
-
-void PDDictionaryClear(PDDictionaryRef dictionary)
-{
-    while (dictionary->count > 0)
-        PDDictionaryDeleteEntry(dictionary, dictionary->keys[dictionary->count-1]);
-}
-
-PDInteger PDDictionaryGetCount(PDDictionaryRef dictionary)
-{
-    return dictionary->count;
-}
-
-char **PDDictionaryGetKeys(PDDictionaryRef dictionary)
-{
-    return dictionary->keys;
-}
-
-void *PDDictionaryGetEntry(PDDictionaryRef dictionary, const char *key)
-{
-    PDDictionaryFetchI(dictionary, key);
-    if (index < 0) return NULL;
-    
-    if (! dictionary->values[index]) {
-        if (dictionary->vstacks[index] != NULL) {
-            pd_stack entry = dictionary->vstacks[index];
+            entry = entry->info;
             pd_stack_set_global_preserve_flag(true);
-            dictionary->values[index] = PDInstanceCreateFromComplex(&entry);
+            void *v = PDInstanceCreateFromComplex(&entry);
             pd_stack_set_global_preserve_flag(false);
 #ifdef PD_SUPPORT_CRYPTO
-            if (dictionary->values[index] && dictionary->ci) 
-                (*PDInstanceCryptoExchanges[PDResolve(dictionary->values[index])])(dictionary->values[index], dictionary->ci, true);
+            if (v && hm->ci) (*PDInstanceCryptoExchanges[PDResolve(v)])(v, hm->ci, true);
 #endif
+            PDDictionarySet(hm, key, v);
+        }
+        s = s->prev;
+    }
+    pd_stack_set_global_preserve_flag(false);
+}
+
+
+static void PDDictionaryNodeDestroy(PDDictionaryNodeRef n)
+{
+    PDRelease(n->data);
+    free(n->key);
+    prof(node_destroys++);
+}
+
+static inline PDDictionaryNodeRef PDDictionaryNodeCreate(PDSize hash, char *key, void *data)
+{
+    prof(node_creations++);
+    PDDictionaryNodeRef n = PDAlloc(sizeof(struct PDDictionaryNode), PDDictionaryNodeDestroy, false);
+    n->hash = hash;
+    n->key = key; // owned! freed on node destruction!
+    n->data = PDRetain(data);
+    return n;
+}
+
+static inline PDArrayRef PDDictionaryFindBucket(PDDictionaryRef hm, const char *key, PDSize hash, PDBool create, PDInteger *outIndex)
+{
+    prof(totfinds++);
+    PDSize bucketIndex = hash & hm->bucketm;
+    
+    PDArrayRef bucket = hm->buckets[bucketIndex];
+    *outIndex = -1;
+    
+    if (NULL == bucket) {
+        if (! create) return NULL;
+        prof(totemptybucks--; totpopbucks++); // when a bucket is asked to be created, it means it will be non-empty and populated, so we prof that here
+        bucket = PDArrayCreateWithCapacity(4);
+        hm->buckets[bucketIndex] = bucket;
+        PDArrayAppend(hm->populated, bucket);
+        PDRelease(bucket);
+    } else {
+        PDDictionaryNodeRef node;
+        PDInteger len = PDArrayGetCount(bucket);
+        for (PDInteger i = 0; i < len; i++) {
+            node = PDArrayGetElement(bucket, i);
+            if (node->hash == hash && !PDHashComparatorCString(key, node->key)) {
+                *outIndex = i;
+                break;
+            }
+            prof(if (create) totsetcolls++; else totgetcolls++);
         }
     }
     
-    return dictionary->values[index];
+    return bucket;
 }
 
-void *PDDictionaryGetTypedEntry(PDDictionaryRef dictionary, const char *key, PDInstanceType type)
+void PDDictionarySet(PDDictionaryRef hm, const char *key, void *value)
 {
-    void *ctr = PDDictionaryGetEntry(dictionary, key);
-    return ctr && PDResolve(ctr) == type ? ctr : NULL;
-}
-
-void PDDictionarySetEntry(PDDictionaryRef dictionary, const char *key, void *value)
-{
-    PDDictionaryFetchI(dictionary, key);
-    if (index == -1) index = dictionary->count;
+    PDAssert(value != NULL); // crash = value is NULL; use delete to remove keys
     
-    if (index == dictionary->count && dictionary->count == dictionary->capacity) {
-        dictionary->capacity += dictionary->capacity + 1;
-        dictionary->keys = realloc(dictionary->keys, sizeof(char *) * dictionary->capacity);
-        dictionary->values = realloc(dictionary->values, sizeof(void *) * dictionary->capacity);
-        dictionary->vstacks = realloc(dictionary->vstacks, sizeof(pd_stack) * dictionary->capacity);
-    }
-
 #ifdef PD_SUPPORT_CRYPTO
-    if (dictionary->ci) (*PDInstanceCryptoExchanges[PDResolve(value)])(value, dictionary->ci, false);
+    if (hm->ci) (*PDInstanceCryptoExchanges[PDResolve(value)])(value, hm->ci, false);
 #endif
     
-    if (index == dictionary->count) {
-        // increase count and set key
-        dictionary->count++;
-        dictionary->keys[index] = strdup(key);
+    prof(operations++);
+    prof(totsets++);
+    PDSize hash = PDHashGeneratorCString(key);
+    PDInteger nodeIndex;
+    PDArrayRef bucket = PDDictionaryFindBucket(hm, key, hash, true, &nodeIndex);
+    PDAssert(bucket != NULL);
+    
+    if (nodeIndex != -1) {
+        prof(totreplaces++);
+        PDDictionaryNodeRef node = PDArrayGetElement(bucket, nodeIndex);
+        PDRetain(value);
+        PDRelease(node->data);
+        node->data = value;
     } else {
-        // clear out old value
-        PDRelease(dictionary->values[index]);
-        pd_stack_destroy(&dictionary->vstacks[index]);
-    }
-    
-    dictionary->values[index] = PDRetain(value);
-    dictionary->vstacks[index] = NULL;
-}
-
-void PDDictionaryDeleteEntry(PDDictionaryRef dictionary, const char *key)
-{
-    PDDictionaryFetchI(dictionary, key);
-    if (index < 0) return;
-    
-    free(dictionary->keys[index]);
-    PDRelease(dictionary->values[index]);
-    pd_stack_destroy(&dictionary->vstacks[index]);
-    dictionary->count--;
-    for (PDInteger i = index; i < dictionary->count; i++) {
-        dictionary->keys[i] = dictionary->keys[i+1];
-        dictionary->values[i] = dictionary->values[i+1];
-        dictionary->vstacks[i] = dictionary->vstacks[i+1];
+        reg_buck_insert(bucket);
+        hm->count++;
+        prof(if (hm->count > hm->maxCount) hm->maxCount = hm->count);
+        PDDictionaryNodeRef node = PDDictionaryNodeCreate(hash, strdup(key), value);
+        PDArrayAppend(bucket, node);
+        PDRelease(node);
     }
 }
 
-char *PDDictionaryToString(PDDictionaryRef dictionary)
+void *PDDictionaryGet(PDDictionaryRef hm, const char *key)
 {
-    PDInteger len = 6 + 20 * dictionary->count;
+    prof(operations++);
+    prof(totgets++);
+    PDSize hash = PDHashGeneratorCString(key);
+    PDInteger nodeIndex;
+    PDArrayRef bucket = PDDictionaryFindBucket(hm, key, hash, false, &nodeIndex);
+    return nodeIndex > -1 ? ((PDDictionaryNodeRef)PDArrayGetElement(bucket, nodeIndex))->data : NULL;
+}
+
+void *PDDictionaryGetTyped(PDDictionaryRef dictionary, const char *key, PDInstanceType type)
+{
+    void *v = PDDictionaryGet(dictionary, key);
+    return v && PDResolve(v) == type ? v : NULL;
+}
+
+void PDDictionaryDelete(PDDictionaryRef hm, const char *key)
+{
+    prof(operations++);
+    prof(totdels++);
+    PDSize hash = PDHashGeneratorCString(key);
+    PDInteger nodeIndex;
+    PDArrayRef bucket = PDDictionaryFindBucket(hm, key, hash, false, &nodeIndex);
+    if (! bucket || nodeIndex == -1) return;
+    reg_buck_delete(bucket);
+    hm->count--;
+    PDArrayDeleteAtIndex(bucket, nodeIndex);
+}
+
+void PDDictionaryClear(PDDictionaryRef hm)
+{
+    prof(operations++);
+    PDInteger blen = PDArrayGetCount(hm->populated);
+    for (PDInteger i = 0; i < blen; i++) {
+        PDArrayRef bucket = PDArrayGetElement(hm->populated, i);
+        PDArrayClear(bucket);
+    }
+    hm->count = 0;
+}
+
+PDSize PDDictionaryGetCount(PDDictionaryRef hm)
+{
+    return hm->count;
+}
+
+void PDDictionaryIterate(PDDictionaryRef hm, PDHashIterator it, void *ui)
+{
+    PDBool shouldStop = false;
+    PDInteger blen = PDArrayGetCount(hm->populated);
+    for (PDInteger i = 0; i < blen; i++) {
+        PDArrayRef bucket = PDArrayGetElement(hm->populated, i);
+        PDInteger len = PDArrayGetCount(bucket);
+        for (PDInteger j = 0; j < len; j++) {
+            PDDictionaryNodeRef node = PDArrayGetElement(bucket, j);
+            it(node->key, node->data, ui, &shouldStop);
+            if (shouldStop) return;
+        }
+    }
+}
+
+typedef struct hm_keygetter {
+    int i;
+    char **res;
+} hm_keygetter;
+
+typedef struct hm_printer {
+    char **bv, **buf;
+    PDInteger *cap;
+    PDInteger *offs;
+} hm_printer;
+
+void pd_hm_getkeys(char *key, void *val, hm_keygetter *userInfo, PDBool *shouldStop)
+{
+    userInfo->res[userInfo->i++] = key;
+}
+
+void pd_hm_print(char *key, void *val, hm_printer *p, PDBool *shouldStop)
+{
+    char *bv;
+    PDInteger *cap = p->cap;
+    
+    char **buf = p->buf;
+    PDInteger offs = *p->offs;
+    
+    PDInteger klen = strlen(key);
+    PDInstancePrinterRequire(klen + 10, klen + 10);
+    bv = *buf;
+    bv[offs++] = '/';
+    strcpy(&bv[offs], key);
+    offs += klen;
+    bv[offs++] = ' ';
+    offs = (*PDInstancePrinters[PDResolve(val)])(val, buf, offs, cap);
+    PDInstancePrinterRequire(4, 4);
+    bv = *buf;
+    bv[offs++] = ' ';
+    
+    *p->bv = bv;
+    *p->offs = offs;
+    
+    //    printf("\t%s: %s\n", key, val);
+}
+
+void PDDictionaryPopulateKeys(PDDictionaryRef hm, char **keys)
+{
+    hm_keygetter kg;
+    kg.i = 0;
+    kg.res = keys;
+    PDDictionaryIterate(hm, (PDHashIterator)pd_hm_getkeys, &kg);
+}
+
+char *PDDictionaryToString(PDDictionaryRef hm)
+{
+    PDInteger len = 6 + 20 * hm->count;
     char *str = malloc(len);
-    PDDictionaryPrinter(dictionary, &str, 0, &len);
+    PDDictionaryPrinter(hm, &str, 0, &len);
     return str;
 }
 
-void PDDictionaryPrint(PDDictionaryRef dictionary)
+void PDDictionaryPrint(PDDictionaryRef hm)
 {
-    char *str = PDDictionaryToString(dictionary);
+    char *str = PDDictionaryToString(hm);
     puts(str);
     free(str);
 }
 
 PDInteger PDDictionaryPrinter(void *inst, char **buf, PDInteger offs, PDInteger *cap)
 {
+    hm_printer p;
     PDInstancePrinterInit(PDDictionaryRef, 0, 1);
     PDInteger len = 6 + 20 * i->count;
     PDInstancePrinterRequire(len, len);
     char *bv = *buf;
-    PDInteger klen;
     bv[offs++] = '<';
     bv[offs++] = '<';
     bv[offs++] = ' ';
-    for (PDInteger j = 0; j < i->count; j++) {
-        klen = strlen(i->keys[j]);
-        PDInstancePrinterRequire(klen + 10, klen + 10);
-        bv = *buf;
-        bv[offs++] = '/';
-        strcpy(&bv[offs], i->keys[j]);
-        offs += klen;
-        bv[offs++] = ' ';
-        if (! i->values[j] && i->vstacks[j]) {
-            PDDictionaryGetEntry(i, i->keys[j]);
-        }
-        if (i->values[j]) {
-            offs = (*PDInstancePrinters[PDResolve(i->values[j])])(i->values[j], buf, offs, cap);
-        }
-        PDInstancePrinterRequire(4, 4);
-        bv = *buf;
-        bv[offs++] = ' ';
-    }
+    
+    p.buf = buf;
+    p.cap = cap;
+    
+    p.bv = &bv;
+    p.offs = &offs;
+    
+    PDDictionaryIterate(i, (PDHashIterator)pd_hm_print, &p);
+    
     bv[offs++] = '>';
     bv[offs++] = '>';
     bv[offs] = 0;
@@ -343,22 +487,21 @@ PDInteger PDDictionaryPrinter(void *inst, char **buf, PDInteger offs, PDInteger 
 
 #ifdef PD_SUPPORT_CRYPTO
 
-void PDDictionaryAttachCrypto(PDDictionaryRef dictionary, pd_crypto crypto, PDInteger objectID, PDInteger genNumber)
+void pd_hm_encrypt(void *key, void *val, PDCryptoInstanceRef ci, PDBool *shouldStop)
 {
-    dictionary->ci = PDCryptoInstanceCreate(crypto, objectID, genNumber);
-    for (PDInteger i = 0; i < dictionary->count; i++) {
-        if (dictionary->values[i]) 
-            (*PDInstanceCryptoExchanges[PDResolve(dictionary->values[i])])(dictionary->values[i], dictionary->ci, false);
-    }
+    (*PDInstanceCryptoExchanges[PDResolve(val)])(val, ci, false);
 }
 
-void PDDictionaryAttachCryptoInstance(PDDictionaryRef dictionary, PDCryptoInstanceRef ci, PDBool encrypted)
+void PDDictionaryAttachCrypto(PDDictionaryRef hm, pd_crypto crypto, PDInteger objectID, PDInteger genNumber)
 {
-    dictionary->ci = PDRetain(ci);
-    for (PDInteger i = 0; i < dictionary->count; i++) {
-        if (dictionary->values[i]) 
-            (*PDInstanceCryptoExchanges[PDResolve(dictionary->values[i])])(dictionary->values[i], dictionary->ci, false);
-    }
+    hm->ci = PDCryptoInstanceCreate(crypto, objectID, genNumber);
+    PDDictionaryIterate(hm, (PDHashIterator)pd_hm_encrypt, hm->ci);
 }
 
-#endif // PD_SUPPORT_CRYPTO
+void PDDictionaryAttachCryptoInstance(PDDictionaryRef hm, PDCryptoInstanceRef ci, PDBool encrypted)
+{
+    hm->ci = PDRetain(ci);
+    PDDictionaryIterate(hm, (PDHashIterator)pd_hm_encrypt, hm->ci);
+}
+
+#endif

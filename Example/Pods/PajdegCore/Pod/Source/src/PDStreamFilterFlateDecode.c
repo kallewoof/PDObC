@@ -38,7 +38,7 @@ PDInteger fd_compress_init(PDStreamFilterRef filter)
     
     if (filter->options) {
         PDDictionaryRef options = filter->options;
-        void *value = PDDictionaryGetEntry(options, "Predictor");
+        void *value = PDDictionaryGet(options, "Predictor");
         if (value) {
             // we need a predictor as well
             PDStreamFilterRef predictor = PDStreamFilterObtain("Predictor", false, filter->options);
@@ -81,7 +81,7 @@ PDInteger fd_decompress_init(PDStreamFilterRef filter)
     
     if (filter->options) {
         PDDictionaryRef options = filter->options;
-        void *value = PDDictionaryGetEntry(options, "Predictor");
+        void *value = PDDictionaryGet(options, "Predictor");
         if (value) {
             // we need a predictor as well
             filter->nextFilter = PDStreamFilterObtain("Predictor", true, filter->options);

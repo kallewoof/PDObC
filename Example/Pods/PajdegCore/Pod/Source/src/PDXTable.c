@@ -277,12 +277,12 @@ PDBool PDXTableInsertXRef(PDParserRef parser)
     
 //    sprintf(obuf, "%lu", parser->mxt->count);
     PDDictionaryRef tobd = PDObjectGetDictionary(tob);
-    PDDictionarySetEntry(tobd, "Size", PDNumberWithSize(parser->mxt->count));
-    PDDictionaryDeleteEntry(tobd, "Prev");
-    PDDictionaryDeleteEntry(tobd, "XRefStm");
-//    PDDictionarySetEntry(PDObjectGetDictionary(tob), "Size", obuf);
-//    PDDictionaryDeleteEntry(PDObjectGetDictionary(tob), "Prev");
-//    PDDictionaryDeleteEntry(PDObjectGetDictionary(tob), "XRefStm");
+    PDDictionarySet(tobd, "Size", PDNumberWithSize(parser->mxt->count));
+    PDDictionaryDelete(tobd, "Prev");
+    PDDictionaryDelete(tobd, "XRefStm");
+//    PDDictionarySet(PDObjectGetDictionary(tob), "Size", obuf);
+//    PDDictionaryDelete(PDObjectGetDictionary(tob), "Prev");
+//    PDDictionaryDelete(PDObjectGetDictionary(tob), "XRefStm");
     
     char *string = NULL;
     len = PDObjectGenerateDefinition(tob, &string, 0);
@@ -311,17 +311,17 @@ PDBool PDXTableInsertXRefStream(PDParserRef parser)
     
     PDDictionaryRef tobd = PDObjectGetDictionary(trailer);
 //    sprintf(obuf, "%lu", mxt->count);
-    PDDictionarySetEntry(tobd, "Size", PDNumberWithSize(mxt->count));
-    PDDictionarySetEntry(tobd, "W", PDXTableWEntry(mxt));
-//    PDDictionarySetEntry(PDObjectGetDictionary(trailer), "Size", obuf);
-//    PDDictionarySetEntry(PDObjectGetDictionary(trailer), "W", PDXTableWEntry(mxt));
+    PDDictionarySet(tobd, "Size", PDNumberWithSize(mxt->count));
+    PDDictionarySet(tobd, "W", PDXTableWEntry(mxt));
+//    PDDictionarySet(PDObjectGetDictionary(trailer), "Size", obuf);
+//    PDDictionarySet(PDObjectGetDictionary(trailer), "W", PDXTableWEntry(mxt));
 
-    PDDictionaryDeleteEntry(tobd, "Prev");
-    PDDictionaryDeleteEntry(tobd, "Index");
-    PDDictionaryDeleteEntry(tobd, "XRefStm");
-//    PDDictionaryDeleteEntry(PDObjectGetDictionary(trailer), "Prev");
-//    PDDictionaryDeleteEntry(PDObjectGetDictionary(trailer), "Index");
-//    PDDictionaryDeleteEntry(PDObjectGetDictionary(trailer), "XRefStm");
+    PDDictionaryDelete(tobd, "Prev");
+    PDDictionaryDelete(tobd, "Index");
+    PDDictionaryDelete(tobd, "XRefStm");
+//    PDDictionaryDelete(PDObjectGetDictionary(trailer), "Prev");
+//    PDDictionaryDelete(PDObjectGetDictionary(trailer), "Index");
+//    PDDictionaryDelete(PDObjectGetDictionary(trailer), "XRefStm");
 
     // override filters/decode params always -- better than risk passing something on by mistake that makes the xref stream unreadable
     PDObjectSetFlateDecodedFlag(trailer, true);
@@ -457,7 +457,7 @@ static inline PDBool PDXTableReadXRefStreamHeader(PDXI X)
     pd_stack s = X->stack;
     X->dict = PDInstanceCreateFromComplex(&s);
     PDScannerAssertString(X->scanner, "stream");
-    PDInteger len = PDNumberGetInteger(PDDictionaryGetEntry(X->dict, "Length"));
+    PDInteger len = PDNumberGetInteger(PDDictionaryGet(X->dict, "Length"));
 //    PDInteger len = PDIntegerFromString(pd_stack_get_dict_key(X->stack, "Length", false)->prev->prev->info);
     PDScannerSkip(X->scanner, len);
     PDTwinStreamAdvance(X->stream, X->stream->cursor + X->scanner->boffset);
@@ -519,21 +519,21 @@ static inline PDBool PDXTableReadXRefStreamContent(PDXI X, PDOffset offset)
     X->dict = PDInstanceCreateFromComplex(&s);
 
     PDScannerAssertString(X->scanner, "stream");
-    len = PDNumberGetInteger(PDDictionaryGetEntry(X->dict, "Length"));
+    len = PDNumberGetInteger(PDDictionaryGet(X->dict, "Length"));
 //    len = PDIntegerFromString(pd_stack_get_dict_key(X->stack, "Length", false)->prev->prev->info);
-    byteWidths = PDDictionaryGetEntry(X->dict, "W");
+    byteWidths = PDDictionaryGet(X->dict, "W");
 //    byteWidths = pd_stack_get_dict_key(X->stack, "W", false);
-    index = PDDictionaryGetEntry(X->dict, "Index");
+    index = PDDictionaryGet(X->dict, "Index");
 //    index = pd_stack_get_dict_key(X->stack, "Index", false);
 //    filterDef = pd_stack_get_dict_key(X->stack, "Filter", false);
-    filterName = PDDictionaryGetEntry(X->dict, "Filter");
-    size = PDNumberGetInteger(PDDictionaryGetEntry(X->dict, "Size"));
+    filterName = PDDictionaryGet(X->dict, "Filter");
+    size = PDNumberGetInteger(PDDictionaryGet(X->dict, "Size"));
 //    size = PDIntegerFromString(pd_stack_get_dict_key(X->stack, "Size", false)->prev->prev->info);
     
     PDStreamFilterRef filter = NULL;
     if (filterName) {
         // ("name"), "filter name"
-        filterOpts = PDDictionaryGetEntry(X->dict, "DecodeParms");
+        filterOpts = PDDictionaryGet(X->dict, "DecodeParms");
 //        filterDef = as(pd_stack, filterDef->prev->prev->info)->prev;
 //        filterOpts = PDDictionaryCreateWithComplex(pd_stack_get_dict_key(X->stack, "DecodeParms", false));
 //        if (filterOpts) 
@@ -870,24 +870,24 @@ static inline void PDXTableParseTrailer(PDXI X)
         return;
     }
     
-    if (X->rootRef == NULL && PDDictionaryGetEntry(dict, "Root")) {
-        X->rootRef = PDDictionaryGetEntry(dict, "Root");
+    if (X->rootRef == NULL && PDDictionaryGet(dict, "Root")) {
+        X->rootRef = PDDictionaryGet(dict, "Root");
     }
-    if (X->infoRef == NULL && PDDictionaryGetEntry(dict, "Info")) {
-        X->infoRef = PDDictionaryGetEntry(dict, "Info");
+    if (X->infoRef == NULL && PDDictionaryGet(dict, "Info")) {
+        X->infoRef = PDDictionaryGet(dict, "Info");
     }
-    if (X->encryptRef == NULL && PDDictionaryGetEntry(dict, "Encrypt")) {
-        X->encryptRef = PDDictionaryGetEntry(dict, "Encrypt");
+    if (X->encryptRef == NULL && PDDictionaryGet(dict, "Encrypt")) {
+        X->encryptRef = PDDictionaryGet(dict, "Encrypt");
     }
     
     // a Prev key may or may not exist, in which case we want to hit it
-    if (PDDictionaryGetEntry(dict, "Prev")) {
-        pd_stack_push_identifier(&X->queue, (PDID)PDNumberGetSize(PDDictionaryGetEntry(dict, "Prev")));
+    if (PDDictionaryGet(dict, "Prev")) {
+        pd_stack_push_identifier(&X->queue, (PDID)PDNumberGetSize(PDDictionaryGet(dict, "Prev")));
     }
     
     // For 1.5+ PDF:s, an XRefStm may exist; it takes precedence over Prev, but does not override Prev
-    if (PDDictionaryGetEntry(dict, "XRefStm")) {
-        pd_stack_push_identifier(&X->queue, (PDID)PDNumberGetSize(PDDictionaryGetEntry(dict, "XRefStm")));
+    if (PDDictionaryGet(dict, "XRefStm")) {
+        pd_stack_push_identifier(&X->queue, (PDID)PDNumberGetSize(PDDictionaryGet(dict, "XRefStm")));
     }
     
     // update the trailer object in case additional info is included; note that we set def to the most recent object only and do not "append" like we do with XREF entries

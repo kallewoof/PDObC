@@ -74,7 +74,7 @@
  
  void finish_asynchronous_thing(PDObjectRef object, PDInteger *asyncDone)
  {
-    PDDictionarySetEntry(PDObjectGetDictionary(object), "Foo", "bar");
+    PDDictionarySet(PDObjectGetDictionary(object), "Foo", "bar");
     *asyncDone = 1;
  }
  @endcode

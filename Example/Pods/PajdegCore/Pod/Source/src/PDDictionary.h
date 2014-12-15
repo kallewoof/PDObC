@@ -23,15 +23,15 @@
 //
 
 /**
- @file PDDictionary.h Dictionary object
+ @file PDDictionary.h Hash map object
  
- @ingroup PDDICTIONARY
+ @ingroup PDDictionary
  
- @defgroup PDDICTIONARY PDDictionary
+ @defgroup PDDictionary PDDictionary
  
- @brief A dictionary construct.
+ @brief A hash map construct.
  
- PDDictionaries maintain a list of objects, such as PDStrings, PDReferences, PDObjects, as associated key/value pairs. It is able to produce a string representation compatible with the PDF specification for its content.
+ PDDictionary is a simple hash map implementation, with C string keys and PDType values.
  
  @{
  */
@@ -42,121 +42,146 @@
 #include "PDDefines.h"
 
 /**
- *  Create a new, empty dictionary with the given capacity.
+ *  Create a hash map with C string keys using default number of buckets.
  *
- *  @param capacity The number of slots to allocate for added entrys
- *
- *  @return Empty dictionary
+ *  @return New hash map
  */
-extern PDDictionaryRef PDDictionaryCreateWithCapacity(PDInteger capacity);
+extern PDDictionaryRef PDDictionaryCreate();
 
 /**
- *  Converts a PDF dictionary stack into a dictionary.
- *  
- *  @param stack The PDF dictionary stack
+ *  Create a hash map with the given number of buckets.
+ *  The hash map uses C string keys.
  *
- *  @return New PDDictionary based on the stack representation of a PDF dictionary
+ *  @param bucketCount Number of buckets to use in the hash map
+ *
+ *  @return New hash map
+ */
+extern PDDictionaryRef PDDictionaryCreateWithBucketCount(PDSize bucketCount);
+
+/**
+ *  Create a hash map with a complex object (a PDF dictionary stack).
+ *
+ *  @param stack PDF dictionary stack
+ *
+ *  @return PDDictionary containing the PDF dictionary content
  */
 extern PDDictionaryRef PDDictionaryCreateWithComplex(pd_stack stack);
 
 /**
- *  Clear the given dictionary, removing all entries.
+ *  Add all entries from the given PDF dictionary stack to this hash map.
+ *  Entries will replace pre-existing key/value pairs when a key in the 
+ *  pd_stack matches the key in the hash map.
  *
- *  @param dict The dictionary
+ *  @param hm    Hash map to add entries to
+ *  @param stack PDF dictionary stack
  */
-extern void PDDictionaryClear(PDDictionaryRef dictionary);
+extern void PDDictionaryAddEntriesFromComplex(PDDictionaryRef hm, pd_stack stack);
 
 /**
- *  Get the number of entrys in the dictionary
+ *  Set key to value. If value is NULL, an assertion is thrown. To delete
+ *  keys, use PDDictionaryDelete().
  *
- *  @param dictionary The dictionary
- *
- *  @return Number of entrys
+ *  @param hm    The hash map
+ *  @param key   The key
+ *  @param value The value
  */
-extern PDInteger PDDictionaryGetCount(PDDictionaryRef dictionary);
+extern void PDDictionarySet(PDDictionaryRef hm, const char *key, void *value);
 
 /**
- *  Get all the keys in the dictionary, as char**.
+ *  Get the value of the given key.
  *
- *  @param dictionary The dictionary
- *
- *  @return Char* array
+ *  @param hm  The hash map
+ *  @param key The key
  */
-extern char **PDDictionaryGetKeys(PDDictionaryRef dictionary);
+extern void *PDDictionaryGet(PDDictionaryRef hm, const char *key);
 
 /**
- *  Return the entry at the given index.
+ *  Delete the given key from the hash map
  *
- *  @param dictionary The dictionary
- *  @param key        The key
- *
- *  @return Appropriate object.
+ *  @param hm  The hash map
+ *  @param key The key to delete
  */
-extern void *PDDictionaryGetEntry(PDDictionaryRef dictionary, const char *key);
+extern void PDDictionaryDelete(PDDictionaryRef hm, const char *key);
 
 /**
- *  Return the entry at the given index, provided that it's of the given type. Otherwise return NULL.
+ *  Get the number of items in the hash map currently.
  *
- *  @param dictionary The dictionary
- *  @param key        The key
- *  @param type       The required type
+ *  @param hm The hash amp
  *
- *  @return Instance of given instance type, or NULL if the instance type does not match the encountered value
+ *  @return The number of inserted key/value pairs
  */
-extern void *PDDictionaryGetTypedEntry(PDDictionaryRef dictionary, const char *key, PDInstanceType type);
-
-//#define PDDictionaryGetNumber(d,k)      PDDictionaryGetTypedEntry(d,k,PDInstanceTypeNumber)
-#define PDDictionaryGetString(d,k)      PDDictionaryGetTypedEntry(d,k,PDInstanceTypeString)
-#define PDDictionaryGetArray(d,k)       PDDictionaryGetTypedEntry(d,k,PDInstanceTypeArray)
-#define PDDictionaryGetDictionary(d,k)  PDDictionaryGetTypedEntry(d,k,PDInstanceTypeDict)
-#define PDDictionaryGetReference(d,k)   PDDictionaryGetTypedEntry(d,k,PDInstanceTypeRef)
-#define PDDictionaryGetObject(d,k)      PDDictionaryGetTypedEntry(d,k,PDInstanceTypeObj)
-
-#define PDDictionaryGetInteger(d,k)     PDNumberGetInteger(PDDictionaryGetEntry(d,k))
+extern PDSize PDDictionaryGetCount(PDDictionaryRef hm);
 
 /**
- *  Set value of for the given key in the dictionary.
+ *  Iterate over the hash map entries using the given iterator.
  *
- *  @param dictionary The dictionary
- *  @param key        The key
- *  @param value      The value
+ *  @param hm The hash map whose key/value pairs should be iterated
+ *  @param it The iterating function
+ *  @param ui User information to pass to iterator, if any
  */
-extern void PDDictionarySetEntry(PDDictionaryRef dictionary, const char *key, void *value);
+extern void PDDictionaryIterate(PDDictionaryRef hm, PDHashIterator it, void *ui);
 
 /**
- *  Delete the value for the given key.
+ *  Fill in the keys array with the keys in the dictionary. 
  *
- *  @param dictionary The dictionary
- *  @param key        The key
+ *  @note keys must have at minimum PDDictionaryGetCount(hm) number of available slots.
+ *
+ *  @param hm   Hash map
+ *  @param keys Pre-allocated array to populate
  */
-extern void PDDictionaryDeleteEntry(PDDictionaryRef dictionary, const char *key);
+extern void PDDictionaryPopulateKeys(PDDictionaryRef hm, char **keys);
 
 /**
- *  Generate a C string formatted according to the PDF specification for this dictionary.
+ *  Remove all entries in the dictionary.
+ *
+ *  @param hm Dictionary to clear
+ */
+extern void PDDictionaryClear(PDDictionaryRef hm);
+
+/**
+ *  Print the hash map content to stdout.
+ *
+ *  @param hm The hash map
+ */
+extern void PDDictionaryPrint(PDDictionaryRef hm);
+
+/**
+ *  Generate a C string formatted according to the PDF specification for this hash map.
  *
  *  @note The returned string must be freed.
  *
- *  @param dictionary The dictionary
+ *  @param hm The hash map
  *
- *  @return C string representation of dictionary
+ *  @return C string representation of hash map, as a PDF dictionary
  */
-extern char *PDDictionaryToString(PDDictionaryRef dictionary);
+extern char *PDDictionaryToString(PDDictionaryRef hm);
 
 extern PDInteger PDDictionaryPrinter(void *inst, char **buf, PDInteger offs, PDInteger *cap);
-
-extern void PDDictionaryPrint(PDDictionaryRef dictionary);
 
 #ifdef PD_SUPPORT_CRYPTO
 
 /**
- *  Supply a crypto object to an dictionary, and associate the dictionary with a specific object. 
+ *  Supply a crypto object to a hash map, and associate the hash map with a specific object. 
  *
- *  @param dictionary The dictionary
+ *  @param hm         The hash map
  *  @param crypto     The pd_crypt object
  *  @param objectID   The object ID of the owning object
  *  @param genNumber  Generation number of the owning object
  */
-extern void PDDictionaryAttachCrypto(PDDictionaryRef dictionary, pd_crypto crypto, PDInteger objectID, PDInteger genNumber);
+extern void PDDictionaryAttachCrypto(PDDictionaryRef hm, pd_crypto crypto, PDInteger objectID, PDInteger genNumber);
+
+extern void *PDDictionaryGetTyped(PDDictionaryRef dictionary, const char *key, PDInstanceType type);
+
+#define PDDictionaryGetString(d,k)      PDDictionaryGetTyped(d,k,PDInstanceTypeString)
+#define PDDictionaryGetArray(d,k)       PDDictionaryGetTyped(d,k,PDInstanceTypeArray)
+#define PDDictionaryGetDictionary(d,k)  PDDictionaryGetTyped(d,k,PDInstanceTypeDict)
+#define PDDictionaryGetReference(d,k)   PDDictionaryGetTyped(d,k,PDInstanceTypeRef)
+#define PDDictionaryGetObject(d,k)      PDDictionaryGetTyped(d,k,PDInstanceTypeObj)
+
+/**
+ *  Short cut to getting an integer value from a PDDictionary
+ */
+#define PDDictionaryGetInteger(d,k)     PDNumberGetInteger(PDDictionaryGet(d,k))
 
 #endif // PD_SUPPORT_CRYPTO
 

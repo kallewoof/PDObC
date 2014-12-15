@@ -171,7 +171,6 @@ void PDContentStreamExecute(PDContentStreamRef cs)
 
     PDInteger i = 0;
     while (i < len) {
-//    for (PDInteger i = 0; i <= len;) {
         arg = PDContentStreamPopValue(cs, stream, len, &i);
         argValue = PDResolve(arg) != PDInstanceTypeString || PDStringTypeEscaped != PDStringGetType(arg) || PDStringIsWrapped(arg); // operators are distinguished by being PDStrings that are NOT wrapped; all other values are either not strings or are wrapped in one way or another
         if (argValue) {
@@ -262,7 +261,7 @@ PDDictionaryRef PDContentStreamPopDictionary(PDContentStreamRef cs, const char *
 {
     void *v;
     PDStringRef key;
-    PDDictionaryRef res = PDDictionaryCreateWithCapacity(3);
+    PDDictionaryRef res = PDDictionaryCreate();
     PDInteger mark = *iptr;
     
     // accept leading '<<'
@@ -280,7 +279,7 @@ PDDictionaryRef PDContentStreamPopDictionary(PDContentStreamRef cs, const char *
                 PDWarn("NULL value in content stream (pop value): using 'null' object");
                 v = PDRetain(PDNullObject);
             }
-            PDDictionarySetEntry(res, PDStringBinaryValue(key, NULL), v);
+            PDDictionarySet(res, PDStringBinaryValue(key, NULL), v);
             PDRelease(key);
             PDRelease(v);
         }

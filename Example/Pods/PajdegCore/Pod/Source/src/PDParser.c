@@ -362,7 +362,7 @@ void PDParserPrepareStreamData(PDParserRef parser, PDObjectRef ob, PDInteger len
     }
     
     if (filterName) {
-        PDDictionaryRef filterOpts = PDDictionaryGetEntry(PDObjectGetDictionary(ob), "DecodeParms");
+        PDDictionaryRef filterOpts = PDDictionaryGet(PDObjectGetDictionary(ob), "DecodeParms");
         PDStreamFilterRef filter = PDStreamFilterObtain(PDStringEscapedValue(filterName, false), true, filterOpts);
         
         if (NULL == filter) {
@@ -412,7 +412,7 @@ char *PDParserFetchCurrentObjectStream(PDParserRef parser, PDInteger obid)
     
     PDInteger len = parser->streamLen;
     PDStringRef filterName = NULL;
-    void *filterValue = PDDictionaryGetEntry(PDObjectGetDictionary(parser->construct), "Filter");
+    void *filterValue = PDDictionaryGet(PDObjectGetDictionary(parser->construct), "Filter");
     PDInstanceType filterType = PDResolve(filterValue);
     switch (filterType) {
         case PDInstanceTypeArray:{
@@ -479,7 +479,7 @@ void PDParserClarifyObjectStreamExistence(PDParserRef parser, PDObjectRef object
     if (object->type == PDObjectTypeUnknown) 
         PDObjectDetermineType(object);
     if (! object->hasStream && object->type == PDObjectTypeDictionary) {
-        void *lengthValue = PDDictionaryGetEntry(PDObjectGetDictionary(object), "Length");
+        void *lengthValue = PDDictionaryGet(PDObjectGetDictionary(object), "Length");
         if (lengthValue) {
             // length could be a ref, or a number
             PDInteger lenInt;
@@ -515,7 +515,7 @@ char *PDParserLocateAndFetchObjectStreamForObject(PDParserRef parser, PDObjectRe
     if (object->extractedLen != -1) return object->streamBuf;
 
     PDInteger len = object->streamLen;
-    PDStringRef filterName = PDDictionaryGetEntry(PDObjectGetDictionary(object), "Filter");
+    PDStringRef filterName = PDDictionaryGet(PDObjectGetDictionary(object), "Filter");
     
     char *rawBuf = malloc(len + 1);
     

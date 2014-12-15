@@ -35,8 +35,8 @@
 #include "PDReference.h"
 #include "PDString.h"
 #include "PDDictionary.h"
+#include "PDDictionary.h"
 #include "PDArray.h"
-//#include "PDCollection.h"
 #include "PDNumber.h"
 #include "PDObject.h"
 #include "PDArray.h"
@@ -928,11 +928,11 @@ PDInteger PDNullPrinter(void *inst, char **buf, PDInteger offs, PDInteger *cap)
 void PDNullExchange(void *inst, PDCryptoInstanceRef ci, PDBool encrypted)
 {}
 
-PDInstancePrinter PDInstancePrinters [] = {PDNullPrinter, PDNumberPrinter, PDStringPrinter, PDArrayPrinter, PDDictionaryPrinter, PDReferencePrinter, PDObjectPrinter};
+PDInstancePrinter PDInstancePrinters [] = {PDNullPrinter, PDNumberPrinter, PDStringPrinter, PDArrayPrinter, PDDictionaryPrinter, PDReferencePrinter, PDObjectPrinter, PDDictionaryPrinter};
 
 #ifdef PD_SUPPORT_CRYPTO
 
-PDInstanceCryptoExchange PDInstanceCryptoExchanges[] = {PDNullExchange, PDNullExchange, (PDInstanceCryptoExchange)PDStringAttachCryptoInstance, (PDInstanceCryptoExchange)PDArrayAttachCryptoInstance, (PDInstanceCryptoExchange)PDDictionaryAttachCryptoInstance, PDNullExchange, PDNullExchange};
+PDInstanceCryptoExchange PDInstanceCryptoExchanges[] = {PDNullExchange, PDNullExchange, (PDInstanceCryptoExchange)PDStringAttachCryptoInstance, (PDInstanceCryptoExchange)PDArrayAttachCryptoInstance, (PDInstanceCryptoExchange)PDDictionaryAttachCryptoInstance, PDNullExchange, PDNullExchange, (PDInstanceCryptoExchange)PDDictionaryAttachCryptoInstance};
 
 #endif
 

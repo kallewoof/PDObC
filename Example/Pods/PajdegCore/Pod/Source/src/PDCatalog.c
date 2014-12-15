@@ -58,7 +58,7 @@ void PDCatalogAppendPages(PDCatalogRef catalog, PDPageReference *pages, PDDictio
     pages->collection = true;
     PDParserRef parser = catalog->parser;
     
-    PDInteger count = PDNumberGetInteger(PDDictionaryGetEntry(ddict, "Count"));
+    PDInteger count = PDNumberGetInteger(PDDictionaryGet(ddict, "Count"));
 //    PDInteger count = PDIntegerFromString(pd_stack_get_dict_key(defs, "Count", false)->prev->prev->info);
     PDAssert(count > 0);
     if (count + catalog->count >= catalog->capacity) {
@@ -66,7 +66,7 @@ void PDCatalogAppendPages(PDCatalogRef catalog, PDPageReference *pages, PDDictio
         catalog->kids = realloc(catalog->kids, sizeof(PDInteger) * catalog->capacity);
     }
     
-    PDArrayRef kidsArray = PDDictionaryGetEntry(ddict, "Kids");
+    PDArrayRef kidsArray = PDDictionaryGet(ddict, "Kids");
 //    pd_stack kidsStack = pd_stack_get_dict_key(defs, "Kids", true);
 //    pd_stack_destroy(&defs);
 //    pd_stack kidsArr = pd_stack_get_arr(kidsStack);
@@ -106,7 +106,7 @@ void PDCatalogAppendPages(PDCatalogRef catalog, PDPageReference *pages, PDDictio
 //        PDAssert(defs); // crash = above function is failing; it may start failing if an object is "weird", or if the code to fetch objects is broken (e.g. PDScanner, PDTwinStream, or even PDParser)
         PDDictionaryRef kdict = PDObjectGetDictionary(kob); //PDInstanceCreateFromComplex(&defs);
 //        pd_stack_destroy(&defs);
-        PDStringRef type = PDDictionaryGetEntry(kdict, "Type");
+        PDStringRef type = PDDictionaryGet(kdict, "Type");
 //        char *type = as(pd_stack, pd_stack_get_dict_key(defs, "Type", false)->prev->prev->info)->prev->info;
         if (PDStringEqualsCString(type, "Pages")) {
 //        if (0 == strcmp(type, "Pages")) {
@@ -148,7 +148,7 @@ PDCatalogRef PDCatalogCreateWithParserForObject(PDParserRef parser, PDObjectRef 
     //  << /Type /Catalog /Pages 3 0 R >>
     // so the first thing we do is fetch that /Pages object
     PDDictionaryRef coDict = PDObjectGetDictionary(catalogObject);
-    sref = PDDictionaryGetEntry(coDict, "Pages");
+    sref = PDDictionaryGet(coDict, "Pages");
     PDAssert(sref != NULL); // catalogObject is most likely not a valid catalog
 
     // the Pages object looks like:

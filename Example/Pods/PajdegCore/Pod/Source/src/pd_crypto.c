@@ -314,14 +314,14 @@ pd_crypto pd_crypto_create(PDDictionaryRef trailerDict, PDDictionaryRef options)
     // read from dict
     crypto->filter = PDRetain(PDDictionaryGetString(options, "Filter"));
     crypto->subfilter = PDRetain(PDDictionaryGetString(options, "SubFilter"));
-    crypto->version = PDNumberGetInteger(PDDictionaryGetEntry(options, "V"));
-    crypto->length = PDNumberGetInteger(PDDictionaryGetEntry(options, "Length"));
-    crypto->encryptMetadata = PDNumberGetBool(PDDictionaryGetEntry(options, "EncryptMetadata"));
+    crypto->version = PDNumberGetInteger(PDDictionaryGet(options, "V"));
+    crypto->length = PDNumberGetInteger(PDDictionaryGet(options, "Length"));
+    crypto->encryptMetadata = PDNumberGetBool(PDDictionaryGet(options, "EncryptMetadata"));
 
-    crypto->revision = PDNumberGetInteger(PDDictionaryGetEntry(options, "R"));
+    crypto->revision = PDNumberGetInteger(PDDictionaryGet(options, "R"));
     crypto->owner = PDStringCreateBinaryFromString(PDDictionaryGetString(options, "O"));
     crypto->user = PDStringCreateBinaryFromString(PDDictionaryGetString(options, "U"));
-    crypto->privs = (int32_t) PDNumberGetInteger(PDDictionaryGetEntry(options, "P"));
+    crypto->privs = (int32_t) PDNumberGetInteger(PDDictionaryGet(options, "P"));
 //    crypto->privs = (int32_t) PDIntegerFromString(PDDictionaryRef_get(options, "P"));
     
     // fix defaults where appropriate
@@ -344,7 +344,7 @@ pd_crypto pd_crypto_create(PDDictionaryRef trailerDict, PDDictionaryRef options)
 //            pd_stack stdcfs = PDDictionaryRef_get_raw(cf, "StdCF");
             if (stdcf) {
 //                PDDictionaryRef stdcf = PDDictionaryRef_from_pdf_dict_stack(stdcfs);
-                PDNumberRef n = PDDictionaryGetEntry(stdcf, "Length");
+                PDNumberRef n = PDDictionaryGet(stdcf, "Length");
                 if (n) crypto->cfLength = PDNumberGetInteger(n);
 //                if (PDDictionaryRef_get(stdcf, "Length")) crypto->cfLength = PDIntegerFromString(PDDictionaryRef_get(stdcf, "Length"));
                 PDStringRef cfm = PDDictionaryGetString(stdcf, "CFM");

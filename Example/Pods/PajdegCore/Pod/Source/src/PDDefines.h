@@ -343,11 +343,22 @@ typedef struct pd_stack      *pd_stack;
 typedef struct PDArray      *PDArrayRef;
 
 /**
- A low-performance dictionary implementation.
+ Hash iterator signature.
  
- @ingroup PDDICTIONARY
+ An iterator will walk over all inserted items in a hash map. For each item,
+ the iterator is called with the key and value pair as arguments, as well as an optional
+ user info object.
  
- The dictionary construct.
+ If *shouldStop is set to true, iteration will end even if there are more items.
+ */
+typedef void (*PDHashIterator)(char *key, void *value, void *userInfo, PDBool *shouldStop);
+
+/**
+ A hash map implementation.
+ 
+ @ingroup PDDictionary
+ 
+ The hash map construct.
  */
 typedef struct PDDictionary *PDDictionaryRef;
 

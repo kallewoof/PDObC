@@ -60,7 +60,7 @@ PDPageRef PDPageCreateForPageWithNumber(PDParserRef parser, PDInteger pageNumber
     PDObjectRef ob = PDParserLocateAndCreateObject(parser, obid, true);
     PDPageRef page = PDPageCreateWithObject(parser, ob);
     
-//    const char *contentsRef = PDDictionaryGetEntry(PDObjectGetDictionary(ob), "Contents");
+//    const char *contentsRef = PDDictionaryGet(PDObjectGetDictionary(ob), "Contents");
 //    assert(contentsRef);
 //    PDObjectRef contentsOb = PDParserLocateAndCreateObject(parser, PDIntegerFromString(contentsRef), true);
 //    char *stream = PDParserLocateAndFetchObjectStreamForObject(parser, contentsOb);
@@ -134,14 +134,14 @@ PDTaskResult PDPageCountupTask(PDPipeRef pipe, PDTaskRef task, PDObjectRef objec
     PDObjectRef source = info;
     
     PDDictionaryRef obDict = PDObjectGetDictionary(object);
-    PDNumberRef realCountNum = PDDictionaryGetEntry(PDObjectGetDictionary(source), "Count");
+    PDNumberRef realCountNum = PDDictionaryGet(PDObjectGetDictionary(source), "Count");
     PDInteger realCount = PDNumberGetInteger(realCountNum);
     PDInteger obCount   = PDDictionaryGetInteger(obDict, "Count");
     if (obCount != realCount) {
-        PDDictionarySetEntry(obDict, "Count", realCountNum);
-//    const char *realCount = PDDictionaryGetEntry(PDObjectGetDictionary(source), "Count");
-//    if (strcmp(realCount, PDDictionaryGetEntry(PDObjectGetDictionary(object), "Count"))) {
-//        PDDictionarySetEntry(PDObjectGetDictionary(object), "Count", realCount);
+        PDDictionarySet(obDict, "Count", realCountNum);
+//    const char *realCount = PDDictionaryGet(PDObjectGetDictionary(source), "Count");
+//    if (strcmp(realCount, PDDictionaryGet(PDObjectGetDictionary(object), "Count"))) {
+//        PDDictionarySet(PDObjectGetDictionary(object), "Count", realCount);
     }
     
     PDRelease(source);
@@ -170,10 +170,10 @@ PDPageRef PDPageInsertIntoPipe(PDPageRef page, PDPipeRef pipe, PDInteger pageNum
     PDDictionaryRef neighDict = PDObjectGetDictionary(neighbor);
     PDDictionaryRef ioDict = PDObjectGetDictionary(importedObject);
     PDReferenceRef parentRef = PDDictionaryGetReference(neighDict, "Parent");
-//    const char *parentRef = PDDictionaryGetEntry(PDObjectGetDictionary(neighbor), "Parent");
+//    const char *parentRef = PDDictionaryGet(PDObjectGetDictionary(neighbor), "Parent");
     PDAssert(parentRef); // crash = ??? no such page? no parent? can pages NOT have parents?
-    PDDictionarySetEntry(ioDict, "Parent", parentRef);
-//    PDDictionarySetEntry(PDObjectGetDictionary(importedObject), "Parent", parentRef);
+    PDDictionarySet(ioDict, "Parent", parentRef);
+//    PDDictionarySet(PDObjectGetDictionary(importedObject), "Parent", parentRef);
     
     PDInteger parentId = PDReferenceGetObjectID(parentRef);
 //    PDAssert(parentId); // crash = parentRef was not a <num> <num> R?
@@ -192,10 +192,10 @@ PDPageRef PDPageInsertIntoPipe(PDPageRef page, PDPipeRef pipe, PDInteger pageNum
 //        char buf[16];
         PDDictionaryRef parentDict = PDObjectGetDictionary(parent);
         PDNumberRef count = PDNumberCreateWithInteger(1 + PDDictionaryGetInteger(parentDict, "Count"));
-//        PDInteger count = 1 + PDIntegerFromString(PDDictionaryGetEntry(PDObjectGetDictionary(parent), "Count"));
+//        PDInteger count = 1 + PDIntegerFromString(PDDictionaryGet(PDObjectGetDictionary(parent), "Count"));
 //        sprintf(buf, "%ld", (long)count);
-//        PDDictionarySetEntry(PDObjectGetDictionary(parent), "Count", buf);
-        PDDictionarySetEntry(parentDict, "Count", count);
+//        PDDictionarySet(PDObjectGetDictionary(parent), "Count", buf);
+        PDDictionarySet(parentDict, "Count", count);
         PDRelease(count);
         
         PDTaskRef task = PDTaskCreateMutatorForObject(parentId, PDPageCountupTask);
@@ -235,7 +235,7 @@ PDObjectRef PDPageGetContentsObjectAtIndex(PDPageRef page, PDInteger index)
         // we need to set the array up first
         PDDictionaryRef d = PDObjectGetDictionary(page->ob);
 //        pd_dict d = PDObjectGetDictionary(page->ob);
-        void *contentsValue = PDDictionaryGetEntry(d, "Contents");
+        void *contentsValue = PDDictionaryGet(d, "Contents");
         if (PDResolve(contentsValue) == PDInstanceTypeArray) {
 //        if (PDObjectTypeArray == pd_dict_get_type(d, "Contents")) {
 //            page->contentRefs = pd_dict_get_copy(d, "Contents");
@@ -243,7 +243,7 @@ PDObjectRef PDPageGetContentsObjectAtIndex(PDPageRef page, PDInteger index)
             page->contentCount = PDArrayGetCount(contentsValue);
             page->contentObs = calloc(page->contentCount, sizeof(PDObjectRef));
         } else {
-//            const char *contentsRef = PDDictionaryGetEntry(PDObjectGetDictionary(page->ob), "Contents");
+//            const char *contentsRef = PDDictionaryGet(PDObjectGetDictionary(page->ob), "Contents");
             if (contentsValue) {
                 page->contentCount = 1;
                 page->contentObs = malloc(sizeof(PDObjectRef));
@@ -269,7 +269,7 @@ PDRect PDPageGetMediaBox(PDPageRef page)
 {
     PDRect rect = (PDRect) {{0,0}, {612,792}};
     PDDictionaryRef obdict = PDObjectGetDictionary(page->ob);
-    void *mediaBoxValue = PDDictionaryGetEntry(obdict, "MediaBox");
+    void *mediaBoxValue = PDDictionaryGet(obdict, "MediaBox");
     if (mediaBoxValue && PDInstanceTypeArray == PDResolve(mediaBoxValue)) {
 //    if (PDObjectTypeArray == PDObjectGetDictionaryEntryType(page->ob, "MediaBox")) {
 //        pd_array arr = PDObjectCopyDictionaryEntry(page->ob, "MediaBox");
@@ -298,7 +298,7 @@ PDRect PDPageGetMediaBox(PDPageRef page)
 
 PDArrayRef PDPageGetAnnotRefs(PDPageRef page)
 {
-    void *res = PDDictionaryGetEntry(PDObjectGetDictionary(page->ob), "Annots");
+    void *res = PDDictionaryGet(PDObjectGetDictionary(page->ob), "Annots");
     if (PDResolve(res) == PDInstanceTypeRef) {
         PDReferenceRef ref = res;
         PDObjectRef ob = PDParserLocateAndCreateObject(page->parser, PDReferenceGetObjectID(ref), true);

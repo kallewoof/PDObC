@@ -607,17 +607,34 @@ struct PDArray {
 #endif
 };
 
+typedef struct PDDictionaryNode *PDDictionaryNodeRef;
+struct PDDictionaryNode {
+    char            *key;       ///< the key for this node
+    void            *data;      ///< the data
+#ifdef PD_SUPPORT_CRYPTO
+    void            *decrypted; ///< the data, in decrypted form
+#endif
+    PDSize           hash;      ///< the hash code
+};
+
+/**
+ *  If set, profiling is done (and printed to stdout occasionally) about how well the hash map is performing
+ */
+//#define PDHM_PROF
+
 /**
  The internal dictionary structure.
  */
 struct PDDictionary {
     PDInteger        count;     ///< Number of entries
-    PDInteger        capacity;  ///< Capacity of dictionary
-    char           **keys;      ///< Keys
-    void           **values;    ///< Resolved values
-    pd_stack        *vstacks;   ///< Unresolved values in pd_stack form
+#ifdef PDHM_PROF
+    PDInteger        maxCount;  ///< Max entries seen in this dictionary
+#endif
+    PDInteger        bucketc;   ///< Number of buckets
+    PDInteger        bucketm;   ///< Bucket mask
+    PDArrayRef      *buckets;   ///< Buckets containing content
+    PDArrayRef       populated; ///< Array of buckets which were created (as opposed to remaining NULL due to index never being touched)
 #ifdef PD_SUPPORT_CRYPTO
-    void           **decrypted; ///< Decrypted versions of (encrypted) values
     PDCryptoInstanceRef ci;     ///< Crypto instance, if dictionary is encrypted
 #endif
 };
@@ -819,6 +836,7 @@ struct PDString {
 extern void PDStringAttachCryptoInstance(PDStringRef string, PDCryptoInstanceRef ci, PDBool encrypted);
 extern void PDArrayAttachCryptoInstance(PDArrayRef array, PDCryptoInstanceRef ci, PDBool encrypted);
 extern void PDDictionaryAttachCryptoInstance(PDDictionaryRef dictionary, PDCryptoInstanceRef ci, PDBool encrypted);
+extern void PDDictionaryAttachCryptoInstance(PDDictionaryRef hm, PDCryptoInstanceRef ci, PDBool encrypted);
 
 ///// @name Collection
 //

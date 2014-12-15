@@ -256,7 +256,7 @@ PDDictionaryRef PDObjectGetDictionary(PDObjectRef object)
         PDObjectInstantiate(object);
         if (NULL == object->inst) {
             object->type = PDObjectTypeDictionary;
-            object->inst = PDDictionaryCreateWithCapacity(3);
+            object->inst = PDDictionaryCreate();
         }
     }
     if (object->type == PDObjectTypeUnknown) 
@@ -321,8 +321,8 @@ void PDObjectSetStream(PDObjectRef object, char *str, PDInteger len, PDBool incl
     if (includeLength)  {
 //        char *lenstr = malloc(30);
 //        sprintf(lenstr, "%ld", len);
-        PDDictionarySetEntry(PDObjectGetDictionary(object), "Length", PDNumberWithInteger(len));
-//        PDDictionarySetEntry(PDObjectGetDictionary(object), "Length", lenstr);
+        PDDictionarySet(PDObjectGetDictionary(object), "Length", PDNumberWithInteger(len));
+//        PDDictionarySet(PDObjectGetDictionary(object), "Length", lenstr);
 //        free(lenstr);
     }
 }
@@ -372,10 +372,10 @@ void PDObjectSetFlateDecodedFlag(PDObjectRef object, PDBool state)
     if (object->inst == NULL) PDObjectGetDictionary(object);
     
     if (state) {
-        PDDictionarySetEntry(object->inst, "Filter", PDAutorelease(PDStringCreateWithName(strdup("/FlateDecode"))));
+        PDDictionarySet(object->inst, "Filter", PDAutorelease(PDStringCreateWithName(strdup("/FlateDecode"))));
     } else {
-        PDDictionaryDeleteEntry(object->inst, "Filter");
-        PDDictionaryDeleteEntry(object->inst, "DecodeParms");
+        PDDictionaryDelete(object->inst, "Filter");
+        PDDictionaryDelete(object->inst, "DecodeParms");
     }
 }
 
@@ -383,13 +383,13 @@ void PDObjectSetPredictionStrategy(PDObjectRef object, PDPredictorType strategy,
 {
     if (object->inst == NULL) PDObjectGetDictionary(object);
     
-    PDDictionaryRef pred = PDDictionaryCreateWithCapacity(2);
-    PDDictionarySetEntry(pred, "Predictor", PDNumberWithInteger(strategy));
-    PDDictionarySetEntry(pred, "Columns", PDNumberWithInteger(columns));
-    PDDictionarySetEntry(object->inst, "DecodeParms", pred);
+    PDDictionaryRef pred = PDDictionaryCreate();
+    PDDictionarySet(pred, "Predictor", PDNumberWithInteger(strategy));
+    PDDictionarySet(pred, "Columns", PDNumberWithInteger(columns));
+    PDDictionarySet(object->inst, "DecodeParms", pred);
 //    char buf[52];
 //    sprintf(buf, "<</Predictor %d /Columns %ld>>", strategy, columns);
-//    PDDictionarySetEntry(PDObjectGetDictionary(object), "DecodeParms", buf);
+//    PDDictionarySet(PDObjectGetDictionary(object), "DecodeParms", buf);
 }
 
 void PDObjectSetStreamEncrypted(PDObjectRef object, PDBool encrypted)
@@ -400,18 +400,18 @@ void PDObjectSetStreamEncrypted(PDObjectRef object, PDBool encrypted)
         if (encrypted) {
             // we don't support encryption except in that we undo our no-encryption stuff below
             // the above isn't strictly the case anymore, but we still don't support encrypting unepcrypted PDFs, or changing their encryption parameters
-            PDDictionaryDeleteEntry(object->inst, "Filter");
-            PDDictionaryDeleteEntry(object->inst, "DecodeParms");
+            PDDictionaryDelete(object->inst, "Filter");
+            PDDictionaryDelete(object->inst, "DecodeParms");
         } else {
             PDArrayRef filterArray = PDArrayCreateWithCapacity(1);
             PDArrayAppend(filterArray, PDStringWithName(strdup("/Crypt")));
-            PDDictionarySetEntry(object->inst, "Filter", filterArray);
+            PDDictionarySet(object->inst, "Filter", filterArray);
             PDRelease(filterArray);
             
-            PDDictionaryRef decodeParms = PDDictionaryCreateWithCapacity(2);
-            PDDictionarySetEntry(decodeParms, "Type", PDStringWithName(strdup("/CryptFilterDecodeParms")));
-            PDDictionarySetEntry(decodeParms, "Name", PDStringWithName(strdup("/Identity")));
-            PDDictionarySetEntry(object->inst, "DecodeParms", decodeParms);
+            PDDictionaryRef decodeParms = PDDictionaryCreate();
+            PDDictionarySet(decodeParms, "Type", PDStringWithName(strdup("/CryptFilterDecodeParms")));
+            PDDictionarySet(decodeParms, "Name", PDStringWithName(strdup("/Identity")));
+            PDDictionarySet(object->inst, "DecodeParms", decodeParms);
             PDRelease(decodeParms);
         }
     }

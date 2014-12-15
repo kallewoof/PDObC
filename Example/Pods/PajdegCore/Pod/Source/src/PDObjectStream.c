@@ -75,7 +75,7 @@ PDObjectStreamRef PDObjectStreamCreateWithObject(PDObjectRef object)
     obstm->constructs = PDSplayTreeCreateWithDeallocator(PDReleaseFunc);
     
     PDStringRef filterName = PDDictionaryGetString(obd, "Filter");
-//    const char *filterName = PDDictionaryGetEntry(PDObjectGetDictionary(object), "Filter");
+//    const char *filterName = PDDictionaryGet(PDObjectGetDictionary(object), "Filter");
     if (filterName) {
         const char *filterString = PDStringEscapedValue(filterName, false);
 //        filterName = &filterName[1]; // get rid of name slash
@@ -261,8 +261,8 @@ void PDObjectStreamCommit(PDObjectStreamRef obstm)
     // update keys
 //    sprintf(hbuf, "%ld", headerlen);
     PDDictionaryRef obd = PDObjectGetDictionary(streamOb);
-    PDDictionarySetEntry(obd, "First", PDNumberWithInteger(headerlen));
-//    PDDictionarySetEntry(PDObjectGetDictionary(streamOb), "First", hbuf);
+    PDDictionarySet(obd, "First", PDNumberWithInteger(headerlen));
+//    PDDictionarySet(PDObjectGetDictionary(streamOb), "First", hbuf);
     
     // generate stream
     len = headerlen + offs;

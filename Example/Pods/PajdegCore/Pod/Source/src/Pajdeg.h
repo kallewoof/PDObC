@@ -254,7 +254,7 @@
 
  Here, we are using a PDDictionary for the first time. It's simply a key/value pair container, used to represent dictionaries in PDFs. We can get the dictionary associated with a PDObject using PDObjectGetDictionary(). There is a corresponding PDObjectGetArray() for array type objects, and so on.
  
- In any case, if PDDictionaryGetEntry() returns a non-NULL value for the "Metadata" key, we explode. With that out of the way, setting the metadata is fairly straightforward.
+ In any case, if PDDictionaryGet() returns a non-NULL value for the "Metadata" key, we explode. With that out of the way, setting the metadata is fairly straightforward.
 
  Our meta object is the info, passed to the task:
  
@@ -263,7 +263,7 @@
 
  We put this into the dictionary as the Metadata value:
 
- @skip PDDictionarySetEntry
+ @skip PDDictionarySet
  @until meta
 
  Note that while meta is a PDObject, by setting a PDDictionary entry's value to a PDObject, it will ultimately end up being a PDReference value. In other words, objects will translate into "<object id> <generation number> R" in a PDDictionary, when written to a PDF.
@@ -373,7 +373,7 @@
 #ifndef INCLUDED_PAJDEG_H
 #   define INCLUDED_PAJDEG_H
 
-#   define PAJDEG_VERSION   "0.1.0"
+#   define PAJDEG_VERSION   "0.2.0"
 
 #   include "PDPipe.h"
 #   include "PDObject.h"

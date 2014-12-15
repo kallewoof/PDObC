@@ -33,9 +33,7 @@
 PDNumberRef PDNullObject = NULL;
 
 void PDNumberDestroy(PDNumberRef n)
-{
-    
-}
+{}
 
 PDNumberRef PDNumberCreateWithInteger(PDInteger i)
 {

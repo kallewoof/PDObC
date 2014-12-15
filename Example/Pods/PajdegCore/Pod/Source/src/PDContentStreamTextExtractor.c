@@ -129,13 +129,11 @@ void PDContentStreamTextExtractorUIDealloc(void *tui)
     free(tui);
 }
 
-static inline void PDContentStreamTextExtractorPrint(PDContentStreamTextExtractorUI tui, const char *str) 
+static inline void PDContentStreamTextExtractorPrint(PDContentStreamTextExtractorUI tui, const char *str, PDSize len) 
 {
-    PDInteger len = strlen(str);
-    
     if (tui->buf[tui->offset-1] == '\n') {
-        while (str[0] == ' ') {
-            str = &str[1];
+        while (len > 0 && str[0] == ' ') {
+            str++;
             len--;
         }
         if (len == 0) return;
@@ -150,7 +148,7 @@ static inline void PDContentStreamTextExtractorPrint(PDContentStreamTextExtracto
     // note: this relies on LTR writing
     tui->TM[TM_x] += 10 * len;
     
-    strcpy(&tui->buf[tui->offset], str);
+    memcpy(&tui->buf[tui->offset], str, len);
     tui->offset += len;
     tui->buf[tui->offset] = 0;
 }
@@ -173,8 +171,11 @@ PDOperatorState PDContentStreamTextExtractor_Tj(PDContentStreamRef cs, PDContent
 {
     // these should have a single string as arg but we won't whine if that's not the case
     PDInteger argc = PDArrayGetCount(args);
+    PDSize length;
+    const char *data;
     for (PDInteger i = 0; i < argc; i++) {
-        PDContentStreamTextExtractorPrint(userInfo, PDStringBinaryValue(PDArrayGetElement(args, i), NULL));
+        data = PDStringBinaryValue(PDArrayGetElement(args, i), &length);
+        PDContentStreamTextExtractorPrint(userInfo, data, length);
     }
     return PDOperatorStateIndependent;
 }
@@ -190,10 +191,13 @@ PDOperatorState PDContentStreamTextExtractor_TJ(PDContentStreamRef cs, PDContent
             argc = PDArrayGetCount(args);
         }
     }
+    PDSize length;
+    const char *data;
     for (PDInteger i = 0; i < argc; i++) {
         void *v = PDArrayGetElement(args, i);
         if (PDResolve(v) == PDInstanceTypeString) {
-            PDContentStreamTextExtractorPrint(userInfo, PDStringBinaryValue(v, NULL));
+            data = PDStringBinaryValue(v, &length);
+            PDContentStreamTextExtractorPrint(userInfo, data, length);
         }
     }
     
@@ -278,6 +282,7 @@ PDContentStreamRef PDContentStreamCreateTextExtractor(PDObjectRef object, char *
     teUI->result = result;
     *result = teUI->buf = malloc(128);
     teUI->buf[0] = '\n';
+    teUI->buf[1] = 0;
     teUI->offset = 1;
     teUI->size = 128;
     teUI->TM[TM_y] = teUI->TM[TM_x] = -1;

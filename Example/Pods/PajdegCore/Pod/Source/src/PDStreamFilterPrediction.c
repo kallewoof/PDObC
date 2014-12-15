@@ -53,9 +53,9 @@ PDInteger pred_init(PDStreamFilterRef filter)
     // parse options
     PDDictionaryRef dict = filter->options;
     PDNumberRef n;
-    n = PDDictionaryGetEntry(dict, "Columns");
+    n = PDDictionaryGet(dict, "Columns");
     if (n) pred->columns = PDNumberGetInteger(n);
-    n = PDDictionaryGetEntry(dict, "Predictor");
+    n = PDDictionaryGet(dict, "Predictor");
     if (n) pred->predictor = (PDPredictorType)PDNumberGetInteger(n);
     
     // we only support given predictors; as more are encountered, support will be added
@@ -245,9 +245,9 @@ PDStreamFilterRef pred_invert_with_options(PDStreamFilterRef filter, PDBool inpu
 {
     PDPredictorRef pred = filter->data;
     
-    PDDictionaryRef opts = PDDictionaryCreateWithCapacity(2);
-    PDDictionarySetEntry(opts, "Predictor", PDNumberWithInteger(pred->predictor));
-    PDDictionarySetEntry(opts, "Columns", PDNumberWithInteger(pred->columns));
+    PDDictionaryRef opts = PDDictionaryCreate();
+    PDDictionarySet(opts, "Predictor", PDNumberWithInteger(pred->predictor));
+    PDDictionarySet(opts, "Columns", PDNumberWithInteger(pred->columns));
     
     return PDStreamFilterPredictionConstructor(inputEnd, opts);
 }
