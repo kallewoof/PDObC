@@ -63,7 +63,7 @@ void PDStreamFilterDestroy(PDStreamFilterRef filter)
 
 PDStreamFilterRef PDStreamFilterAlloc(void)
 {
-    return PDAlloc(sizeof(struct PDStreamFilter), PDStreamFilterDestroy, false);
+    return PDAllocTyped(PDInstanceTypeSFilter, sizeof(struct PDStreamFilter), PDStreamFilterDestroy, false);
 }
 
 PDStreamFilterRef PDStreamFilterCreate(PDStreamFilterFunc init, PDStreamFilterFunc done, PDStreamFilterFunc begin, PDStreamFilterFunc proceed, PDStreamFilterPrcs createInversion, PDDictionaryRef options)

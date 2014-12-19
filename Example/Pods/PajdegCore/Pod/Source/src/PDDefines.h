@@ -130,6 +130,25 @@
  */
 //#define DEBUG_PD_STRINGS
 
+
+/**
+ @def DEBUG_PD_LEAKS
+ Enables PDDebugBeginSession and PDDebugEndSession functions, used to mark out a region for 
+ which deallocation should have occurred at the end, for all content created after 
+ beginning.
+ 
+ @warning This HEAVILY impacts performance and should be turned off unless you are suspecting leaks.
+ */
+//#define DEBUG_PD_LEAKS
+
+/*
+ This forces DEBUG_PD_RELEASES to be enabled if DEBUG_PD_LEAKS is set.
+ */
+#if defined(DEBUG_PD_LEAKS) && !defined(DEBUG_PD_RELEASES)
+#   warning Forcing DEBUG_PD_RELEASES as DEBUG_PD_LEAKS is set.
+#   define DEBUG_PD_RELEASES
+#endif
+
 /**
  *  The __deprecated macro should be available.
  */
@@ -523,6 +542,23 @@ typedef enum {
     PDInstanceTypeDict      = 4,    ///< PDDictionary
     PDInstanceTypeRef       = 5,    ///< PDReference
     PDInstanceTypeObj       = 6,    ///< PDObject
+    PDInstanceTypeParser    = 7,
+    PDInstanceTypePipe      = 8,
+    PDInstanceTypeScanner   = 9,
+    PDInstanceTypeCStream   = 10,   ///< PDContentStream
+    PDInstanceTypeOStream   = 11,   ///< PDObjectStream
+    PDInstanceTypeOperator  = 12,
+    PDInstanceTypePage      = 13,
+    PDInstanceTypeParserAtt = 14,
+    PDInstanceTypeTree      = 15,   ///< PDSplayTree
+    PDInstanceTypeState     = 16,   ///< PDState
+    PDInstanceTypeSFilter   = 17,   ///< PDStreamFilter
+    PDInstanceTypeTask      = 18,   ///< PDTask
+    PDInstanceType2Stream   = 19,
+    PDInstanceTypeXTable    = 20,   ///< PDXTable
+    PDInstanceTypeCSOper    = 21,   /// Content stream operator
+    //
+    PDInstanceType__SIZE    = 22,
 } PDInstanceType;
 
 /**

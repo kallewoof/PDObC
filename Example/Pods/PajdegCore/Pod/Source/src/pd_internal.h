@@ -124,6 +124,7 @@ union PDType {
  @param zeroed Whether the allocated block should be zeroed or not. If true, calloc is used to allocate the memory.
  */
 #ifdef DEBUG_PD_RELEASES
+extern void *_PDFocusObject;
 #define PDAllocTyped(it,s,d,z) _PDAllocTypedDebug(__FILE__,__LINE__,it,s,d,z)
 extern void *_PDAllocTypedDebug(const char *file, int lineNumber, PDInstanceType it, PDSize size, void *dealloc, PDBool zeroed);
 #else

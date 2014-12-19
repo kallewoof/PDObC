@@ -135,6 +135,10 @@ void PDDictionaryDestroy(PDDictionaryRef hm)
 {
     prof(capCountSum += hm->maxCount);
     prof(destroys++);
+    
+#ifdef PD_SUPPORT_CRYPTO
+    PDRelease(hm->ci);
+#endif    
     free(hm->buckets);
     PDRelease(hm->populated);
 }
@@ -249,12 +253,12 @@ void PDDictionaryAddEntriesFromComplex(PDDictionaryRef hm, pd_stack stack)
             if (v && hm->ci) (*PDInstanceCryptoExchanges[PDResolve(v)])(v, hm->ci, true);
 #endif
             PDDictionarySet(hm, key, v);
+            PDRelease(v);
         }
         s = s->prev;
     }
     pd_stack_set_global_preserve_flag(false);
 }
-
 
 static void PDDictionaryNodeDestroy(PDDictionaryNodeRef n)
 {

@@ -114,7 +114,7 @@ PDPipeRef PDPipeCreateWithFilePaths(const char * inputFilePath, const char * out
     }
     PDPipeCloseFileStream(fo);
     
-    PDPipeRef pipe = PDAlloc(sizeof(struct PDPipe), PDPipeDestroy, true);
+    PDPipeRef pipe = PDAllocTyped(PDInstanceTypePipe, sizeof(struct PDPipe), PDPipeDestroy, true);
     pipe->pi = strdup(inputFilePath);
     pipe->po = strdup(outputFilePath);
     pipe->attachments = PDSplayTreeCreateWithDeallocator(PDReleaseFunc);

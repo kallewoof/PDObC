@@ -51,7 +51,7 @@ void PDContentStreamOperationDestroy(PDContentStreamOperationRef op)
 
 PDContentStreamOperationRef PDContentStreamOperationCreate(char *name, pd_stack state)
 {
-    PDContentStreamOperationRef op = PDAlloc(sizeof(struct PDContentStreamOperation), PDContentStreamOperationDestroy, false);
+    PDContentStreamOperationRef op = PDAllocTyped(PDInstanceTypeCSOper, sizeof(struct PDContentStreamOperation), PDContentStreamOperationDestroy, false);
     op->name = name;
     op->state = state;
     return op;
@@ -80,7 +80,7 @@ PDContentStreamRef PDContentStreamCreateWithObject(PDObjectRef object)
 {
     PDOperatorSymbolGlobSetup();
     
-    PDContentStreamRef cs = PDAlloc(sizeof(struct PDContentStream), PDContentStreamDestroy, false);
+    PDContentStreamRef cs = PDAllocTyped(PDInstanceTypeCStream, sizeof(struct PDContentStream), PDContentStreamDestroy, false);
     cs->ob = PDRetain(object);
     cs->opertree = PDSplayTreeCreateWithDeallocator(free);
     cs->opers = NULL;

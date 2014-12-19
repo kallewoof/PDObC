@@ -73,7 +73,7 @@ PDPageRef PDPageCreateForPageWithNumber(PDParserRef parser, PDInteger pageNumber
 
 PDPageRef PDPageCreateWithObject(PDParserRef parser, PDObjectRef object)
 {
-    PDPageRef page = PDAlloc(sizeof(struct PDPage), PDPageDestroy, false);
+    PDPageRef page = PDAllocTyped(PDInstanceTypePage, sizeof(struct PDPage), PDPageDestroy, false);
     page->parser = PDRetain(parser);
     page->ob = PDRetain(object);
     page->contentRefs = NULL;

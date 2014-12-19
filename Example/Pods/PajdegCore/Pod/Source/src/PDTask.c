@@ -86,7 +86,7 @@ void PDTaskDestroy(PDTaskRef task)
 
 PDTaskRef PDTaskCreateFilterWithValue(PDPropertyType propertyType, PDInteger value)
 {
-    PDTaskRef task = PDAlloc(sizeof(struct PDTask), PDTaskDestroy, false);
+    PDTaskRef task = PDAllocTyped(PDInstanceTypeTask, sizeof(struct PDTask), PDTaskDestroy, false);
     task->isActive     =  true;
     task->deallocator  = &PDTaskDealloc;
     task->isFilter     = 1;

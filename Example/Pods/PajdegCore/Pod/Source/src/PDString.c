@@ -55,6 +55,9 @@ char *PDStringNameToBinary(char *string, PDSize len, PDBool hasW, PDSize *outLen
 
 void PDStringDestroy(PDStringRef string)
 {
+#ifdef PD_SUPPORT_CRYPTO
+    PDRelease(string->ci);
+#endif
     PDRelease(string->alt);
     free(string->data);
 }
@@ -764,8 +767,9 @@ PDStringRef PDStringCreateDecrypted(PDStringRef string)
     
     PDSize len;
     const char *data_in = PDStringBinaryValue(string, &len);
-    char *data = malloc(len);
+    char *data = malloc(len + 1);
     memcpy(data, data_in, len);
+    data[len] = 0;
     
     pd_crypto_convert(string->ci->crypto, string->ci->obid, string->ci->genid, data, len);
     PDStringRef decrypted = PDStringCreate(data);

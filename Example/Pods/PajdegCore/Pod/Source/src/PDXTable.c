@@ -232,7 +232,7 @@ void PDXTableDestroy(PDXTableRef xtable)
 PDXTableRef PDXTableCreate(PDXTableRef pdx)
 {
     if (pdx) {
-        PDXTableRef pdxc = PDAlloc(sizeof(struct PDXTable), PDXTableDestroy, false);
+        PDXTableRef pdxc = PDAllocTyped(PDInstanceTypeXTable, sizeof(struct PDXTable), PDXTableDestroy, false);
         memcpy(pdxc, pdx, sizeof(struct PDXTable));
         pdxc->xrefs = xrefalloc(pdx, pdx->cap, pdx->width); //malloc(pdx->cap * pdxc->width + 1);
         memcpy(pdxc->xrefs, pdx->xrefs, pdx->cap * pdxc->width);

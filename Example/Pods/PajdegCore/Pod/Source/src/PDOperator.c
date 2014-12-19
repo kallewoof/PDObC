@@ -121,7 +121,7 @@ void PDOperatorDestroy(PDOperatorRef op)
 
 PDOperatorRef PDOperatorCreate(PDOperatorType type)
 {
-    PDOperatorRef op = PDAlloc(sizeof(struct PDOperator), PDOperatorDestroy, false);
+    PDOperatorRef op = PDAllocTyped(PDInstanceTypeOperator, sizeof(struct PDOperator), PDOperatorDestroy, false);
     op->type = type;
     op->next = NULL;
     op->key = NULL;

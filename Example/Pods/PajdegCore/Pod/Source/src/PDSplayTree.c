@@ -102,7 +102,7 @@ void PDSplayTreeDestroy(PDSplayTreeRef st)
 
 PDSplayTreeRef PDSplayTreeCreateWithDeallocator(PDDeallocator deallocator)
 {
-    PDSplayTreeRef st = PDAlloc(sizeof(struct PDSplayTree), PDSplayTreeDestroy, false);
+    PDSplayTreeRef st = PDAllocTyped(PDInstanceTypeTree, sizeof(struct PDSplayTree), PDSplayTreeDestroy, false);
     st->deallocator = deallocator;
     st->count = 0;
     st->root = NULL;

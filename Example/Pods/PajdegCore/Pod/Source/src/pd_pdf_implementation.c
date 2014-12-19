@@ -107,6 +107,7 @@ void pd_pdf_implementation_use()
         PDDeallocatorNull = PDDeallocatorNullFunc;
         // set null number
         PDNullObject = PDNumberCreateWithBool(false);
+        PDFlagGlobalObject(PDNullObject);
     }
     
     if (users == 0) {

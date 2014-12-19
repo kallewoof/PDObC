@@ -45,7 +45,7 @@ void PDTwinStreamDestroy(PDTwinStreamRef ts)
 
 PDTwinStreamRef PDTwinStreamCreate(FILE *fi, FILE *fo)
 {
-    PDTwinStreamRef ts = PDAlloc(sizeof(struct PDTwinStream), PDTwinStreamDestroy, true);
+    PDTwinStreamRef ts = PDAllocTyped(PDInstanceType2Stream, sizeof(struct PDTwinStream), PDTwinStreamDestroy, true);
     ts->fi = fi;
     ts->fo = fo;
     

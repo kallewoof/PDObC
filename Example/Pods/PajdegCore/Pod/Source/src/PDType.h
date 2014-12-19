@@ -126,6 +126,16 @@ extern void *PDAutorelease(void *pajdegObject);
  */
 extern PDInstanceType PDResolve(void *pajdegObject);
 
+#if defined(DEBUG_PD_LEAKS)
+extern void PDDebugBeginSession();
+extern PDInteger PDDebugEndSession();
+extern void PDFlagGlobalObject(void *ob);
+#else
+#   define PDDebugBeginSession() 
+#   define PDDebugEndSession() 0
+#   define PDFlagGlobalObject(ob) 
+#endif
+
 #endif
 
 /** @} */

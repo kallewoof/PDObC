@@ -67,7 +67,7 @@ void PDObjectStreamDestroy(PDObjectStreamRef obstm)
 
 PDObjectStreamRef PDObjectStreamCreateWithObject(PDObjectRef object)
 {
-    PDObjectStreamRef obstm = PDAlloc(sizeof(struct PDObjectStream), PDObjectStreamDestroy, false);
+    PDObjectStreamRef obstm = PDAllocTyped(PDInstanceTypeOStream, sizeof(struct PDObjectStream), PDObjectStreamDestroy, false);
     obstm->ob = PDRetain(object);
     PDDictionaryRef obd = PDObjectGetDictionary(object);
     obstm->n = PDDictionaryGetInteger(obd, "N");

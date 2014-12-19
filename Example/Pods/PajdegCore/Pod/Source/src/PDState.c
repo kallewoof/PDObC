@@ -54,7 +54,7 @@ void PDStateDestroy(PDStateRef state)
 
 PDStateRef PDStateCreate(char *name)
 {
-    PDStateRef state = PDAlloc(sizeof(struct PDState), PDStateDestroy, true);
+    PDStateRef state = PDAllocTyped(PDInstanceTypeState, sizeof(struct PDState), PDStateDestroy, true);
     state->name = strdup(name);
     return state;
 }

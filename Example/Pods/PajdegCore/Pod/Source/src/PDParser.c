@@ -81,7 +81,7 @@ PDParserRef PDParserCreateWithStream(PDTwinStreamRef stream)
 {
     pd_pdf_implementation_use();
     
-    PDParserRef parser = PDAlloc(sizeof(struct PDParser), PDParserDestroy, true);
+    PDParserRef parser = PDAllocTyped(PDInstanceTypeParser, sizeof(struct PDParser), PDParserDestroy, true);
     parser->stream = stream;
     parser->state = PDParserStateBase;
     parser->success = true;

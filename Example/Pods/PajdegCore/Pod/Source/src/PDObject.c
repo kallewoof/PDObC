@@ -40,6 +40,10 @@
 void PDObjectDestroy(PDObjectRef object)
 {
     PDRelease(object->inst);
+
+#ifdef PD_SUPPORT_CRYPTO
+    PDRelease(object->cryptoInstance);
+#endif
     
     pd_stack_destroy(&object->def);
     
@@ -383,13 +387,11 @@ void PDObjectSetPredictionStrategy(PDObjectRef object, PDPredictorType strategy,
 {
     if (object->inst == NULL) PDObjectGetDictionary(object);
     
-    PDDictionaryRef pred = PDDictionaryCreate();
+    PDDictionaryRef pred = PDDictionaryCreateWithBucketCount(2);
     PDDictionarySet(pred, "Predictor", PDNumberWithInteger(strategy));
     PDDictionarySet(pred, "Columns", PDNumberWithInteger(columns));
     PDDictionarySet(object->inst, "DecodeParms", pred);
-//    char buf[52];
-//    sprintf(buf, "<</Predictor %d /Columns %ld>>", strategy, columns);
-//    PDDictionarySet(PDObjectGetDictionary(object), "DecodeParms", buf);
+    PDRelease(pred);
 }
 
 void PDObjectSetStreamEncrypted(PDObjectRef object, PDBool encrypted)

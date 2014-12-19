@@ -105,7 +105,7 @@ void PDScannerDestroy(PDScannerRef scanner)
 
 PDScannerRef PDScannerCreateWithStateAndPopFunc(PDStateRef state, PDScannerPopFunc popFunc)
 {
-    PDScannerRef scanner = PDAlloc(sizeof(struct PDScanner), PDScannerDestroy, true);
+    PDScannerRef scanner = PDAllocTyped(PDInstanceTypeScanner, sizeof(struct PDScanner), PDScannerDestroy, true);
     scanner->env = PDEnvCreate(state);
     scanner->popFunc = popFunc;
     return scanner;

@@ -47,6 +47,8 @@
  */
 extern PDContentStreamRef PDContentStreamCreateTextExtractor(PDObjectRef object, char **result);
 
+extern void PDContentTextExtractorAppendFontObject(PDContentStreamRef textExtractor, PDObjectRef fontObject);
+
 #endif
 
 /** @} */

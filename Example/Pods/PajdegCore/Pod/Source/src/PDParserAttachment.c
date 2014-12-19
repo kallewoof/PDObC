@@ -72,7 +72,7 @@ PDParserAttachmentRef PDParserAttachmentCreate(PDParserRef parser, PDParserRef f
         if (att->nativeParser == parser && att->foreignParser == foreignParser) 
             return PDRetain(att);
     
-    PDParserAttachmentRef attachment = PDAlloc(sizeof(struct PDParserAttachment), PDParserAttachmentDestroy, false);
+    PDParserAttachmentRef attachment = PDAllocTyped(PDInstanceTypeParserAtt, sizeof(struct PDParserAttachment), PDParserAttachmentDestroy, false);
     attachment->nativeParser = parser;
     attachment->foreignParser = foreignParser;
     attachment->obMap = PDSplayTreeCreateWithDeallocator(PDReleaseFunc);
