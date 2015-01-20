@@ -4,7 +4,7 @@ source 'https://github.com/CocoaPods/Specs.git'
 
 target 'Pajdeg', :exclusive => true do
   pod "PajdegPDF", :path => "../"
-  pod "PajdegCore", "~> 0.2.2"
+  pod "PajdegCore", "~> 0.3.0"
 end
 
 target 'Tests', :exclusive => true do

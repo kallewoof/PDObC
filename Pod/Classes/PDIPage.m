@@ -1,7 +1,7 @@
 //
 // PDIPage.c
 //
-// Copyright (c) 2012 - 2014 Karl-Johan Alm (http://github.com/kallewoof)
+// Copyright (c) 2012 - 2015 Karl-Johan Alm (http://github.com/kallewoof)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -29,6 +29,8 @@
 #import "pd_internal.h"
 #import "PDIConversion.h"
 #import "PDContentStreamTextExtractor.h"
+#import "PDPipe.h"
+#import "PDISession.h"
 
 @interface PDIPage () {
     NSArray *_contentObjects;
@@ -86,13 +88,14 @@
     for (PDIObject *contents in [self contentObjects]) {
         [contents enableMutationViaMimicSchedulingWithSession:_session];
         [contents prepareStream];
-        PDContentStreamRef cs = PDContentStreamCreateTextExtractor(contents.objectRef, &buf);
+        PDContentStreamRef cs = PDContentStreamCreateTextExtractor(_pageRef, contents.objectRef, &buf);
         PDContentStreamExecute(cs);
         PDRelease(cs);
         t = nil;
-        if (NULL != strstr(buf, "\xa9")) {
-            t = [NSString stringWithCString:buf encoding:NSMacOSRomanStringEncoding];
-        }
+        // nowadays, PD converts input to UTF-8 when possible, and is aware of MacRoman encoding, so below is unnecessary
+//        if (NULL != strstr(buf, "\xa9")) {
+//            t = [NSString stringWithCString:buf encoding:NSMacOSRomanStringEncoding];
+//        }
         if (t == nil) t = @(buf);
         if (t == nil) t = [NSString stringWithCString:buf encoding:NSMacOSRomanStringEncoding];
         if (t == nil) t = [NSString stringWithCString:buf encoding:NSISOLatin1StringEncoding];
