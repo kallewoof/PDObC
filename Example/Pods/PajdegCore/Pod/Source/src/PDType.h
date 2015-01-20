@@ -1,7 +1,7 @@
 //
 // PDType.h
 //
-// Copyright (c) 2012 - 2014 Karl-Johan Alm (http://github.com/kallewoof)
+// Copyright (c) 2012 - 2015 Karl-Johan Alm (http://github.com/kallewoof)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -125,6 +125,17 @@ extern void *PDAutorelease(void *pajdegObject);
  *  @return PDInstanceType for the given object
  */
 extern PDInstanceType PDResolve(void *pajdegObject);
+
+/**
+ *  Generate a description of the given object as a C string. 
+ *  The description is generated via the PDInstancePrinters entry for the resolved instance type
+ *  of the object.
+ *
+ *  @param pajdegObject Object whose C string description should be generated
+ *
+ *  @return An "autoreleased" string.
+ */
+extern const char *PDDescription(void *pajdegObject);
 
 #if defined(DEBUG_PD_LEAKS)
 extern void PDDebugBeginSession();

@@ -1,5 +1,5 @@
 //
-// PDStreamFilterPrediction.h
+// PDFontDictionary.h
 //
 // Copyright (c) 2012 - 2015 Karl-Johan Alm (http://github.com/kallewoof)
 // 
@@ -23,41 +23,38 @@
 //
 
 /**
- @file PDStreamFilterPrediction.h
+ @file PDFontDictionary.h PDF font dictionary for a page or a set of pages.
  
- @ingroup PDSTREAMFILTERPREDICTION
-
- @defgroup PDSTREAMFILTERPREDICTION PDStreamFilterPrediction
+ @ingroup PDFONTS
  
- @brief Prediction filter
+ Convenience methods for handling PDF font dictionaries.
  
- @ingroup PDINTERNAL
- 
- @implements PDSTREAMFILTER
-
  @{
  */
 
-#ifndef INCLUDED_PDStreamFilterPrediction_h
-#define INCLUDED_PDStreamFilterPrediction_h
+#ifndef INCLUDED_PDFontDictionary_h
+#define INCLUDED_PDFontDictionary_h
 
-#include "PDStreamFilter.h"
-
-/**
- Set up a stream filter for prediction.
- */
-//extern PDStreamFilterRef PDStreamFilterPredictionCreate(void);
+#include "PDDefines.h"
 
 /**
- Set up stream filter for unprediction.
+ *  Create a font dictionary for the specified page.
+ *
+ *  @param parser     Parser reference
+ *  @param pageObject Page reference
+ *
+ *  @return A new font dictionary object.
  */
-extern PDStreamFilterRef PDStreamFilterUnpredictionCreate(PDDictionaryRef options);
+extern PDFontDictionaryRef PDFontDictionaryCreate(PDParserRef parser, PDObjectRef pageObject);
+
 /**
- Set up a stream filter for prediction based on inputEnd boolean. 
+ *  Get the font with the given name, or NULL if no such font exists in this dictionary.
+ *
+ *  @param fontDict The font dictionary
+ *  @param name     The name of the font
+ *
+ *  @return PDFont object or NULL if no such font exists
  */
-extern PDStreamFilterRef PDStreamFilterPredictionConstructor(PDBool inputEnd, PDDictionaryRef options);
+extern PDFontRef PDFontDictionaryGetFont(PDFontDictionaryRef fontDict, const char *name);
 
-#endif
-
-/** @} */
-
+#endif // INCLUDED_PDFontDictionary_h

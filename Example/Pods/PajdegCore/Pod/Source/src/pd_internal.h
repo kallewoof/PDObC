@@ -1,7 +1,7 @@
 //
 // pd_internal.h
 //
-// Copyright (c) 2012 - 2014 Karl-Johan Alm (http://github.com/kallewoof)
+// Copyright (c) 2012 - 2015 Karl-Johan Alm (http://github.com/kallewoof)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -109,25 +109,25 @@ union PDType {
 /**
  Allocate a new PDType object, with given size and deallocator.
  
- @param size Size of object.
- @param dealloc Dealloc method as a (*)(void*).
- @param zeroed Whether the allocated block should be zeroed or not. If true, calloc is used to allocate the memory.
+ @param s Size of object.
+ @param d Dealloc method as a (*)(void*).
+ @param z Whether the allocated block should be zeroed or not. If true, calloc is used to allocate the memory.
  */
 #define PDAlloc(s,d,z) PDAllocTyped(PDInstanceTypeUnset,s,d,z)
 
+#ifdef DEBUG_PD_RELEASES
+#define PDAllocTyped(it,s,d,z) _PDAllocTypedDebug(__FILE__,__LINE__,it,s,d,z)
+extern void *_PDFocusObject;
+extern void *_PDAllocTypedDebug(const char *file, int lineNumber, PDInstanceType it, PDSize size, void *dealloc, PDBool zeroed);
+#else
 /**
  Allocate a new PDType object with a defined instance type, with given size and deallocator.
-
+ 
  @param it Instance type.
  @param size Size of object.
  @param dealloc Dealloc method as a (*)(void*).
  @param zeroed Whether the allocated block should be zeroed or not. If true, calloc is used to allocate the memory.
  */
-#ifdef DEBUG_PD_RELEASES
-extern void *_PDFocusObject;
-#define PDAllocTyped(it,s,d,z) _PDAllocTypedDebug(__FILE__,__LINE__,it,s,d,z)
-extern void *_PDAllocTypedDebug(const char *file, int lineNumber, PDInstanceType it, PDSize size, void *dealloc, PDBool zeroed);
-#else
 extern void *PDAllocTyped(PDInstanceType it, PDSize size, void *dealloc, PDBool zeroed);
 #endif
 
@@ -322,6 +322,7 @@ struct PDPage {
     PDInteger    contentCount; ///< # of content objects in the page
     PDArrayRef   contentRefs;  ///< array of content references for the page
     PDObjectRef *contentObs;   ///< array of content objects for the page, or NULL if unfetched
+    PDFontDictionaryRef fontDict; ///< The font dictionary for the page; lazily constructed on first call to PDPageGetFont().
 };
 
 /** @} */
@@ -518,6 +519,7 @@ struct PDScanner {
     PDBool        fixedBuf;     ///< if set, the buffer is fixed (i.e. buffering function should not be called)
     PDBool        failed;       ///< if set, the scanner aborted due to a failure
     PDBool        outgrown;     ///< if true, a scanner with fixedBuf set needed more data
+    PDBool        strict;       ///< if true, the scanner will complain loudly when erroring out, otherwise it will silently fail
 };
 
 /// @name Stack
@@ -638,6 +640,46 @@ struct PDDictionary {
 #ifdef PD_SUPPORT_CRYPTO
     PDCryptoInstanceRef ci;     ///< Crypto instance, if dictionary is encrypted
 #endif
+};
+
+/**
+ *  The internal font dictionary structure.
+ */
+struct PDFontDictionary {
+    PDParserRef     parser;     ///< The owning parser
+    PDDictionaryRef fonts;      ///< Dictionary mapping font names to their values
+};
+
+/**
+ *  The internal font object structure.
+ */
+struct PDFont {
+    PDParserRef     parser;     ///< Parser reference
+    PDObjectRef     obj;        ///< Font object reference
+    PDCMapRef       toUnicode;  ///< CMap, or NULL if not yet compiled or if non-existent
+    PDStringEncoding enc;       ///< String encoding
+};
+
+typedef struct PDCMapRange PDCMapRange;                 ///< Private structure for ranges (<hex> <hex>), where multi-byte ranges are rectangles, not sequences (see PDF specification)
+typedef struct PDCMapRangeMapping PDCMapRangeMapping;   ///< Private structure for range mappings (<hex> <hex> <hex>)
+typedef struct PDCMapCharMapping PDCMapCharMapping;     ///< Private structure for individual char mappings (<hex> <hex>)
+
+/**
+ *  The internal CID map object structure.
+ */
+struct PDCMap {
+    PDDictionaryRef systemInfo; ///< The CIDSystemInfo dictionary, which has /Registry, /Ordering, and /Supplement
+    PDStringRef     name;       ///< CMapName
+    PDNumberRef     type;       ///< CMapType
+    PDSize          csrCap;     ///< Codespace range capacity
+    PDSize          bfrCap;     ///< BF range capacity
+    PDSize          bfcCap;     ///< BF char capacity
+    PDSize          csrCount;   ///< Number of codespace ranges
+    PDSize          bfrCount;   ///< Number of BF ranges
+    PDSize          bfcCount;   ///< Number of BF chars
+    PDCMapRange    *csrs;       ///< Array of codespace ranges
+    PDCMapRangeMapping *bfrs;   ///< BF ranges
+    PDCMapCharMapping  *bfcs;   ///< BF chars
 };
 
 #ifdef PD_SUPPORT_CRYPTO
@@ -806,12 +848,13 @@ struct PDReference {
  @ingroup PDNUMBER
  */
 struct PDNumber {
-    PDObjectType type;      ///< Type of the number
+    PDObjectType type;      ///< Type of the number; as a special case, PDObjectTypeReference is used for pointers
     union {
         PDInteger i;
         PDReal r;
         PDBool b;
         PDSize s;
+        void  *p;
     };
 };
 
@@ -824,6 +867,8 @@ struct PDNumber {
  */
 struct PDString {
     PDStringType type;      ///< Type of the string
+    PDFontRef font;         ///< The font associated with the string
+    PDStringEncoding enc;   ///< Encoding of the string
     PDSize length;          ///< Length of the string
     PDBool wrapped;         ///< Whether the string is wrapped
     char *data;             ///< Buffer containing string data
@@ -838,18 +883,6 @@ extern void PDStringAttachCryptoInstance(PDStringRef string, PDCryptoInstanceRef
 extern void PDArrayAttachCryptoInstance(PDArrayRef array, PDCryptoInstanceRef ci, PDBool encrypted);
 extern void PDDictionaryAttachCryptoInstance(PDDictionaryRef dictionary, PDCryptoInstanceRef ci, PDBool encrypted);
 extern void PDDictionaryAttachCryptoInstance(PDDictionaryRef hm, PDCryptoInstanceRef ci, PDBool encrypted);
-
-///// @name Collection
-//
-///**
-// Internal collection structure.
-// 
-// @ingroup PDCOLLECTION
-// */
-//struct PDCollection {
-//    PDCollectionType type;  ///< Type of the collection
-//    void *data;             ///< Contained data, 
-//};
 
 /// @name Conversion (PDF specification)
 
@@ -961,6 +994,20 @@ extern void _PDBreak();
 #       define PDAssert(args...) 
 #   endif
 #endif
+
+/**
+ @def PDRequire
+ Require that the given state is true, and print out msg (format string), and return retval if it is not.
+ In addition, if asserts are enabled, throw an assertion. The difference between this and PDAssert is that
+ this code is guaranteed to abort the operation even if in a production environment, whereas PDAssert will
+ be silently ignored for !DEBUG && !PD_ASSERTS.
+ */
+#define PDRequire(state, retval, msg...) \
+        if (!(state)) { \
+            PDWarn("requirement failure : " msg); \
+            PDAssert(state); \
+            return retval; \
+        }
 
 /**
  Macro for making casting of types a bit less of an eyesore. 

@@ -1,7 +1,7 @@
 //
 // PDNumber.h
 //
-// Copyright (c) 2012 - 2014 Karl-Johan Alm (http://github.com/kallewoof)
+// Copyright (c) 2012 - 2015 Karl-Johan Alm (http://github.com/kallewoof)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -48,6 +48,7 @@ extern PDNumberRef PDNumberCreateWithInteger(PDInteger i);
 extern PDNumberRef PDNumberCreateWithSize(PDSize s);
 extern PDNumberRef PDNumberCreateWithReal(PDReal r);
 extern PDNumberRef PDNumberCreateWithBool(PDBool b);
+extern PDNumberRef PDNumberCreateWithPointer(void *p);
 extern PDNumberRef PDNumberCreateWithCString(const char *cString);
 
 // autoreleased variants
@@ -55,12 +56,14 @@ extern PDNumberRef PDNumberCreateWithCString(const char *cString);
 #define PDNumberWithSize(s)     PDAutorelease(PDNumberCreateWithSize(s))
 #define PDNumberWithReal(r)     PDAutorelease(PDNumberCreateWithReal(r))
 #define PDNumberWithBool(b)     PDAutorelease(PDNumberCreateWithBool(b))
+#define PDNumberWithPointer(p)  PDAutorelease(PDNumberCreateWithPointer(p))
 
 // NULL n safe
 extern PDInteger PDNumberGetInteger(PDNumberRef n);
 extern PDSize PDNumberGetSize(PDNumberRef n);
 extern PDReal PDNumberGetReal(PDNumberRef n);
 extern PDBool PDNumberGetBool(PDNumberRef n);
+extern void  *PDNumberGetPointer(PDNumberRef n);
 
 extern PDInteger PDNumberPrinter(void *inst, char **buf, PDInteger offs, PDInteger *cap);
 

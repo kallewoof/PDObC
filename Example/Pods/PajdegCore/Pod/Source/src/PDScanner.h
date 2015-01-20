@@ -1,7 +1,7 @@
 //
 // PDScanner.h
 //
-// Copyright (c) 2012 - 2014 Karl-Johan Alm (http://github.com/kallewoof)
+// Copyright (c) 2012 - 2015 Karl-Johan Alm (http://github.com/kallewoof)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -88,20 +88,40 @@ extern pd_stack PDScannerGenerateStackFromFixedBuffer(PDStateRef state, char *bu
 /**
  Pop the next string. 
  
- @param scanner The scanner.
- @param value Pointer to string variable. Must be freed.
- @return true if the next value was a string.
+ @param scanner The scanner
+ @param value Pointer to string variable. Must be freed
+ @return true if the next value was a string
  */
 extern PDBool PDScannerPopString(PDScannerRef scanner, char **value);
 
 /**
- Pop the next stack.
- 
- @param scanner The scanner.
- @param value Pointer to stack ref. Must be freed.
- @return true if the next value was a stack.
+ *  Pop the next stack.
+ *
+ *  @param scanner The scanner
+ *  @param value   Pointer to stack ref. Must be freed
+ *
+ *  @return true if the next value was a stack
  */
 extern PDBool PDScannerPopStack(PDScannerRef scanner, pd_stack *value);
+
+/**
+ *  Pop the next value, which the scanner was not able to recognize.
+ *
+ *  @param scanner The scanner
+ *  @param value   Pointer to string variable. Must be freed
+ *
+ *  @return true if the next value was an unrecognizable string
+ */
+extern PDBool PDScannerPopUnknown(PDScannerRef scanner, char **value);
+
+/**
+ *  Determine if the scanner has reached the end of the stream
+ *
+ *  @param scanner Scanner object
+ *
+ *  @return Boolean value indicating whether the stream hit the end or not
+ */
+extern PDBool PDScannerEndOfStream(PDScannerRef scanner);
 
 /**
  Require that the next result is a string, and that it is equal to the given value, or throw assertion.
@@ -138,17 +158,6 @@ extern void PDScannerAssertComplex(PDScannerRef scanner, const char *identifier)
  @param bytes The amount of bytes to skip.
  */
 extern void PDScannerSkip(PDScannerRef scanner, PDSize bytes);
-
-/* *
- Skip until the given sequence is encountered, stopping after the last byte. 
- 
- @note Buffer growth is never done in this method, which means if the scanner's buffer is only partially complete, it may stop prematurely.
- 
- @param scanner The scanner.
- @param sequence The string sequence.
- @return The number of bytes skipped.
- */
-//extern PDInteger PDScannerPassSequence(PDScannerRef scanner, char *sequence);
 
 /**
  Skip until the given symbol character type is encountered, stopping after the symbol character type.
@@ -226,25 +235,6 @@ extern void PDScannerPushContext(PDScannerRef scanner, void *ctxInfo, PDScannerB
  *  @param scanner Scanner
  */
 extern void PDScannerPopContext(PDScannerRef scanner);
-
-///**
-// Push a global scanner context.
-// 
-// Global scanner contexts, consisting of an info pointer and a buffer function; can be pushed to provide a temporary context e.g. for off-reading.
-// 
-// @note These are global. All instances of PDScannerRef will switch to using the pushed context and switch back when popped.
-// 
-// @param ctxInfo The info object. Can be anything, but in Pajdeg it is always a PDTwinStreamRef. It is passed on to the buffer function when called.
-// @param ctxBufFunc The buffer function.
-// */
-//extern void PDScannerContextPush(void *ctxInfo, PDScannerBufFunc ctxBufFunc);
-//
-///**
-// Pop global scanner context.
-// 
-// @see PDScannerContextPush
-// */
-//extern void PDScannerContextPop(void);
 
 /**
  Set a cap on # of loops scanners make before considering a pop a failure.

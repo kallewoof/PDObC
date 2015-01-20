@@ -1,7 +1,7 @@
 //
 // PDDefines.h
 //
-// Copyright (c) 2012 - 2014 Karl-Johan Alm (http://github.com/kallewoof)
+// Copyright (c) 2012 - 2015 Karl-Johan Alm (http://github.com/kallewoof)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -334,24 +334,6 @@ typedef union PDType *PDTypeRef;
  */
 typedef struct pd_stack      *pd_stack;
 
-///**
-// A low-performance array implementation.
-// 
-// @ingroup pd_array
-// 
-// The pd_array.
-// */
-//typedef struct pd_array     *pd_array;
-//
-///**
-// A low-performance dictionary implementation.
-// 
-// @ingroup pd_dict
-// 
-// The pd_dict.
-// */
-//typedef struct pd_dict      *pd_dict;
-
 /**
  A low-performance array implementation.
  
@@ -380,6 +362,36 @@ typedef void (*PDHashIterator)(char *key, void *value, void *userInfo, PDBool *s
  The hash map construct.
  */
 typedef struct PDDictionary *PDDictionaryRef;
+
+/**
+ *  A font dictionary.
+ *
+ *  @ingroup PDFONTS
+ *
+ *  Font dictionaries are convenience-dictionaries for dealing with font dictionaries 
+ *  in PDF files.
+ */
+typedef struct PDFontDictionary *PDFontDictionaryRef;
+
+/**
+ *  A font.
+ *
+ *  @ingroup PDFONTS
+ *
+ *  Fonts are objects which contain information on how to convert text to unicode 
+ *  (among other things), necessary to perform text extraction.
+ */
+typedef struct PDFont *PDFontRef;
+
+/**
+ *  A CID mapping.
+ *
+ *  @ingroup PDFONTS
+ *
+ *  CID mappings are currently used to deal with ToUnicode streams but have more
+ *  functionality in PDFs beyond this.
+ */
+typedef struct PDCMap *PDCMapRef;
 
 /**
  Crypto methods.
@@ -556,9 +568,13 @@ typedef enum {
     PDInstanceTypeTask      = 18,   ///< PDTask
     PDInstanceType2Stream   = 19,
     PDInstanceTypeXTable    = 20,   ///< PDXTable
-    PDInstanceTypeCSOper    = 21,   /// Content stream operator
+    PDInstanceTypeCSOper    = 21,   ///< Content stream operator
+    PDInstanceTypeFontDict  = 22,   ///< PDFontDictionary
+    PDInstanceTypeFont      = 23,   ///< PDFont
+    PDInstanceTypeCMap      = 24,   ///< PDCMap
+    PDInstanceTypePSExec    = 25,   ///< PostScript executable code
     //
-    PDInstanceType__SIZE    = 22,
+    PDInstanceType__SIZE    = 26,
 } PDInstanceType;
 
 /**
@@ -626,6 +642,30 @@ typedef enum {
     PDStringTypeName    = 4,        ///< A regular string prefixed with a forward slash
 } PDStringType;
 
+typedef enum {
+    PDStringEncodingDefault = 0,    ///< This is most likely ASCII or UTF-8, but implicit checks are made where necessary
+    PDStringEncodingASCII = 1,      ///< 8-bit regular ascii encoding
+    PDStringEncodingUTF8 = 2,       ///< UTF-8 encoding
+    PDStringEncodingUTF16BE = 3,    ///< UTF-16 encoding (big endian)
+    PDStringEncodingUTF16LE = 4,    ///< UTF-16 encoding (little endian)
+    PDStringEncodingUTF32 = 5,      ///< UTF-32 encoding
+    PDStringEncodingMacRoman = 6,   ///< Mac Roman encoding
+    PDStringEncodingEUCJP = 7,      ///< EUC-JP
+    PDStringEncodingSHIFTJIS = 8,   ///< SHIFT-JIS
+    PDStringEncodingISO8859_1 = 9,  ///< ISO-8859-1 (latin1)
+    PDStringEncodingISO8859_2 = 10, ///< ISO-8859-2 (latin2)
+    PDStringEncodingCP1251 = 11,    ///< Windows CP-1251
+    PDStringEncodingCP1252 = 12,    ///< Windows CP-1252
+    PDStringEncodingCP1253 = 13,    ///< Windows CP-1253
+    PDStringEncodingCP1254 = 14,    ///< Windows CP-1254
+    PDStringEncodingCP1250 = 15,    ///< Windows CP-1250
+    PDStringEncodingISO2022JP = 16, ///< ISO-2022-JP
+    __PDSTRINGENC_END = 16,         ///< --marker--
+    PDStringEncodingUndefined = 999,///< The encoding used was not determined correctly. The string may be a binary value or similar
+} PDStringEncoding;
+
+extern const char *PDStringEncodingToIconvName(PDStringEncoding enc);
+
 /**
  A number object.
  
@@ -639,24 +679,6 @@ typedef struct PDNumber  *PDNumberRef;
  @ingroup PDSTRING
  */
 typedef struct PDString  *PDStringRef;
-
-/**
- The type of a collection.
- 
- @ingroup PDCOLLECTION
- */
-typedef enum {
-    PDCollectionTypeArray = 1,      ///< A PDArrayRef
-    PDCollectionTypeDictionary = 2, ///< A PDDictionaryRef
-    PDCollectionTypeStack = 3,      ///< A pd_stack
-} PDCollectionType;
-
-/**
- A collection object.
- 
- @ingroup PDCOLLECTION
- */
-typedef struct PDCollection *PDCollectionRef;
 
 /**
  @defgroup PDPIPE_CONCEPT Pajdeg Pipes

@@ -1,7 +1,7 @@
 //
 // PDContentStreamTextExtractor.c
 //
-// Copyright (c) 2012 - 2014 Karl-Johan Alm (http://github.com/kallewoof)
+// Copyright (c) 2012 - 2015 Karl-Johan Alm (http://github.com/kallewoof)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -33,6 +33,9 @@
 #include "pd_stack.h"
 #include "PDString.h"
 #include "PDNumber.h"
+#include "PDPage.h"
+#include "PDFont.h"
+#include "PDCMap.h"
 
 /*
  TABLE A.1 PDF content stream operators [PDF spec 1.7, p. 985 - 988]
@@ -117,8 +120,10 @@ typedef struct PDContentStreamTextExtractorUI *PDContentStreamTextExtractorUI;
 struct PDContentStreamTextExtractorUI {
     char **result;
     char *buf;
+    PDPageRef page;
     PDInteger offset;
     PDInteger size;
+    PDFontRef font;
     PDReal TM[6];   // text matrix; all except TM_x and TM_y are currently undefined!
 #define TM_x 4
 #define TM_y 5
@@ -167,15 +172,37 @@ static inline void PDContentStreamTextExtractorNewline(PDContentStreamTextExtrac
     tui->buf[tui->offset] = 0;
 }
 
+PDOperatorState PDContentStreamTextExtractor_Tf(PDContentStreamRef cs, PDContentStreamTextExtractorUI userInfo, PDArrayRef args, pd_stack inState, pd_stack *outState)
+{
+    // Set text font and size: font = args[0], size = args[1]
+    PDAssert(PDArrayGetCount(args) == 2);
+    PDStringRef font = PDArrayGetElement(args, 0);
+//    PDStringRef size = PDArrayGetElement(args, 1);
+    // font should be a /name
+    PDAssert(PDStringGetType(font) == PDStringTypeName);
+
+    // get font from page
+    userInfo->font = PDPageGetFont(userInfo->page, font);
+    
+    return PDOperatorStateIndependent;
+}
+
+
 PDOperatorState PDContentStreamTextExtractor_Tj(PDContentStreamRef cs, PDContentStreamTextExtractorUI userInfo, PDArrayRef args, pd_stack inState, pd_stack *outState)
 {
     // these should have a single string as arg but we won't whine if that's not the case
+    PDStringRef string;
+    PDStringRef utf8string;
     PDInteger argc = PDArrayGetCount(args);
     PDSize length;
     const char *data;
     for (PDInteger i = 0; i < argc; i++) {
-        data = PDStringBinaryValue(PDArrayGetElement(args, i), &length);
+        string = PDArrayGetElement(args, i);
+        PDStringSetFont(string, userInfo->font);
+        utf8string = PDStringCreateUTF8Encoded(string);
+        data = PDStringBinaryValue(utf8string, &length);
         PDContentStreamTextExtractorPrint(userInfo, data, length);
+        PDRelease(utf8string);
     }
     return PDOperatorStateIndependent;
 }
@@ -191,13 +218,17 @@ PDOperatorState PDContentStreamTextExtractor_TJ(PDContentStreamRef cs, PDContent
             argc = PDArrayGetCount(args);
         }
     }
+    PDStringRef utf8string;
     PDSize length;
     const char *data;
     for (PDInteger i = 0; i < argc; i++) {
         void *v = PDArrayGetElement(args, i);
         if (PDResolve(v) == PDInstanceTypeString) {
-            data = PDStringBinaryValue(v, &length);
+            PDStringSetFont(v, userInfo->font);
+            utf8string = PDStringCreateUTF8Encoded(v);
+            data = PDStringBinaryValue(utf8string, &length);
             PDContentStreamTextExtractorPrint(userInfo, data, length);
+            PDRelease(utf8string);
         }
     }
     
@@ -244,6 +275,21 @@ PDOperatorState PDContentStreamTextExtractor_Td(PDContentStreamRef cs, PDContent
     return PDOperatorStateIndependent;
 }
 
+PDOperatorState PDContentStreamTextExtractor_TD(PDContentStreamRef cs, PDContentStreamTextExtractorUI userInfo, PDArrayRef args, pd_stack inState, pd_stack *outState)
+{
+    // Move text position and set leading (tx, ty)
+    PDInteger argc = PDArrayGetCount(args);
+    if (argc != 2) {
+        PDWarn("invalid number of arguments in Td call; ignoring command");
+        return PDOperatorStateIndependent;
+    }
+    
+    // since we're not actually tracking the TM, we simply make sure it's not accidentally set to something that causes oddnesses in rare occasions
+    userInfo->TM[TM_x] = userInfo->TM[TM_y] = -1;
+    
+    return PDOperatorStateIndependent;
+}
+
 PDOperatorState PDContentStreamTextExtractor_Tstar(PDContentStreamRef cs, PDContentStreamTextExtractorUI userInfo, PDArrayRef args, pd_stack inState, pd_stack *outState)
 {
     // Move to the start of the next line.
@@ -275,10 +321,11 @@ PDOperatorState PDContentStreamTextExtractor_Tcite(PDContentStreamRef cs, PDCont
     return PDContentStreamTextExtractor_Tj(cs, userInfo, args, inState, outState);
 }
 
-PDContentStreamRef PDContentStreamCreateTextExtractor(PDObjectRef object, char **result)
+PDContentStreamRef PDContentStreamCreateTextExtractor(PDPageRef page, PDObjectRef object, char **result)
 {
     PDContentStreamRef cs = PDContentStreamCreateWithObject(object);
     PDContentStreamTextExtractorUI teUI = malloc(sizeof(struct PDContentStreamTextExtractorUI));
+    teUI->page = page;
     teUI->result = result;
     *result = teUI->buf = malloc(128);
     teUI->buf[0] = '\n';
@@ -295,8 +342,9 @@ PDContentStreamRef PDContentStreamCreateTextExtractor(PDObjectRef object, char *
                                              "T'", PDContentStreamTextExtractor_Tapostrophe,
                                              "T\"", PDContentStreamTextExtractor_Tcite,
                                              pair2(T*, Tstar),
+                                             pair(Tf),
                                              pair(Td),
-                                             pair2(TD, Td),
+                                             pair(TD),
                                              pair(Tm)
                                              )
                                        );

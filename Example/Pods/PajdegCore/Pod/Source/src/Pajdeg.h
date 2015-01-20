@@ -1,7 +1,7 @@
 //
 // Pajdeg.h
 //
-// Copyright (c) 2012 - 2014 Karl-Johan Alm (http://github.com/kallewoof)
+// Copyright (c) 2012 - 2015 Karl-Johan Alm (http://github.com/kallewoof)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -373,7 +373,7 @@
 #ifndef INCLUDED_PAJDEG_H
 #   define INCLUDED_PAJDEG_H
 
-#   define PAJDEG_VERSION   "0.2.2"
+#   define PAJDEG_VERSION   "0.3.0"
 
 #   include "PDPipe.h"
 #   include "PDObject.h"
@@ -381,4 +381,8 @@
 #   include "PDParser.h"
 #   include "PDReference.h"
 #   include "PDScanner.h"
+#   include "PDDictionary.h"
+#   include "PDArray.h"
+#   include "PDString.h"
+#   include "PDNumber.h"
 #endif

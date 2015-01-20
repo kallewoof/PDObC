@@ -1,7 +1,7 @@
 //
 // PDObject.h
 //
-// Copyright (c) 2012 - 2014 Karl-Johan Alm (http://github.com/kallewoof)
+// Copyright (c) 2012 - 2015 Karl-Johan Alm (http://github.com/kallewoof)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -196,7 +196,7 @@ extern PDBool PDObjectHasStream(PDObjectRef object);
  
  @param object The object.
  */
-extern PDInteger PDObjectGetStreamLength(PDObjectRef object);
+extern PDInteger PDObjectGetRawStreamLength(PDObjectRef object);
 
 /**
  Determine the extracted length of the previously fetched object stream. 

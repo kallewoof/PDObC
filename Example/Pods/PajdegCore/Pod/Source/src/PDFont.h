@@ -1,5 +1,5 @@
 //
-// PDStreamFilterPrediction.h
+// PDFont.h
 //
 // Copyright (c) 2012 - 2015 Karl-Johan Alm (http://github.com/kallewoof)
 // 
@@ -23,41 +23,46 @@
 //
 
 /**
- @file PDStreamFilterPrediction.h
+ @file PDFont.h PDF font object
  
- @ingroup PDSTREAMFILTERPREDICTION
-
- @defgroup PDSTREAMFILTERPREDICTION PDStreamFilterPrediction
+ @ingroup PDFONTS
  
- @brief Prediction filter
+ A font representation.
  
- @ingroup PDINTERNAL
- 
- @implements PDSTREAMFILTER
-
  @{
  */
 
-#ifndef INCLUDED_PDStreamFilterPrediction_h
-#define INCLUDED_PDStreamFilterPrediction_h
+#ifndef INCLUDED_PDFont_h
+#define INCLUDED_PDFont_h
 
-#include "PDStreamFilter.h"
-
-/**
- Set up a stream filter for prediction.
- */
-//extern PDStreamFilterRef PDStreamFilterPredictionCreate(void);
+#include "PDDefines.h"
 
 /**
- Set up stream filter for unprediction.
+ *  Create a PDFont object from a font object in a PDF dictionary.
+ *
+ *  @param parser Parser from which to fetch content necessary to generate the font object
+ *  @param obj    Font object in PDF dictionary
+ *
+ *  @return A new PDFont object
  */
-extern PDStreamFilterRef PDStreamFilterUnpredictionCreate(PDDictionaryRef options);
+extern PDFontRef PDFontCreate(PDParserRef parser, PDObjectRef obj);
+
 /**
- Set up a stream filter for prediction based on inputEnd boolean. 
+ *  Get the name of the encoding used for the font.
+ *
+ *  @param font The font object
+ *
+ *  @return The string value of the encoding (e.g. /Identity-H or /WinAnsiEncoding) or NULL if undefined
  */
-extern PDStreamFilterRef PDStreamFilterPredictionConstructor(PDBool inputEnd, PDDictionaryRef options);
+extern PDStringRef PDFontGetEncodingName(PDFontRef font);
 
-#endif
+/**
+ *  Get the encoding used for the font.
+ *
+ *  @param font The font object
+ *
+ *  @return The PDStringEncoding value of the encoding, or PDStringEncodingUndefined if undefined
+ */
+extern PDStringEncoding PDFontGetEncoding(PDFontRef font);
 
-/** @} */
-
+#endif // INCLUDED_PDFont_h

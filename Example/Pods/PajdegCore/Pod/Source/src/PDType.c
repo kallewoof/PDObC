@@ -1,7 +1,7 @@
 //
 // PDType.c
 //
-// Copyright (c) 2012 - 2014 Karl-Johan Alm (http://github.com/kallewoof)
+// Copyright (c) 2012 - 2015 Karl-Johan Alm (http://github.com/kallewoof)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -26,6 +26,7 @@
 #include "pd_internal.h"
 #include "PDType.h"
 #include "pd_stack.h"
+#include "PDString.h"
 #include "PDSplayTree.h"
 #include "pd_pdf_implementation.h"
 
@@ -181,23 +182,10 @@ static inline char *PDInstanceTypeToString(PDInstanceType it)
         strings[PDInstanceType2Stream] = strdup("PDTwinStream");
         strings[PDInstanceTypeXTable] = strdup("PDXTable");
         strings[PDInstanceTypeCSOper] = strdup("PDContentStreamOperation");
-        /*
-         PDInstanceTypeParser    = 7,
-         PDInstanceTypePipe      = 8,
-         PDInstanceTypeScanner   = 9,
-         PDInstanceTypeCStream   = 10,   ///< PDContentStream
-         PDInstanceTypeOStream   = 11,   ///< PDObjectStream
-         PDInstanceTypeOperator  = 12,
-         PDInstanceTypePage      = 13,
-         PDInstanceTypeParserAtt = 14,
-         PDInstanceTypeTree      = 15,   ///< PDSplayTree
-         PDInstanceTypeState     = 16,   ///< PDState
-         PDInstanceTypeSFilter   = 17,   ///< PDStreamFilter
-         PDInstanceTypeTask      = 18,   ///< PDTask
-         PDInstanceType2Stream   = 19,
-         PDInstanceTypeXTable    = 20,   ///< PDXTable
-         PDInstanceTypeCSOper    = 21,   /// Content stream operator
-         */
+        strings[PDInstanceTypeFontDict] = strdup("PDFontDictionary");
+        strings[PDInstanceTypeFont] = strdup("PDFont");
+        strings[PDInstanceTypeCMap] = strdup("PDCMap");
+        strings[PDInstanceTypePSExec] = strdup("PostScript_Exec");
         strings[PDInstanceType__SIZE] = strdup("???");
     }
     return strings[it < 0 || it > PDInstanceType__SIZE ? PDInstanceType__SIZE : it];
@@ -335,11 +323,6 @@ void *PDAllocTyped(PDInstanceType it, PDSize size, void *dealloc, PDBool zeroed)
     return chunk + 1;
 }
 
-//void *PDAlloc(PDSize size, void *dealloc, PDBool zeroed)
-//{
-//    return PDAllocTyped(PDInstanceTypeUnset, size, dealloc, zeroed);
-//}
-
 #ifdef DEBUG_PD_RELEASES
 void PDReleaseFunc(void *pajdegObject) 
 {
@@ -438,6 +421,17 @@ void PDFlush(void)
     while ((obj = pd_stack_pop_identifier(&arp))) {
         PDRelease(obj);
     }
+}
+
+const char *PDDescription(void *pajdegObject)
+{
+    PDInteger cap = 10;
+    char *buf = malloc(cap);
+    PDInteger offs = (*PDInstancePrinters[PDResolve(pajdegObject)])(pajdegObject, &buf, 0, &cap);
+    if (cap == offs) buf = realloc(buf, cap+1);
+    buf[offs] = 0;
+    PDAutorelease(PDStringCreate(buf));
+    return buf;
 }
 
 void PDNOP(void *val) {}

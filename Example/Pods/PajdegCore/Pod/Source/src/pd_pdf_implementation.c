@@ -1,7 +1,7 @@
 //
 // pd_pdf_implementation.c
 //
-// Copyright (c) 2012 - 2014 Karl-Johan Alm (http://github.com/kallewoof)
+// Copyright (c) 2012 - 2015 Karl-Johan Alm (http://github.com/kallewoof)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -339,17 +339,6 @@ void pd_pdf_implementation_use()
                                                    "F",
                                                    PDDef(PDOperatorPushResult,
                                                          and PDOperatorPopState)));                                             
-//                                             PDDef(/*"S(", 
-//                                                    PDDef(PDOperatorPushResult,
-//                                                    PDOperatorPushState, paren,
-//                                                    PDOperatorPopValue,
-//                                                    PDOperatorPushComplex, &PD_NAME,
-//                                                    PDOperatorPopState),*/
-//                                                   "F",
-//                                                   PDDef(PDOperatorPushbackSymbol,
-//                                                         and PDOperatorPopValue,
-//                                                         and PDOperatorPushComplex, &PD_NAME,
-//                                                         and PDOperatorPopState)));
         
         
         
@@ -698,11 +687,9 @@ void *PDInstanceCreateFromComplex(pd_stack *complex)
         }
         else if (PDIdentifies(tid, PD_DICT)) {
             result = PDDictionaryCreateWithComplex(*complex);
-//            result = PDCollectionCreateWithDictionary(pd_dict_from_pdf_dict_stack(*complex));
         }
         else if (PDIdentifies(tid, PD_ARRAY)) {
             result = PDArrayCreateWithComplex(*complex);
-//            result = PDCollectionCreateWithArray(pd_array_from_pdf_array_stack(*complex));
         }
         else if (PDIdentifies(tid, PD_DE)) {
             *complex = (*complex)->prev->prev->info;
@@ -718,7 +705,6 @@ void *PDInstanceCreateFromComplex(pd_stack *complex)
     } else if ((*complex)->prev) {
         // short array is the "default" when a prev exists and type != PD_STACK_ID
         result = PDArrayCreateWithStackList(*complex);
-//        result = PDCollectionCreateWithArray(pd_array_from_stack(*complex));
     } else if ((*complex)->type == PD_STACK_STRING) {
         // a stack string can be a number of things:
         // 1. true, false or null
@@ -908,8 +894,6 @@ void PDStringFromArbitrary(pd_stack *s, PDStringConvRef scv)
     }
 }
 
-//PDInstanceTypeUnset     =-2,    ///< The associated instance value has not been set yet
-//PDInstanceTypeUnknown   =-1,    ///< Undefined / non-allocated instance
 //PDInstanceTypeNull      = 0,    ///< NULL
 //PDInstanceTypeNumber    = 1,    ///< PDNumber
 //PDInstanceTypeString    = 2,    ///< PDString
@@ -917,6 +901,25 @@ void PDStringFromArbitrary(pd_stack *s, PDStringConvRef scv)
 //PDInstanceTypeDict      = 4,    ///< PDDictionary
 //PDInstanceTypeRef       = 5,    ///< PDReference
 //PDInstanceTypeObj       = 6,    ///< PDObject
+//PDInstanceTypeParser    = 7,
+//PDInstanceTypePipe      = 8,
+//PDInstanceTypeScanner   = 9,
+//PDInstanceTypeCStream   = 10,   ///< PDContentStream
+//PDInstanceTypeOStream   = 11,   ///< PDObjectStream
+//PDInstanceTypeOperator  = 12,
+//PDInstanceTypePage      = 13,
+//PDInstanceTypeParserAtt = 14,
+//PDInstanceTypeTree      = 15,   ///< PDSplayTree
+//PDInstanceTypeState     = 16,   ///< PDState
+//PDInstanceTypeSFilter   = 17,   ///< PDStreamFilter
+//PDInstanceTypeTask      = 18,   ///< PDTask
+//PDInstanceType2Stream   = 19,
+//PDInstanceTypeXTable    = 20,   ///< PDXTable
+//PDInstanceTypeCSOper    = 21,   ///< Content stream operator
+//PDInstanceTypeFontDict  = 22,   ///< PDFontDictionary
+//PDInstanceTypeFont      = 23,   ///< PDFont
+//PDInstanceTypeCMap      = 24,   ///< PDCMap
+//PDInstanceTypePSExec    = 25,   ///< PostScript executable code
 
 PDInteger PDNullPrinter(void *inst, char **buf, PDInteger offs, PDInteger *cap)
 {
@@ -926,14 +929,22 @@ PDInteger PDNullPrinter(void *inst, char **buf, PDInteger offs, PDInteger *cap)
     return offs + 4;
 }
 
+PDInteger PDBasePrinter(void *inst, char **buf, PDInteger offs, PDInteger *cap)
+{
+    PDInstancePrinterRequire(30, 30);
+    char *bv = *buf;
+    offs += sprintf(&bv[offs], "[%d:%p]", PDResolve(inst), inst);
+    return offs;
+}
+
 void PDNullExchange(void *inst, PDCryptoInstanceRef ci, PDBool encrypted)
 {}
 
-PDInstancePrinter PDInstancePrinters [] = {PDNullPrinter, PDNumberPrinter, PDStringPrinter, PDArrayPrinter, PDDictionaryPrinter, PDReferencePrinter, PDObjectPrinter, PDDictionaryPrinter};
+PDInstancePrinter PDInstancePrinters [] = {PDNullPrinter, PDNumberPrinter, PDStringPrinter, PDArrayPrinter, PDDictionaryPrinter, PDReferencePrinter, PDObjectPrinter, PDBasePrinter, PDBasePrinter, PDBasePrinter, PDBasePrinter, PDBasePrinter, PDBasePrinter, PDBasePrinter, PDBasePrinter, PDBasePrinter, PDBasePrinter, PDBasePrinter, PDBasePrinter, PDBasePrinter, PDBasePrinter, PDBasePrinter, PDBasePrinter, PDBasePrinter, PDBasePrinter, PDBasePrinter};
 
 #ifdef PD_SUPPORT_CRYPTO
 
-PDInstanceCryptoExchange PDInstanceCryptoExchanges[] = {PDNullExchange, PDNullExchange, (PDInstanceCryptoExchange)PDStringAttachCryptoInstance, (PDInstanceCryptoExchange)PDArrayAttachCryptoInstance, (PDInstanceCryptoExchange)PDDictionaryAttachCryptoInstance, PDNullExchange, PDNullExchange, (PDInstanceCryptoExchange)PDDictionaryAttachCryptoInstance};
+PDInstanceCryptoExchange PDInstanceCryptoExchanges[] = {PDNullExchange, PDNullExchange, (PDInstanceCryptoExchange)PDStringAttachCryptoInstance, (PDInstanceCryptoExchange)PDArrayAttachCryptoInstance, (PDInstanceCryptoExchange)PDDictionaryAttachCryptoInstance, PDNullExchange, PDNullExchange, PDNullExchange, PDNullExchange, PDNullExchange, PDNullExchange, PDNullExchange, PDNullExchange, PDNullExchange, PDNullExchange, PDNullExchange, PDNullExchange, PDNullExchange, PDNullExchange, PDNullExchange, PDNullExchange, PDNullExchange, PDNullExchange, PDNullExchange, PDNullExchange, PDNullExchange};
 
 #endif
 

@@ -1,7 +1,7 @@
 //
 // PDPage.c
 //
-// Copyright (c) 2012 - 2014 Karl-Johan Alm (http://github.com/kallewoof)
+// Copyright (c) 2012 - 2015 Karl-Johan Alm (http://github.com/kallewoof)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -38,11 +38,13 @@
 #include "PDArray.h"
 #include "PDDictionary.h"
 #include "PDNumber.h"
+#include "PDFontDictionary.h"
 
 void PDPageDestroy(PDPageRef page)
 {
     PDRelease(page->parser);
     PDRelease(page->ob);
+    PDRelease(page->fontDict);
 
     if (page->contentObs) {
         for (PDInteger i = 0; i < page->contentCount; i++) {
@@ -79,6 +81,7 @@ PDPageRef PDPageCreateWithObject(PDParserRef parser, PDObjectRef object)
     page->contentRefs = NULL;
     page->contentObs = NULL;
     page->contentCount = -1;
+    page->fontDict = NULL;
     return page;
 }
 
@@ -306,4 +309,11 @@ PDArrayRef PDPageGetAnnotRefs(PDPageRef page)
         PDAutorelease(ob);
     }
     return res;
+}
+
+PDFontRef PDPageGetFont(PDPageRef page, PDStringRef fontName)
+{
+    if (page->fontDict == NULL) page->fontDict = PDFontDictionaryCreate(page->parser, page->ob);
+    
+    return PDFontDictionaryGetFont(page->fontDict, PDStringBinaryValue(fontName, NULL));
 }

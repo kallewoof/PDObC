@@ -1,7 +1,7 @@
 //
 // PDScanner.c
 //
-// Copyright (c) 2012 - 2014 Karl-Johan Alm (http://github.com/kallewoof)
+// Copyright (c) 2012 - 2015 Karl-Johan Alm (http://github.com/kallewoof)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -108,6 +108,7 @@ PDScannerRef PDScannerCreateWithStateAndPopFunc(PDStateRef state, PDScannerPopFu
     PDScannerRef scanner = PDAllocTyped(PDInstanceTypeScanner, sizeof(struct PDScanner), PDScannerDestroy, true);
     scanner->env = PDEnvCreate(state);
     scanner->popFunc = popFunc;
+    scanner->strict = true;
     return scanner;
 }
 
@@ -661,7 +662,7 @@ void PDScannerScan(PDScannerRef scanner)
                   : (sym->stype & PDOperatorSymbolGlobDelimiter) && state->delimiterOp
                   ? state->delimiterOp
                   : state->fallbackOp);
-        } 
+        }
         
         if (op) {
             //char *str = strndup(sym->sstart, sym->slen);
@@ -670,19 +671,24 @@ void PDScannerScan(PDScannerRef scanner)
             //printf("] // state %s operator(%s)\n", state->name, str);
             //free(str);
         } else {
-            // if we have a fixed buffer, we will OFTEN have end of buffers and other errors for when we miss the size of an object, and this is perfectly normal
-            scanner->outgrown |= scanner->fixedBuf;
-            if (! scanner->outgrown) {
-                if (sym->stype == PDOperatorSymbolExtEOB) {
-                    PDError("unexpected end of buffer encountered; resetting scanner\n");
-                } else {
-                    PDError("scanner failure! resetting!\n");
+            // did we hit the end of the buffer?
+            if (scanner->bsize == scanner->boffset) {
+                // if we have a fixed buffer, we will OFTEN have end of buffers and other errors for when we miss the size of an object, and this is perfectly normal
+                scanner->outgrown |= scanner->fixedBuf;
+                if (! scanner->outgrown) {
+                    if (sym->stype == PDOperatorSymbolExtEOB) {
+                        PDError("unexpected end of buffer encountered; resetting scanner\n");
+                    } else {
+                        PDError("scanner failure! resetting!\n");
+                    }
                 }
+            } else if (scanner->strict) {
+                PDError("scanner failure! resetting!\n");
             }
             struct PDOperator resetter;
             resetter.type = PDOperatorPopState;
             resetter.next = NULL;
-            while (scanner->env) PDScannerOperate(scanner, &resetter);
+            while (scanner->env && ! scanner->env->state->iterates) PDScannerOperate(scanner, &resetter);
             pd_stack_destroy(&scanner->resultStack);
             scanner->failed = true;
             return;
@@ -696,7 +702,9 @@ void PDScannerScan(PDScannerRef scanner)
 
 PDBool PDScannerPollType(PDScannerRef scanner, char type)
 {
-    pd_stack_destroy(&scanner->garbageStack);
+    if (scanner->symbolStack == NULL) {
+        pd_stack_destroy(&scanner->garbageStack);
+    }
     while (!scanner->failed && scanner->env && !scanner->resultStack) {
         if (PDScannerScanAttemptCap > -1 && PDScannerScanAttemptCap-- == 0) 
             return false;
@@ -724,6 +732,36 @@ PDBool PDScannerPopStack(PDScannerRef scanner, pd_stack *value)
         return true;
     }
     return false;
+}
+
+PDBool PDScannerPopUnknown(PDScannerRef scanner, char **value)
+{
+    if (scanner->failed) {
+        // there should be a sym available
+        if (! scanner->sym) {
+            PDWarn("scanner->sym was unexpectedly NULL");
+            (*scanner->popFunc)(scanner);
+        }
+        PDScannerSymbolRef sym = scanner->sym;
+        if (sym) {
+            if (sym->slen > 0) {
+                *value = strndup(sym->sstart, sym->slen);
+                free(sym);
+                scanner->sym = NULL;
+                scanner->failed = false;
+                return true;
+            } else {
+                free(sym);
+                scanner->sym = NULL;
+            }
+        }
+    }
+    return false;
+}
+
+PDBool PDScannerEndOfStream(PDScannerRef scanner)
+{
+    return scanner->outgrown || (scanner->sym != NULL && scanner->sym->stype == PDScannerSymbolTypeEOB);
 }
 
 void PDScannerAssertString(PDScannerRef scanner, char *value)

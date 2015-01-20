@@ -1,7 +1,7 @@
 //
 // PDContentStream.c
 //
-// Copyright (c) 2012 - 2014 Karl-Johan Alm (http://github.com/kallewoof)
+// Copyright (c) 2012 - 2015 Karl-Johan Alm (http://github.com/kallewoof)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -26,14 +26,9 @@
 
 #include "PDContentStream.h"
 #include "pd_internal.h"
-#include "PDObject.h"
 #include "PDSplayTree.h"
 #include "PDOperator.h"
-#include "PDArray.h"
 #include "pd_stack.h"
-#include "PDString.h"
-#include "PDNumber.h"
-#include "PDDictionary.h"
 
 // Private declarations
 
@@ -183,7 +178,7 @@ void PDContentStreamExecute(PDContentStreamRef cs)
             arr = PDSplayTreeGet(cs->opertree, PDST_KEY_STR(str, slen));
             
             // if we did not get an operator, switch to catchall
-            if (arr == NULL && ! argValue) arr = catchall;
+            if (arr == NULL) arr = catchall;
             
             // have we matched a string to an operator?
             if (arr) {
@@ -323,7 +318,7 @@ void *PDContentStreamPopValue(PDContentStreamRef cs, const char *stream, PDInteg
             mark++;
             cf = (creatorFunc) PDStringCreateWithName;
             break;
-        case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9': case '0': case '-':
+        case '.': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9': case '0': case '-':
             // PDNumber
             freeStr = true;
             cf = (creatorFunc) PDNumberCreateWithCString;
@@ -374,7 +369,7 @@ void *PDContentStreamPopValue(PDContentStreamRef cs, const char *stream, PDInteg
     
     str = strndup(&stream[i], mark - i);
     *iptr = mark + (termWS && chtype == PDOperatorSymbolGlobWhitespace);
-    res = (*cf)(str);
+    res = cf(str);
     if (freeStr) free(str);
     
     return res;

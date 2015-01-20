@@ -1,7 +1,7 @@
 //
 // pd_pdf_private.h
 //
-// Copyright (c) 2012 - 2014 Karl-Johan Alm (http://github.com/kallewoof)
+// Copyright (c) 2012 - 2015 Karl-Johan Alm (http://github.com/kallewoof)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -25,7 +25,7 @@
 #ifndef INCLUDED_pd_pdf_private_h
 #define INCLUDED_pd_pdf_private_h
 
-#define PDDeallocateViaStackDealloc(ob) (*pd_stack_dealloc)(ob)
+#define PDDeallocateViaStackDealloc(ob) pd_stack_dealloc(ob)
 
 #define currch  (scv->allocBuf)[scv->offs]
 #define currchi scv->left--; (scv->allocBuf)[(scv->offs)++]

@@ -1,7 +1,7 @@
 //
 // PDNumber.c
 //
-// Copyright (c) 2012 - 2014 Karl-Johan Alm (http://github.com/kallewoof)
+// Copyright (c) 2012 - 2015 Karl-Johan Alm (http://github.com/kallewoof)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -67,6 +67,14 @@ PDNumberRef PDNumberCreateWithBool(PDBool b)
     return n;
 }
 
+PDNumberRef PDNumberCreateWithPointer(void *p)
+{
+    PDNumberRef n = PDAllocTyped(PDInstanceTypeNumber, sizeof(struct PDNumber), PDNumberDestroy, false);
+    n->type = PDObjectTypeReference;
+    n->p = p;
+    return n;
+}
+
 PDNumberRef PDNumberCreateWithCString(const char *cString)
 {
     // constant check
@@ -97,6 +105,7 @@ PDInteger PDNumberGetInteger(PDNumberRef n)
     if (PDInstanceTypeString == PDResolve(n)) return PDIntegerFromString(((PDStringRef)n)->data);
     
     switch (n->type) {
+        case PDObjectTypeReference: 
         case PDObjectTypeInteger:   return n->i;
         case PDObjectTypeSize:      return n->s;
         case PDObjectTypeBoolean:   return n->b;
@@ -110,6 +119,7 @@ PDSize PDNumberGetSize(PDNumberRef n)
     if (PDInstanceTypeString == PDResolve(n)) return PDIntegerFromString(((PDStringRef)n)->data);
     
     switch (n->type) {
+        case PDObjectTypeReference: 
         case PDObjectTypeInteger:   return n->i;
         case PDObjectTypeSize:      return n->s;
         case PDObjectTypeBoolean:   return n->b;
@@ -123,6 +133,7 @@ PDReal PDNumberGetReal(PDNumberRef n)
     if (PDInstanceTypeString == PDResolve(n)) return PDRealFromString(((PDStringRef)n)->data);
 
     switch (n->type) {
+        case PDObjectTypeReference: 
         case PDObjectTypeInteger:   return (PDReal)n->i;
         case PDObjectTypeSize:      return (PDReal)n->s;
         case PDObjectTypeBoolean:   return (PDReal)n->b;
@@ -136,11 +147,20 @@ PDBool PDNumberGetBool(PDNumberRef n)
     if (PDInstanceTypeString == PDResolve(n)) return PDStringEqualsCString((PDStringRef)n, "true") || PDIntegerFromString(((PDStringRef)n)->data) != 0;
 
     switch (n->type) {
+        case PDObjectTypeReference: 
         case PDObjectTypeInteger:   return 0 != n->i;
         case PDObjectTypeSize:      return 0 != n->s;
         case PDObjectTypeBoolean:   return n->b;
         default:                    return 0 != n->r;
     }
+}
+
+void *PDNumberGetPointer(PDNumberRef n)
+{
+    if (n == NULL) return NULL;
+    if (PDInstanceTypeString == PDResolve(n)) return (void *)PDIntegerFromString(((PDStringRef)n)->data);
+    
+    return n->p;
 }
 
 PDInteger PDNumberPrinter(void *inst, char **buf, PDInteger offs, PDInteger *cap)
@@ -159,6 +179,9 @@ PDInteger PDNumberPrinter(void *inst, char **buf, PDInteger offs, PDInteger *cap
     switch (i->type) {
         case PDObjectTypeInteger:
             len = sprintf(tmp, "%ld", i->i);
+            break;
+        case PDObjectTypeReference:
+            len = sprintf(tmp, "%p", i->p);
             break;
         case PDObjectTypeSize:
             len = sprintf(tmp, "%lu", i->s);

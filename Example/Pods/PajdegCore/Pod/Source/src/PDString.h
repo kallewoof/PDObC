@@ -1,7 +1,7 @@
 //
 // PDString.h
 //
-// Copyright (c) 2012 - 2014 Karl-Johan Alm (http://github.com/kallewoof)
+// Copyright (c) 2012 - 2015 Karl-Johan Alm (http://github.com/kallewoof)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -101,13 +101,77 @@ extern PDStringRef PDStringCreateWithHexString(char *hex);
  *
  *  @note If string is already of the given type, it is retained and returned as is.
  *
- *  @param string PDString instance used in transformation
- *  @param type   String type to transform to
- *  @param wrap   Whether the string should be wrapped ("()" for escaped, "<>" for hex)
+ *  @param string      PDString instance used in transformation
+ *  @param type        String type to transform to
+ *  @param wrap        Whether the string should be wrapped ("()" for escaped, "<>" for hex)
+ *  @param requireCopy If false, and if string matches the required type and wrap state, string is retained and returned, otherwise a copy of string is returned.
  *
  *  @return A PDString whose value is identical to that of string, and whose type is the given type
  */
-extern PDStringRef PDStringCreateFromStringWithType(PDStringRef string, PDStringType type, PDBool wrap);
+extern PDStringRef PDStringCreateFromStringWithType(PDStringRef string, PDStringType type, PDBool wrap, PDBool requireCopy);
+
+/**
+ *  Create a UTF-8 encoded version of the given string.
+ *  If the string has not had its encoding set, a wild (and often incorrect) guess is made. 
+ *  @see PDStringSetEncoding, PDStringSetFont
+ *
+ *  @param string The string to convert to UTF-8
+ *
+ *  @return A new UTF-8 encoded version of string, or string itself (retained) if it is already UTF-8 encoded
+ */
+extern PDStringRef PDStringCreateUTF8Encoded(PDStringRef string);
+
+/**
+ *  Create a UTF-16 encoded version of the given string.
+ *  If the string has not had its encoding set, a wild (and often incorrect) guess is made. 
+ *  @see PDStringSetEncoding, PDStringSetFont
+ *
+ *  @param string The string to convert to UTF-16
+ *
+ *  @return A new UTF-16 encoded version of string, or string itself (retained) if it is already UTF-16 encoded
+ */
+extern PDStringRef PDStringCreateUTF16Encoded(PDStringRef string);
+
+/**
+ *  Create a copy of the given string.
+ *
+ *  @param string String to copy
+ *
+ *  @return A new string, identical in every way to the original string
+ */
+extern PDStringRef PDStringCopy(PDStringRef string);
+
+/**
+ *  Get the encoding type for the given encoding string.
+ *
+ *  @param encodingName Encoding name
+ *
+ *  @return Encoding which may be PDStringEncodingUndefined if the given string was not recognized
+ */
+extern PDStringEncoding PDStringEncodingGetByName(const char *encodingName);
+
+/**
+ *  Set the encoding for the given string. Note that this does not convert the string in any way, it
+ *  simply informs the system that this string is of the given encoding. To make conversions to 
+ *  other encodings, use PDStringCreate...Encoded().
+ *
+ *  @param string   String whose encoding is being clarified
+ *  @param encoding The encoding being used by the string
+ */
+extern void PDStringSetEncoding(PDStringRef string, PDStringEncoding encoding);
+
+/**
+ *  Set the font used to represent the given string. This is primarily used to get the ToUnicode 
+ *  CID Map, used when translating a string into its UTF-8 sequence.
+ *  The string adapts the encoding of the font, as if 
+ *      PDStringSetEncoding(string, PDFontGetEncoding(font)) 
+ *  had been issued.
+ *  If font is NULL, the string uses its current encoding, but will discard its current font object, if any.
+ *
+ *  @param string String whose font is being set
+ *  @param font   Font object
+ */
+extern void PDStringSetFont(PDStringRef string, PDFontRef font);
 
 /**
  *  Force the wrapped state of a string. 
@@ -127,7 +191,7 @@ extern void PDStringForceWrappedState(PDStringRef string, PDBool wrapped);
  *
  *  @return Binary PDString object
  */
-#define PDStringCreateBinaryFromString(string) PDStringCreateFromStringWithType(string, PDStringTypeBinary, false)
+#define PDStringCreateBinaryFromString(string) PDStringCreateFromStringWithType(string, PDStringTypeBinary, false, false)
 
 //#define PDStringWithUnescapedCString(unescapedCString) PDAutorelease(PDStringCreateBinary(unescapedCString, strlen(unescapedCString)))
 
@@ -194,11 +258,21 @@ extern const char *PDStringHexValue(PDStringRef string, PDBool wrap);
 
 extern PDBool PDStringEqualsCString(PDStringRef string, const char *cString);
 
+/**
+ *  Compare the two strings and determine if their content is equal, disregarding wrapping and representation type.
+ *
+ *  @param string  First string to compare
+ *  @param string2 Second string to compare
+ *
+ *  @return Boolean value indicating whether the strings are equal
+ */
 extern PDBool PDStringEqualsString(PDStringRef string, PDStringRef string2);
 
 extern PDBool PDStringIsWrapped(PDStringRef string);
 
 extern PDStringType PDStringGetType(PDStringRef string);
+
+extern PDStringEncoding PDStringGetEncoding(PDStringRef string);
 
 #ifdef PD_SUPPORT_CRYPTO
 

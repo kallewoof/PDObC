@@ -1,7 +1,7 @@
 //
 // PDPage.h
 //
-// Copyright (c) 2012 - 2014 Karl-Johan Alm (http://github.com/kallewoof)
+// Copyright (c) 2012 - 2015 Karl-Johan Alm (http://github.com/kallewoof)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -129,6 +129,16 @@ extern PDRect PDPageGetMediaBox(PDPageRef page);
  *  @return An array of annotation references and objects.
  */
 extern PDArrayRef PDPageGetAnnotRefs(PDPageRef page);
+
+/**
+ *  Get the font object with the given font name for the page.
+ *
+ *  @param page     Page whose resource dictionary defines the font dictionary in which the font with the given name is defined
+ *  @param fontName The name of the font (a /Name string)
+ *
+ *  @return PDFont object or NULL if no font with the given name was found
+ */
+extern PDFontRef PDPageGetFont(PDPageRef page, PDStringRef fontName);
 
 #endif
 

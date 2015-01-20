@@ -1,7 +1,7 @@
 //
 // PDContentStreamTextExtractor.h
 //
-// Copyright (c) 2012 - 2014 Karl-Johan Alm (http://github.com/kallewoof)
+// Copyright (c) 2012 - 2015 Karl-Johan Alm (http://github.com/kallewoof)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -40,14 +40,13 @@
 /**
  *  Create a content stream configured to write all string values of the stream into a string, allocated to fit any amount of content, then pointing *result to the string.
  *
+ *  @param page   Page object, from which font information is fetched
  *  @param object Object whose content stream should have its text extracted
  *  @param result Pointer to char * into which results are to be written
  *
  *  @return A pre-configured content stream
  */
-extern PDContentStreamRef PDContentStreamCreateTextExtractor(PDObjectRef object, char **result);
-
-extern void PDContentTextExtractorAppendFontObject(PDContentStreamRef textExtractor, PDObjectRef fontObject);
+extern PDContentStreamRef PDContentStreamCreateTextExtractor(PDPageRef page, PDObjectRef object, char **result);
 
 #endif
 

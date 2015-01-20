@@ -1,7 +1,7 @@
 //
 // pd_stack.c
 //
-// Copyright (c) 2012 - 2014 Karl-Johan Alm (http://github.com/kallewoof)
+// Copyright (c) 2012 - 2015 Karl-Johan Alm (http://github.com/kallewoof)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -111,7 +111,7 @@ PDID pd_stack_pop_identifier(pd_stack *stack)
     PDAssert(popped->type == PD_STACK_ID);
     *stack = popped->prev;
     PDID identifier = popped->info;
-    (*pd_stack_dealloc)(popped);
+    pd_stack_dealloc(popped);
     return identifier;
 }
 
@@ -125,13 +125,13 @@ void pd_stack_assert_expected_key(pd_stack *stack, const char *key)
     char *got = popped->info;
     if (popped->type == PD_STACK_STRING) {
         PDAssert(got == key || !strcmp(got, key));
-        (*pd_stack_dealloc)(got);
+        pd_stack_dealloc(got);
     } else {
         PDAssert(!strcmp(*(char**)got, key));
     }
     
     *stack = popped->prev;
-    (*pd_stack_dealloc)(popped);
+    pd_stack_dealloc(popped);
 }
 
 void pd_stack_assert_expected_int(pd_stack *stack, PDInteger i)
@@ -145,8 +145,8 @@ void pd_stack_assert_expected_int(pd_stack *stack, PDInteger i)
     PDAssert(i == atoi(got));
     
     *stack = popped->prev;
-    (*pd_stack_dealloc)(got);
-    (*pd_stack_dealloc)(popped);
+    pd_stack_dealloc(got);
+    pd_stack_dealloc(popped);
 }
 
 PDSize pd_stack_pop_size(pd_stack *stack)
@@ -157,8 +157,8 @@ PDSize pd_stack_pop_size(pd_stack *stack)
     *stack = popped->prev;
     char *key = popped->info;
     PDSize st = atol(key);
-    (*pd_stack_dealloc)(key);
-    (*pd_stack_dealloc)(popped);
+    pd_stack_dealloc(key);
+    pd_stack_dealloc(popped);
     return st;
 }
 
@@ -170,8 +170,8 @@ PDInteger pd_stack_pop_int(pd_stack *stack)
     *stack = popped->prev;
     char *key = popped->info;
     PDInteger st = atol(key);
-    (*pd_stack_dealloc)(key);
-    (*pd_stack_dealloc)(popped);
+    pd_stack_dealloc(key);
+    pd_stack_dealloc(popped);
     return st;
 }
 
@@ -189,7 +189,7 @@ char *pd_stack_pop_key(pd_stack *stack)
     PDAssert(popped->type == PD_STACK_STRING);
     *stack = popped->prev;
     char *key = popped->info;
-    (*pd_stack_dealloc)(popped);
+    pd_stack_dealloc(popped);
     return key;
 }
 
@@ -200,7 +200,7 @@ pd_stack pd_stack_pop_stack(pd_stack *stack)
     PDAssert(popped->type == PD_STACK_STACK);
     *stack = popped->prev;
     pd_stack pstack = popped->info;
-    (*pd_stack_dealloc)(popped);
+    pd_stack_dealloc(popped);
     return pstack;
 }
 
@@ -211,7 +211,7 @@ void *pd_stack_pop_object(pd_stack *stack)
     PDAssert(popped->type == PD_STACK_PDOB);
     *stack = popped->prev;
     void *ob = popped->info;
-    (*pd_stack_dealloc)(popped);
+    pd_stack_dealloc(popped);
     return ob;
 }
 
@@ -222,7 +222,7 @@ void *pd_stack_pop_freeable(pd_stack *stack)
     PDAssert(popped->type == PD_STACK_FREEABLE);
     *stack = popped->prev;
     void *key = popped->info;
-    (*pd_stack_dealloc)(popped);
+    pd_stack_dealloc(popped);
     return key;
 }
 
