@@ -62,9 +62,11 @@ PDInteger pred_init(PDStreamFilterRef filter)
     switch (pred->predictor) {
         case PDPredictorNone:
         case PDPredictorPNG_UP:
-            //case PDPredictorPNG_SUB:
-            //case PDPredictorPNG_AVG:
-            //case PDPredictorPNG_PAE:
+        case PDPredictorPNG_OPT:
+            break;
+        case PDPredictorPNG_SUB:
+        case PDPredictorPNG_AVG:
+        case PDPredictorPNG_PAE:
             break;
             
         default:
@@ -104,6 +106,20 @@ PDInteger pred_done(PDStreamFilterRef filter)
     return pred_done(filter);
 }*/
 
+int paeth_predictor(int a, int b, int c)
+{
+    // a = left, b = above, c = upper left
+    int p = a + b - c;
+    int pa = abs(p - a); // distances to a, b, c
+    int pb = abs(p - b);
+    int pc = abs(p - c);
+    // return nearest of a,b,c,
+    // breaking ties in order a,b,c.
+    if (pa <= pb && pa <= pc) return a;
+    if (pb <= pc) return b;
+    return c;
+}
+
 PDInteger pred_proceed(PDStreamFilterRef filter)
 {
     PDInteger outputLength;
@@ -134,24 +150,46 @@ PDInteger pred_proceed(PDStreamFilterRef filter)
     
     //PDAssert(avail % bw == 0); // crash = this filter is bugged, or the input is corrupt
 
+    unsigned char  prevRowMinus1 = 0;
     unsigned char *prevRow = pred->prevRow;
     unsigned char *row = calloc(1, bw);
     
-    PDAssert(pred->predictor >= 10);
-    while (avail >= bw && cap >= rw) {
-        memcpy(row, src, bw);
-        src += bw;
-        avail -= bw;
-
-        *dst = pred->predictor - 10;
-        dst++;
-
+    // if the predictor is OPT, we fall back to UP, which we fill into every row, otherwise we keep it
+    PDPredictorType predictor = pred->predictor == PDPredictorPNG_OPT ? PDPredictorPNG_UP : pred->predictor;
+    
+    PDAssert(predictor >= 10);
+    
+#define pred_loop_begin() \
+    while (avail >= bw && cap >= rw) {\
+        memcpy(row, src, bw);\
+        src += bw;\
+        avail -= bw;\
+\
+        *dst = predictor - 10;\
+        dst++;\
+\
         for (i = 0; i < bw; i++) {
-            *dst = (row[i] - prevRow[i]) & 0xff;
-            prevRow[i] = row[i];
-            dst++;
-        }
-        cap -= rw;
+#define pred_loop_end() \
+            prevRow[i] = row[i];\
+            dst++;\
+        }\
+        cap -= rw;\
+    }
+#define pred_apply(formula, suffix) pred_loop_begin() *dst = (formula) & 0xff; suffix; pred_loop_end()
+#define pred_case(pred, formula, suffix) \
+        case pred: \
+            pred_apply(formula, suffix); \
+            break
+    
+    switch (predictor) {
+            pred_case(PDPredictorPNG_UP,    row[i] - prevRow[i],);
+            pred_case(PDPredictorPNG_SUB,   row[i] - (i ? row[i-1] : 0),);
+            pred_case(PDPredictorPNG_AVG,   row[i] - ((i ? row[i-1] : 0) + prevRow[i]) / 2,);
+            pred_case(PDPredictorPNG_PAE,   paeth_predictor(i ? row[i-1] : 0, prevRow[i], i ? prevRowMinus1 : 0), prevRowMinus1 = prevRow[i]);
+        default:
+            // unsupported; falling back to PNG_NONE
+            pred_apply(row[i],);
+            break;
     }
     
     free(row);
@@ -199,20 +237,68 @@ PDInteger unpred_proceed(PDStreamFilterRef filter)
     // this throws incorrectly if input is incomplete
     //PDAssert(avail % rw == 0); // crash = this filter is bugged, or the input is corrupt
     
+    unsigned char  prevRowMinus1 = 0;
     unsigned char *prevRow = pred->prevRow;
     unsigned char *row = calloc(1, bw);
+
+    PDPredictorType predictor = pred->predictor;
     
-    while (avail >= rw && cap >= bw) {
-        PDAssert(src[0] == pred->predictor - 10);
-        memcpy(row, &src[1], bw);
-        src += rw;
-        avail -= rw;
-        
+#define unpred_loop_begin() \
+    while (avail >= rw && cap >= bw) {\
+        predictor = src[0] + 10;\
+        memcpy(row, &src[1], bw);\
+        src += rw;\
+        avail -= rw;\
+        \
         for (i = 0; i < bw; i++) {
-            *dst = prevRow[i] = (row[i] + prevRow[i]) & 0xff;
-            dst++;
+#define unpred_loop_end() \
+            dst++;\
+        }\
+        cap -= bw;\
+    }
+#define unpred_apply(formula, suffix) unpred_loop_begin() *dst = (formula) & 0xff; suffix; prevRow[i] = *dst; unpred_loop_end()
+#define unpred_case(pred, formula, suffix) \
+        case pred: \
+            unpred_apply(formula, suffix); \
+            break
+    
+    if (predictor == PDPredictorPNG_OPT) {
+        while (avail >= rw && cap >= bw) {
+            predictor = src[0] + 10;
+            memcpy(row, &src[1], bw);
+            src += rw;
+            avail -= rw;
+            
+#define unpred_opt_case(pred, formula, suffix) \
+                case pred:\
+                    for (i = 0; i < bw; i++) {\
+                        *dst = (formula) & 0xff; suffix; prevRow[i] = *dst;\
+                        dst++;\
+                    }\
+                    break
+            switch (predictor) {
+                    unpred_opt_case(PDPredictorPNG_UP,  row[i] + prevRow[i],);
+                    unpred_opt_case(PDPredictorPNG_SUB, row[i] + (i ? row[i-1] : 0),);
+                    unpred_opt_case(PDPredictorPNG_AVG, row[i] + ((i ? row[i-1] : 0) + prevRow[i]),);
+                    unpred_opt_case(PDPredictorPNG_PAE, row[i] + paeth_predictor(i ? row[i-1] : 0, prevRow[i], prevRowMinus1), prevRowMinus1 = prevRow[i]);
+                default:
+                    for (i = 0; i < bw; i++) {
+                        unpred_apply(row[i],);
+                        dst++;
+                    }
+            }
+            cap -= bw;
         }
-        cap -= bw;
+    } else {
+        switch (predictor) {
+                unpred_case(PDPredictorPNG_UP,  row[i] + prevRow[i],);
+                unpred_case(PDPredictorPNG_SUB, row[i] + (i ? row[i-1] : 0),);
+                unpred_case(PDPredictorPNG_AVG, row[i] + ((i ? row[i-1] : 0) + prevRow[i]),);
+                unpred_case(PDPredictorPNG_PAE, row[i] + paeth_predictor(i ? row[i-1] : 0, prevRow[i], prevRowMinus1), prevRowMinus1 = prevRow[i]);
+            default:
+                unpred_apply(row[i],);
+                break;
+        }
     }
     
     free(row);

@@ -25,6 +25,7 @@
 #include <iconv.h>
 #include "PDString.h"
 #include "PDDictionary.h"
+#include "PDArray.h"
 #include "PDFont.h"
 #include "PDCMap.h"
 #include "PDNumber.h"
@@ -184,7 +185,7 @@ PDStringRef PDUTF8String(PDStringRef string)
     PDStringRef source = string;
     
     // we get a lot of plain strings, so we check that first off
-    PDBool onlyPlain = PDStringGetType(string) == PDStringTypeBinary || PDStringGetType(string) == PDStringTypeEscaped;
+    PDBool onlyPlain = string->enc == PDStringEncodingDefault && (PDStringGetType(string) == PDStringTypeBinary || PDStringGetType(string) == PDStringTypeEscaped);
     for (int i = string->wrapped; onlyPlain && i < string->length - string->wrapped; i++) onlyPlain = string->data[i] == ' ' || (string->data[i] >= 'a' && string->data[i] <= 'z') || (string->data[i] >= 'A' && string->data[i] <= 'Z') || (string->data[i] >= '0' && string->data[i] <= '9') || string->data[i] == '\n' || string->data[i] == '\r' || string->data[i] == '\t' || string->data[i] == '\\' || string->data[i] == '"' || string->data[i] == '\'' || string->data[i] == '.' || string->data[i] == '(' || string->data[i] == ')';
     if (onlyPlain) {
         string->enc = PDStringEncodingUTF8;
@@ -201,15 +202,21 @@ PDStringRef PDUTF8String(PDStringRef string)
     
     PDStringEncoding knownEncoding = PDStringEncodingDefault;
     
-    // does this string have a font, with a toUnicode mapping? if so we can get a UTF16BE from it
-    if (source->font && source->font->toUnicode) {
-        source = PDCMapApply(source->font->toUnicode, source);
-        knownEncoding = source->enc = PDStringEncodingUTF16BE;
+    // if the string has a font object associated with it, the font object may need to preprocess
+    // the string; it may also give us the encoding of the string, if we're lucky
+    if (source->font) {
+        source = PDFontProcessString(source->font, source);
+        knownEncoding = source->enc;
+    }
+    // it could be UTF16BE, which we can often detect because it has \0 as first char despite being > 0 len
+    else if (source->length > 0 && source->data[0] == 0) {
+        knownEncoding = PDStringEncodingUTF16BE;
     }
     
     iconv_t cd;
     
     PDInteger cap = (3 * source->length)>>1;
+    if (cap < 5) cap = 5;
     char *results = malloc(sizeof(char) * cap);
     
     PDStringEncodingEnumerate(enc) {
@@ -255,6 +262,10 @@ PDStringRef PDUTF8String(PDStringRef string)
             string->alt = PDStringCreateBinary((char *)results, (targetStart-results));
             string->alt->enc = PDStringEncodingUTF8;
             return string->alt;
+        }
+        
+        if (string->font) {
+            PDWarn("failed recoding into UTF-8 despite existing font object!");
         }
     }
     
@@ -378,3 +389,294 @@ PDStringRef PDStringCreateUTF16Encoded(PDStringRef string)
             return PDRetain(PDUTF16String(string));
     }
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+//void typedef void (*PDHashIterator)(char *key, void *value, void *userInfo, PDBool *shouldStop);
+void PDStringLatinRCharsetIter(char *key, void *value, void *userInfo, PDBool *shouldStop)
+{
+    char **rarr = userInfo;
+    PDInteger iv = PDNumberGetInteger(value);
+    if (iv < 0 || iv > 255) return;
+    rarr[iv] = key;
+}
+
+const char **PDStringLatinRCharsetArray(void)
+{
+    static char **rarr = NULL;
+    if (rarr) return (const char **)rarr;
+    
+    PDDictionaryRef lat = PDStringLatinCharsetDict();
+    rarr = calloc(256, sizeof(char*));
+    PDDictionaryIterate(lat, PDStringLatinRCharsetIter, rarr);
+    return (const char **)rarr;
+}
+
+const unsigned char PDStringLatinPDFToWin[] = {
+    0000, 0001, 0002, 0003, 0004, 0005, 0006, 0007, 0010, 0011, 0012, 0013, 0014, 0015, 0016, 0017, 
+    0020, 0021, 0022, 0023, 0024, 0025, 0026, 0027, 0030, 0031, 0210, 0033, 0034, 0035, 0036, 0230, 
+    0040, 0041, 0042, 0043, 0044, 0045, 0046, 0047, 0050, 0051, 0052, 0053, 0054, 0055, 0056, 0057, 
+    0060, 0061, 0062, 0063, 0064, 0065, 0066, 0067, 0070, 0071, 0072, 0073, 0074, 0075, 0076, 0077, 
+    0100, 0101, 0102, 0103, 0104, 0105, 0106, 0107, 0110, 0111, 0112, 0113, 0114, 0115, 0116, 0117, 
+    0120, 0121, 0122, 0123, 0124, 0125, 0126, 0127, 0130, 0131, 0132, 0133, 0134, 0135, 0136, 0137, 
+    0140, 0141, 0142, 0143, 0144, 0145, 0146, 0147, 0150, 0151, 0152, 0153, 0154, 0155, 0156, 0157, 
+    0160, 0161, 0162, 0163, 0164, 0165, 0166, 0167, 0170, 0171, 0172, 0173, 0174, 0175, 0176, 0177, 
+    0225, 0206, 0207, 0205, 0227, 0226, 0203, 0207, 0213, 0233, 0212, 0211, 0204, 0223, 0224, 0221, 
+    0222, 0202, 0231, 0223, 0224, 0225, 0214, 0212, 0237, 0216, 0232, 0233, 0234, 0232, 0236, 0237, 
+    0200, 0241, 0242, 0243, 0244, 0245, 0246, 0247, 0250, 0251, 0252, 0253, 0254, 0255, 0256, 0257, 
+    0260, 0261, 0262, 0263, 0264, 0265, 0266, 0267, 0270, 0271, 0272, 0273, 0274, 0275, 0276, 0277, 
+    0300, 0301, 0302, 0303, 0304, 0305, 0306, 0307, 0310, 0311, 0312, 0313, 0314, 0315, 0316, 0317, 
+    0320, 0321, 0322, 0323, 0324, 0325, 0326, 0327, 0330, 0331, 0332, 0333, 0334, 0335, 0336, 0337, 
+    0340, 0341, 0342, 0343, 0344, 0345, 0346, 0347, 0350, 0351, 0352, 0353, 0354, 0355, 0356, 0357, 
+    0360, 0361, 0362, 0363, 0364, 0365, 0366, 0367, 0370, 0371, 0372, 0373, 0374, 0375, 0376, 0377, 
+};
+
+PDDictionaryRef PDStringLatinCharsetDict(void)
+{
+    static PDDictionaryRef dict = NULL;
+    if (dict) return dict;
+    
+    PDNumberRef dummyRef = PDNumberCreateWithBool(true);
+    PDAutorelease(dummyRef);
+    
+#define n(v) PDNumberWithInteger(v)
+#define pair(k,v) k, n(0##v)
+    dict = PDDictionaryCreateWithKeyValueDefinition
+    (PDDef(
+           ".notdef", n(0),
+           pair("A", 101),
+           pair("AE", 306),
+           pair("Aacute", 301),
+           pair("Acircumflex", 302),
+           pair("Adieresis", 304),
+           pair("Agrave", 300),
+           pair("Aring", 305),
+           pair("Atilde", 303),
+           pair("B", 102),
+           pair("C", 103),
+           pair("Ccedilla", 307),
+           pair("D", 104),
+           pair("E", 105),
+           pair("Eacute", 311),
+           pair("Ecircumflex", 312),
+           pair("Edieresis", 313),
+           pair("Egrave", 310),
+           pair("Eth", 320),
+           pair("Euro", 240),
+           pair("F", 106),
+           pair("G", 107),
+           pair("H", 110),
+           pair("I", 111),
+           pair("Iacute", 315),
+           pair("Icircumflex", 316),
+           pair("Idieresis", 317),
+           pair("Igrave", 314),
+           pair("J", 112),
+           pair("K", 113),
+           pair("L", 114),
+           pair("Lslash", 225),
+           pair("M", 115),
+           pair("N", 116),
+           pair("Ntilde", 321),
+           pair("O", 117),
+           pair("OE", 226),
+           pair("Oacute", 323),
+           pair("Ocircumflex", 324),
+           pair("Odieresis", 326),
+           pair("Ograve", 322),
+           pair("Oslash", 330),
+           pair("Otilde", 325),
+           pair("P", 120),
+           pair("Q", 121),
+           pair("R", 122),
+           pair("S", 123),
+           pair("Scaron", 227),
+           pair("T", 124),
+           pair("Thorn", 336),
+           pair("U", 125),
+           pair("Uacute", 332),
+           pair("Ucircumflex", 333),
+           pair("Udieresis", 334),
+           pair("Ugrave", 331),
+           pair("V", 126),
+           pair("W", 127),
+           pair("X", 130),
+           pair("Y", 131),
+           pair("Yacute", 335),
+           pair("Ydieresis", 230),
+           pair("Z", 132),
+           pair("Zcaron", 231),
+           pair("a", 141),
+           pair("aacute", 341),
+           pair("acircumflex", 342),
+           pair("acute", 264),
+           pair("adieresis", 344),
+           pair("ae", 346),
+           pair("agrave", 340),
+           pair("ampersand", 046),
+           pair("aring", 345),
+           pair("asciicircum", 136),
+           pair("asciitilde", 176),
+           pair("asterisk", 052),
+           pair("at", 100),
+           pair("atilde", 343),
+           pair("b", 142),
+           pair("backslash", 134),
+           pair("bar", 174),
+           pair("braceleft", 173),
+           pair("braceright", 175),
+           pair("bracketleft", 133),
+           pair("bracketright", 135),
+           pair("breve", 030),
+           pair("brokenbar", 246),
+           pair("bullet", 200),
+           pair("c", 143),
+           pair("caron", 031),
+           pair("ccedilla", 347),
+           pair("cedilla", 270),
+           pair("cent", 242),
+           pair("circumflex", 032),
+           pair("colon", 072),
+           pair("comma", 054),
+           pair("copyright", 251),
+           pair("currency", 244),
+           pair("d", 144),
+           pair("dagger", 201),
+           pair("daggerdbl", 202),
+           pair("degree", 260),
+           pair("dieresis", 250),
+           pair("divide", 367),
+           pair("dollar", 044),
+           pair("dotaccent", 033),
+           pair("dotlessi", 232),
+//           pair("dotlessj", 152), // currently mapping dotlessj to j, until we can figure out where this bugger comes from (it's not in the PDF spec but it is appearing in PDFs regardless)
+           pair("e", 145),
+           pair("eacute", 351),
+           pair("ecircumflex", 352),
+           pair("edieresis", 353),
+           pair("egrave", 350),
+           pair("eight", 070),
+           pair("ellipsis", 203),
+           pair("emdash", 204),
+           pair("endash", 205),
+           pair("equal", 075),
+           pair("eth", 360),
+           pair("exclam", 041),
+           pair("exclamdown", 241),
+           pair("f", 146),
+           pair("fi", 223),
+           pair("five", 065),
+           pair("fl", 224),
+           pair("florin", 206),
+           pair("four", 064),
+           pair("fraction", 207),
+           pair("g", 147),
+           pair("germandbls", 337),
+           pair("grave", 140),
+           pair("greater", 076),
+           pair("guillemotleft", 253),
+           pair("guillemotright", 273),
+           pair("guilsinglleft", 210),
+           pair("guilsinglright", 211),
+           pair("h", 150),
+           pair("hungarumlaut", 034),
+           pair("hyphen", 055),
+           pair("i", 151),
+           pair("iacute", 355),
+           pair("icircumflex", 356),
+           pair("idieresis", 357),
+           pair("igrave", 354),
+           pair("j", 152),
+           pair("k", 153),
+           pair("l", 154),
+           pair("less", 074),
+           pair("logicalnot", 254),
+           pair("lslash", 233),
+           pair("m", 155),
+           pair("macron", 257),
+           pair("minus", 212),
+           pair("mu", 265),
+           pair("multiply", 327),
+           pair("n", 156),
+           pair("nine", 071),
+           pair("ntilde", 361),
+           pair("numbersign", 043),
+           pair("o", 157),
+           pair("oacute", 363),
+           pair("ocircumflex", 364),
+           pair("odieresis", 366),
+           pair("oe", 234),
+           pair("ogonek", 035),
+           pair("ograve", 362),
+           pair("one", 061),
+           pair("onehalf", 275),
+           pair("onequarter", 274),
+           pair("onesuperior", 271),
+           pair("ordfeminine", 252),
+           pair("ordmasculine", 272),
+           pair("oslash", 370),
+           pair("otilde", 365),
+           pair("p", 160),
+           pair("paragraph", 266),
+           pair("parenleft", 050),
+           pair("parenright", 051),
+           pair("percent", 045),
+           pair("period", 056),
+           pair("periodcentered", 267),
+           pair("perthousand", 213),
+           pair("plus", 053),
+           pair("plusminus", 261),
+           pair("q", 161),
+           pair("question", 077),
+           pair("questiondown", 277),
+           pair("quotedbl", 042),
+           pair("quotedblbase", 214),
+           pair("quotedblleft", 215),
+           pair("quotedblright", 216),
+           pair("quoteleft", 217),
+           pair("quoteright", 220),
+           pair("quotesinglbase", 221),
+           pair("quotesingle", 047),
+           pair("r", 162),
+           pair("registered", 256),
+           pair("ring", 036),
+           pair("s", 163),
+           pair("scaron", 235),
+           pair("section", 247),
+           pair("semicolon", 073),
+           pair("seven", 067),
+           pair("six", 066),
+           pair("slash", 057),
+           pair("space", 040),
+           pair("sterling", 243),
+           pair("t", 164),
+           pair("thorn", 376),
+           pair("three", 063),
+           pair("threequarters", 276),
+           pair("threesuperior", 263),
+           pair("tilde", 037),
+           pair("trademark", 222),
+           pair("two", 062),
+           pair("twosuperior", 262),
+           pair("u", 165),
+           pair("uacute", 372),
+           pair("ucircumflex", 373),
+           pair("udieresis", 374),
+           pair("ugrave", 371),
+           pair("underscore", 137),
+           pair("v", 166),
+           pair("w", 167),
+           pair("x", 170),
+           pair("y", 171),
+           pair("yacute", 375),
+           pair("ydieresis", 377),
+           pair("yen", 245),
+           pair("z", 172),
+           pair("zcaron", 236),
+           pair("zero", 060)
+           ));
+    
+    PDFlushUntil(dummyRef);
+    return dict;
+}
+

@@ -40,12 +40,13 @@
 /**
  *  Create a PDFont object from a font object in a PDF dictionary.
  *
- *  @param parser Parser from which to fetch content necessary to generate the font object
- *  @param obj    Font object in PDF dictionary
+ *  @param parser   Parser from which to fetch content necessary to generate the font object
+ *  @param fontDict Font dictionary owning the font object
+ *  @param obj      Font object in PDF dictionary
  *
  *  @return A new PDFont object
  */
-extern PDFontRef PDFontCreate(PDParserRef parser, PDObjectRef obj);
+extern PDFontRef PDFontCreate(PDParserRef parser, PDFontDictionaryRef fontDict, PDObjectRef obj);
 
 /**
  *  Get the name of the encoding used for the font.
@@ -64,5 +65,19 @@ extern PDStringRef PDFontGetEncodingName(PDFontRef font);
  *  @return The PDStringEncoding value of the encoding, or PDStringEncodingUndefined if undefined
  */
 extern PDStringEncoding PDFontGetEncoding(PDFontRef font);
+
+/**
+ *  Process the given string, applying ToUnicode CMap (if applicable), encMap
+ *  byte mapping (if applicable), etc., and return the result as a new, auto-
+ *  released string. If no applicable mappings are available, the string is 
+ *  returned as is. 
+ *  If possible, the string's enc value is defined in the process.
+ *
+ *  @param font   The font object
+ *  @param string String to process
+ *
+ *  @return The same string, or a new string that has been processed
+ */
+extern PDStringRef PDFontProcessString(PDFontRef font, PDStringRef string);
 
 #endif // INCLUDED_PDFont_h

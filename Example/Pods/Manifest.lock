@@ -1,15 +1,15 @@
 PODS:
   - Expecta (0.3.1)
   - FBSnapshotTestCase (1.4)
-  - PajdegCore (0.3.0)
-  - PajdegPDF (0.3.0):
-    - PajdegCore (~> 0.3.0)
+  - PajdegCore (0.3.1)
+  - PajdegPDF (0.3.1):
+    - PajdegCore (~> 0.3.1)
   - Specta (0.2.1)
 
 DEPENDENCIES:
   - Expecta
   - FBSnapshotTestCase
-  - PajdegCore (~> 0.3.0)
+  - PajdegCore (~> 0.3.1)
   - PajdegPDF (from `../`)
   - Specta
 
@@ -20,8 +20,8 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   Expecta: 03aabd0a89d8dea843baecb19a7fd7466a69a31d
   FBSnapshotTestCase: f9f225b5ba11c8d8c09075590490df16314e4d62
-  PajdegCore: 382b926c28873c4ab84a80783676209e10683819
-  PajdegPDF: 32636ecc840ab3d53a12d309b7ab468b763effb6
+  PajdegCore: 82ff0f296446d2696450bd9d5dbdb55526d9864c
+  PajdegPDF: 67150c83208ab21950efcc6f42099b3d7b90e061
   Specta: 9141310f46b1f68b676650ff2854e1ed0b74163a
 
 COCOAPODS: 0.35.0

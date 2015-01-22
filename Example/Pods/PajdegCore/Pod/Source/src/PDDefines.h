@@ -364,6 +364,15 @@ typedef void (*PDHashIterator)(char *key, void *value, void *userInfo, PDBool *s
 typedef struct PDDictionary *PDDictionaryRef;
 
 /**
+ A dictionary stack implementation.
+ 
+ @ingroup PDDictionaryStack
+ 
+ The dictionary stack construct.
+ */
+typedef struct PDDictionaryStack *PDDictionaryStackRef;
+
+/**
  *  A font dictionary.
  *
  *  @ingroup PDFONTS
@@ -524,6 +533,7 @@ typedef enum {
     PDOperatorStateIndependent = 0, ///< this operator does not push nor pop the stack
     PDOperatorStatePush        = 1, ///< this operator pushes onto the stack
     PDOperatorStatePop         = 2, ///< this operator pops the stack
+    PDOperatorStateSeek        = 3, ///< this operator performs a seek operation on the stream; the latest argument in the arg stack is a PDNumber indicating the number of bytes
 } PDOperatorState;
 
 /**
@@ -573,8 +583,9 @@ typedef enum {
     PDInstanceTypeFont      = 23,   ///< PDFont
     PDInstanceTypeCMap      = 24,   ///< PDCMap
     PDInstanceTypePSExec    = 25,   ///< PostScript executable code
+    PDInstanceTypeDictStack = 26,   ///< PDDictionaryStack
     //
-    PDInstanceType__SIZE    = 26,
+    PDInstanceType__SIZE    = 27,
 } PDInstanceType;
 
 /**
@@ -644,7 +655,7 @@ typedef enum {
 
 typedef enum {
     PDStringEncodingDefault = 0,    ///< This is most likely ASCII or UTF-8, but implicit checks are made where necessary
-    PDStringEncodingASCII = 1,      ///< 8-bit regular ascii encoding
+    PDStringEncodingASCII = 1,      ///< 8-bit regular ascii encoding (this is probably 7-bit, actually)
     PDStringEncodingUTF8 = 2,       ///< UTF-8 encoding
     PDStringEncodingUTF16BE = 3,    ///< UTF-16 encoding (big endian)
     PDStringEncodingUTF16LE = 4,    ///< UTF-16 encoding (little endian)
@@ -661,6 +672,8 @@ typedef enum {
     PDStringEncodingCP1250 = 15,    ///< Windows CP-1250
     PDStringEncodingISO2022JP = 16, ///< ISO-2022-JP
     __PDSTRINGENC_END = 16,         ///< --marker--
+    
+    PDStringEncodingCustom = 998,   ///< The encoding has a custom mapping in an associated font object
     PDStringEncodingUndefined = 999,///< The encoding used was not determined correctly. The string may be a binary value or similar
 } PDStringEncoding;
 

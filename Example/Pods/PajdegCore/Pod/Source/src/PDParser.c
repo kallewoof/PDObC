@@ -43,6 +43,7 @@
 #include "PDString.h"
 #include "PDNumber.h"
 #include "PDScanner.h"
+#include "PDFontDictionary.h"
 
 void PDParserDestroy(PDParserRef parser)
 {
@@ -52,6 +53,7 @@ void PDParserDestroy(PDParserRef parser)
     for (pd_stack t = parser->xstack; t; t = t->prev)
         printf("- [-]: %ld\n", ((PDTypeRef)t->info - 1)->retainCount);*/
     
+    PDRelease(parser->mfd);
     PDRelease(parser->aiTree);
     PDRelease(parser->catalog);
     PDRelease(parser->construct);
@@ -86,6 +88,7 @@ PDParserRef PDParserCreateWithStream(PDTwinStreamRef stream)
     parser->state = PDParserStateBase;
     parser->success = true;
     parser->aiTree = PDSplayTreeCreateWithDeallocator(PDReleaseFunc);
+    parser->mfd = PDFontDictionaryCreate(parser, NULL);
     
     if (! PDXTableFetchXRefs(parser)) {
         PDError("PDF is invalid or in an unsupported format.");
@@ -275,8 +278,22 @@ pd_stack PDParserLocateAndCreateDefinitionForObjectWithSize(PDParserRef parser, 
         // the object did not fit in our expected buffer, which means it's unusually big; we bump the buffer size to 6k if it's smaller, otherwise we consider this a failure
         pd_stack_destroy(&stack);
         stack = NULL;
-        if (bufsize < 64000 && readBytes == bufsize)
+        if (readBytes == bufsize) {
+            if (master) {
+                PDSize newbs = PDXTableDetermineObjectSize(parser->mxt, obid);
+                if (newbs > bufsize) {
+                    bufsize = newbs; 
+                } else {
+                    PDError("PDXTable determined object size is not sufficient for reading object");
+                    if (bufsize > 64000) return NULL;
+                    bufsize *= 2;
+                }
+            } else {
+                if (bufsize > 64000) return NULL;
+                bufsize = (bufsize + 1024) * 3;
+            }
             return PDParserLocateAndCreateDefinitionForObjectWithSize(parser, obid, (bufsize + 1024) * 3, master, outOffset);
+        }
     }
     
     return stack;
@@ -288,7 +305,9 @@ pd_stack PDParserLocateAndCreateDefinitionForObject(PDParserRef parser, PDIntege
     if (parser->construct && parser->construct->obid == obid) {
         return pd_stack_copy(parser->construct->def);
     }
-    return PDParserLocateAndCreateDefinitionForObjectWithSize(parser, obid, 4192, master, NULL);
+    PDInteger bufsize = 4192;
+    if (master && parser->mxt->nextOb) bufsize = PDXTableDetermineObjectSize(parser->mxt, obid);
+    return PDParserLocateAndCreateDefinitionForObjectWithSize(parser, obid, bufsize, master, NULL);
 }
 
 PDObjectRef PDParserLocateAndCreateObject(PDParserRef parser, PDInteger obid, PDBool master)
@@ -366,7 +385,7 @@ void PDParserPrepareStreamData(PDParserRef parser, PDObjectRef ob, PDInteger len
         PDStreamFilterRef filter = PDStreamFilterObtain(PDStringEscapedValue(filterName, false), true, filterOpts);
         
         if (NULL == filter) {
-            PDWarn("Unknown filter \"%s\" is ignored.", PDStringEscapedValue(filterName, false));
+            PDNotice("Unknown filter \"%s\" is ignored.", PDStringEscapedValue(filterName, false));
         } else {
             PDInteger allocated;
             char *extractedBuf;
@@ -413,31 +432,33 @@ char *PDParserFetchCurrentObjectStream(PDParserRef parser, PDInteger obid)
     PDInteger len = parser->streamLen;
     PDStringRef filterName = NULL;
     void *filterValue = PDDictionaryGet(PDObjectGetDictionary(parser->construct), "Filter");
-    PDInstanceType filterType = PDResolve(filterValue);
-    switch (filterType) {
-        case PDInstanceTypeArray:{
-            PDInteger count = PDArrayGetCount(filterValue);
-            if (count == 0) {
-                PDWarn("Null filter (empty array value) encountered");
-            } else {
-                if (count > 1) {
-                    PDInteger cap = 32;
-                    char *buf = malloc(32);
-                    PDArrayPrinter(filterValue, &buf, 0, &cap);
-                    PDWarn("Unsupported chained filter in %s", buf);
-                    free(buf);
+    if (filterValue) {
+        PDInstanceType filterType = PDResolve(filterValue);
+        switch (filterType) {
+            case PDInstanceTypeArray:{
+                PDInteger count = PDArrayGetCount(filterValue);
+                if (count == 0) {
+                    PDWarn("Null filter (empty array value) encountered");
+                } else {
+                    if (count > 1) {
+                        PDInteger cap = 32;
+                        char *buf = malloc(32);
+                        PDArrayPrinter(filterValue, &buf, 0, &cap);
+                        PDWarn("Unsupported chained filter in %s", buf);
+                        free(buf);
+                    }
+                    filterValue = PDArrayGetElement(filterValue, 0);
                 }
-                filterValue = PDArrayGetElement(filterValue, 0);
-            }
-        } break;
-            
-        case PDInstanceTypeString:
-            break;
-            
-        default:
-            PDWarn("Unsupported filter type %d", filterType);
-            filterValue = NULL;
-            break;
+            } break;
+                
+            case PDInstanceTypeString:
+                break;
+                
+            default:
+                PDWarn("Unsupported filter type %d", filterType);
+                filterValue = NULL;
+                break;
+        }
     }
     
     filterName = filterValue;

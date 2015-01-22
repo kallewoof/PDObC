@@ -237,16 +237,12 @@ PDObjectRef PDPageGetContentsObjectAtIndex(PDPageRef page, PDInteger index)
     if (page->contentObs == NULL) {
         // we need to set the array up first
         PDDictionaryRef d = PDObjectGetDictionary(page->ob);
-//        pd_dict d = PDObjectGetDictionary(page->ob);
         void *contentsValue = PDDictionaryGet(d, "Contents");
         if (PDResolve(contentsValue) == PDInstanceTypeArray) {
-//        if (PDObjectTypeArray == pd_dict_get_type(d, "Contents")) {
-//            page->contentRefs = pd_dict_get_copy(d, "Contents");
             page->contentRefs = PDRetain(contentsValue);
             page->contentCount = PDArrayGetCount(contentsValue);
             page->contentObs = calloc(page->contentCount, sizeof(PDObjectRef));
         } else {
-//            const char *contentsRef = PDDictionaryGet(PDObjectGetDictionary(page->ob), "Contents");
             if (contentsValue) {
                 page->contentCount = 1;
                 page->contentObs = malloc(sizeof(PDObjectRef));
@@ -260,8 +256,6 @@ PDObjectRef PDPageGetContentsObjectAtIndex(PDPageRef page, PDInteger index)
     
     if (NULL == page->contentObs[index]) {
         PDReferenceRef contentsRef = PDArrayGetReference(page->contentRefs, index);
-//        PDInteger contentsId = PDArrayGetInteger(page->contentRefs, index);
-//        PDInteger contentsId = PDIntegerFromString(pd_array_get_at_index(page->contentRefs, index));
         page->contentObs[index] = PDParserLocateAndCreateObject(page->parser, PDReferenceGetObjectID(contentsRef), true);
     }
     

@@ -27,6 +27,7 @@
 #include "PDType.h"
 #include "pd_stack.h"
 #include "PDString.h"
+#include "PDObject.h"
 #include "PDSplayTree.h"
 #include "pd_pdf_implementation.h"
 
@@ -423,11 +424,27 @@ void PDFlush(void)
     }
 }
 
+void PDFlushUntil(void *ob)
+{
+    void *obj;
+    while ((obj = pd_stack_pop_identifier(&arp))) {
+        PDRelease(obj);
+        if (obj == ob) break;
+    }
+}
+
 const char *PDDescription(void *pajdegObject)
 {
+    PDInstanceType it = PDResolve(pajdegObject);
     PDInteger cap = 10;
     char *buf = malloc(cap);
-    PDInteger offs = (*PDInstancePrinters[PDResolve(pajdegObject)])(pajdegObject, &buf, 0, &cap);
+    PDInteger offs;
+    if (it == PDInstanceTypeObj) {
+        offs = PDObjectGenerateDefinition(pajdegObject, &buf, 10);
+        cap = offs; // we always trigger a realloc to be sure
+    } else {
+        offs = (*PDInstancePrinters[PDResolve(pajdegObject)])(pajdegObject, &buf, 0, &cap);
+    }
     if (cap == offs) buf = realloc(buf, cap+1);
     buf[offs] = 0;
     PDAutorelease(PDStringCreate(buf));

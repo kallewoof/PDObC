@@ -150,6 +150,18 @@ PDBool pd_ps_compile_next(pd_ps_env cenv)
     if (PDScannerPopString(scanner, &string) || PDScannerPopUnknown(scanner, &string)) {
         // we got a string
         operatorName = string;
+        // if this is "<" we want to see if the next is "<" too
+        if (operatorName[0] == '<' && operatorName[1] == 0 && scanner->buf[scanner->boffset] == '<') {
+            scanner->boffset++;
+            pd_ps_push(PDDictionaryCreate());
+            operatorName = "begin";
+        } else if (operatorName[0] == '>' && operatorName[1] == 0 && scanner->buf[scanner->boffset] == '>') {
+            scanner->boffset++;
+            // we do this because end will drop it out of the dict stack, whereas programs do things like /myFineDictionary << /foo /bar >> def
+            // which indicates the dict has to be in the operand stack after >>
+            pd_ps_push(PDRetain(cenv->userdict));
+            operatorName = "end";
+        }
     }
     else {
         if (! PDScannerEndOfStream(scanner)) {
@@ -177,7 +189,7 @@ PDBool pd_ps_compile_next(pd_ps_env cenv)
         if (funcPtr) {
             PDPSFunc func = PDNumberGetPointer(funcPtr);
             func(operatorName, cenv);
-            free(operatorName);
+            free(string);
             return true;
         }
         
@@ -198,7 +210,7 @@ PDBool pd_ps_compile_next(pd_ps_env cenv)
                         if (PDObjectTypeReference == PDNumberGetObjectType(value)) {
                             PDPSFunc func = PDNumberGetPointer(value);
                             func(operatorName, cenv);
-                            free(operatorName);
+                            free(string);
                             return true;
                         }
                         break;
@@ -373,6 +385,7 @@ void PDPSDict(char *funcLabel, pd_ps_env cenv)
 void PDPSBegin(char *funcLabel, pd_ps_env cenv)
 {
     PDDictionaryRef dict = pd_ps_pop();
+    PDAssert(PDResolve(dict) == PDInstanceTypeDict);
     pd_stack_push_object(&cenv->dicts, dict);
     cenv->userdict = dict;
 }
@@ -397,7 +410,11 @@ void PDPSDef(char *funcLabel, pd_ps_env cenv)
 {
     void *value = pd_ps_pop();
     void *key = pd_ps_pop();
-    PDDictionarySet(cenv->userdict, PDStringBinaryValue(key, NULL), value);
+    if (key && value) {
+        PDDictionarySet(cenv->userdict, PDStringBinaryValue(key, NULL), value);
+    } else {
+        PDWarn("PostScript: missing key and/or value in def call");
+    }
     PDRelease(value);
     PDRelease(key);
 }

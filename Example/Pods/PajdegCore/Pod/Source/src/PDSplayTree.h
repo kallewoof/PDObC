@@ -19,6 +19,16 @@ extern void PDSplayTreeDelete(PDSplayTreeRef tree, PDInteger key);
 extern PDInteger PDSplayTreeGetCount(PDSplayTreeRef tree);
 
 /**
+ *  Iterate over the splay tree using a hash iterator (note that the key is given
+ *  as a char*, but in reality is a PDInteger).
+ *
+ *  @param tree     Splay tree to iterate over
+ *  @param it       Iterator function
+ *  @param userInfo User info to pass to iterator function
+ */
+extern void PDSplayTreeIterate(PDSplayTreeRef tree, PDHashIterator it, void *userInfo);
+
+/**
  *  Dump all keys (not values) into preallocated array. 
  * 
  *  @warning If dest is not able to hold all entries, memory error will occur.

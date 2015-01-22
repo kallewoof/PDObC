@@ -62,26 +62,21 @@ void PDContentStreamDestroy(PDContentStreamRef cs)
         (*deallocator)(userInfo);
     }
     pd_stack_destroy(&cs->resetters);
-    PDRelease(cs->ob);
     PDRelease(cs->opertree);
     pd_stack_destroy(&cs->opers);
     PDRelease(cs->args);
-//    pd_array_destroy(cs->args);
-    
-//    PDOperatorSymbolGlobClear();
 }
 
-PDContentStreamRef PDContentStreamCreateWithObject(PDObjectRef object)
+PDContentStreamRef PDContentStreamCreate(void)
 {
     PDOperatorSymbolGlobSetup();
     
     PDContentStreamRef cs = PDAllocTyped(PDInstanceTypeCStream, sizeof(struct PDContentStream), PDContentStreamDestroy, false);
-    cs->ob = PDRetain(object);
     cs->opertree = PDSplayTreeCreateWithDeallocator(free);
     cs->opers = NULL;
     cs->deallocators = NULL;
     cs->resetters = NULL;
-    cs->args = PDArrayCreateWithCapacity(8);//pd_array_with_capacity(8);
+    cs->args = PDArrayCreateWithCapacity(8);
     return cs;
 }
 
@@ -140,7 +135,7 @@ void PDContentStreamInheritContentStream(PDContentStreamRef dest, PDContentStrea
     // note that we do not copy the deallocators from dest; dest is the "master", and it is the responsibility of the caller to ensure that master CS'es remain alive until the spawned CS'es are all done
 }
 
-void PDContentStreamExecute(PDContentStreamRef cs)
+void PDContentStreamExecute(PDContentStreamRef cs, PDObjectRef ob)
 {
     void **catchall;
     PDBool argValue;
@@ -152,17 +147,18 @@ void PDContentStreamExecute(PDContentStreamRef cs)
     char *str;
     pd_stack inStack, outStack, argDests;
     PDArrayRef args;
+    PDNumberRef num;
 
     catchall = PDSplayTreeGet(cs->opertree, 0);
     argDests = NULL;
     args     = cs->args;
     
-    const char *stream = PDObjectGetStream(cs->ob);
-    PDInteger   len    = PDObjectGetExtractedStreamLength(cs->ob);
+    const char *stream = PDObjectGetStream(ob);
+    PDInteger   len    = PDObjectGetExtractedStreamLength(ob);
 
     pd_stack *opers = &cs->opers;
-    pd_stack_destroy(opers);
-    PDArrayClear(cs->args);
+//    pd_stack_destroy(opers);
+//    PDArrayClear(cs->args);
 
     PDInteger i = 0;
     while (i < len) {
@@ -197,11 +193,21 @@ void PDContentStreamExecute(PDContentStreamRef cs)
                 PDAssert(NULL == argDests); // crash = ending ] was not encountered for embedded array
                 PDArrayClear(args);
                 
-                if (state == PDOperatorStatePush) {
-                    operation = PDContentStreamOperationCreate(strdup(str), outStack);
-                    pd_stack_push_object(opers, operation);
-                } else if (state == PDOperatorStatePop) {
-                    PDRelease(pd_stack_pop_object(opers));
+                switch (state) {
+                    case PDOperatorStatePush:
+                        operation = PDContentStreamOperationCreate(strdup(str), outStack);
+                        pd_stack_push_object(opers, operation);
+                        break;
+                    case PDOperatorStatePop:
+                        PDRelease(pd_stack_pop_object(opers));
+                        break;
+                    case PDOperatorStateSeek:
+                        // # of bytes is found in the outStack
+                        num = pd_stack_pop_object(&outStack);
+                        PDAssert(PDResolve(num) == PDInstanceTypeNumber);
+                        i += PDNumberGetInteger(num);
+                        break;
+                    case PDOperatorStateIndependent:break;
                 }
             }
             
@@ -213,7 +219,10 @@ void PDContentStreamExecute(PDContentStreamRef cs)
         while (i < len && PDOperatorSymbolGlob[stream[i]] == PDOperatorSymbolGlobWhitespace) i++;
         PDRelease(arg);
     }
+}
 
+void PDContentStreamReset(PDContentStreamRef cs)
+{
     for (pd_stack iter = cs->resetters; iter; iter = iter->prev->prev) {
         PDDeallocator resetter = (PDDeallocator) iter->info;
         void *userInfo = (void *) iter->prev->info;
@@ -366,6 +375,8 @@ void *PDContentStreamPopValue(PDContentStreamRef cs, const char *stream, PDInteg
         }
         mark++;
     }
+    
+    if (mark == i && mark < len) mark++; // we do this to avoid infinite loops
     
     str = strndup(&stream[i], mark - i);
     *iptr = mark + (termWS && chtype == PDOperatorSymbolGlobWhitespace);

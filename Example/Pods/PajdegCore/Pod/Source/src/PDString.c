@@ -190,7 +190,7 @@ PDStringRef PDStringCopy(PDStringRef string)
     PDStringRef res = PDAllocTyped(PDInstanceTypeString, sizeof(struct PDString), PDStringDestroy, false);
     res->enc = string->enc;
     res->data = data;
-    res->alt = PDRetain(string->alt);
+    res->alt = NULL; // we choose to NULL alt here, because copied strings are often modified internally, which necessitates the removal of the alt object
     res->font = PDRetain(string->font);
     res->length = string->length;
     res->type = string->type;

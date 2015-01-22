@@ -124,6 +124,12 @@ PDBool PDStreamFilterApply(PDStreamFilterRef filter, unsigned char *src, unsigne
         bytes = PDStreamFilterProceed(filter);
     }
     
+    // if we ended up with a huge alloc for resbuf, we want to attempt to trim it down
+    if (dstCap - 5000 > got) {
+        resbuf = realloc(resbuf, got + 2);
+        dstCap = got + 2;
+    }
+    
     *dstPtr = resbuf;
     *newlenPtr = got;
     if (allocatedlenPtr) *allocatedlenPtr = dstCap;
@@ -212,6 +218,13 @@ PDInteger PDStreamFilterProceed(PDStreamFilterRef filter)
     for (curr = filter; curr; curr = next) {
         next = curr->nextFilter;
         
+        if (curr->bufOutOwned && /*curr->bufOut - curr->bufOutOwned + 5 > bufOutCapacity &&*/ curr->bufOutOwnedCapacity < bufOutCapacity) {
+            // we're exhausting our buffer; grow to match main buffer (temporarily making this the case even when not exhausting)
+            curr->bufOutOwned = realloc(curr->bufOutOwned, bufOutCapacity);
+            curr->bufOut = NULL;
+            curr->bufOutOwnedCapacity = bufOutCapacity;
+        }
+        
         if (next) {
             
             if (! next->needsInput || next->bufInAvailable >= curr->bufOutOwnedCapacity / 2) {
@@ -229,7 +242,7 @@ PDInteger PDStreamFilterProceed(PDStreamFilterRef filter)
                 curr->bufOut = curr->bufOutOwned + next->bufInAvailable;
                 curr->bufOutCapacity = curr->bufOutOwnedCapacity - next->bufInAvailable;
             } else {
-                // next filter ate all its breakfast, so we do this the easy way
+                // next filter ate all its input, so we do this the easy way
                 curr->bufOut = next->bufIn = curr->bufOutOwned;
                 curr->bufOutCapacity = curr->bufOutOwnedCapacity;
             }

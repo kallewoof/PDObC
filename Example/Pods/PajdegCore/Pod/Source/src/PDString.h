@@ -319,6 +319,24 @@ extern PDStringRef PDStringCreateEncrypted(PDStringRef string);
  */
 extern PDStringRef PDStringCreateDecrypted(PDStringRef string);
 
+/**
+ *  Retrieve the latin character set dictionary.
+ *
+ *  @return Latin character set dictionary
+ */
+extern PDDictionaryRef PDStringLatinCharsetDict(void);
+
+/**
+ *  Retrieve the reversed latin character set dictionary.
+ *  The dictionary is reversed, in that the keys are the code points and the values are the
+ *  names. The dictionary is returned as a char* array with NULL in place of holes, if any.
+ *
+ *  @return Reversed Latin character set as a const char*[]
+ */
+extern const char **PDStringLatinRCharsetArray(void);
+
+extern const unsigned char PDStringLatinPDFToWin[];
+
 extern PDInteger PDStringPrinter(void *inst, char **buf, PDInteger offs, PDInteger *cap);
 
 #endif // PD_SUPPORT_CRYPTO

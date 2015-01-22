@@ -24,25 +24,31 @@
 
 #include "Pajdeg.h"
 #include "PDFont.h"
+#include "PDFontDictionary.h"
 #include "PDCMap.h"
+#include "PDDictionaryStack.h"
 #include "pd_internal.h"
 
 void PDFontCompileUnicodeMapping(PDFontRef font);
+void PDFontCompileEncoding(PDFontRef font, PDDictionaryRef encDict);
 
 void PDFontDestroy(PDFontRef font)
 {
-    PDRelease(font->parser);
     PDRelease(font->obj);
     PDRelease(font->toUnicode);
+//    if (font->encMap) free(font->encMap);
 }
 
-PDFontRef PDFontCreate(PDParserRef parser, PDObjectRef obj)
+PDFontRef PDFontCreate(PDParserRef parser, PDFontDictionaryRef fontDict, PDObjectRef obj)
 {
     PDFontRef font = PDAllocTyped(PDInstanceTypeFont, sizeof(struct PDFont), PDFontDestroy, false);
-    font->parser = PDRetain(parser);
+    font->parser = parser;
     font->obj = PDRetain(obj);
     font->toUnicode = NULL;
+    font->encMap = NULL;
+    font->fontDict = fontDict; // unretained
     font->enc = PDStringEncodingDefault;
+    
     PDFontCompileUnicodeMapping(font);
     
     return font;
@@ -50,16 +56,46 @@ PDFontRef PDFontCreate(PDParserRef parser, PDObjectRef obj)
 
 PDStringRef PDFontGetEncodingName(PDFontRef font)
 {
-    return PDDictionaryGet(PDObjectGetDictionary(font->obj), "Encoding");
+    void *encoding = PDDictionaryGet(PDObjectGetDictionary(font->obj), "Encoding");
+    PDInstanceType it = PDResolve(encoding);
+    if (encoding && it == PDInstanceTypeString) return encoding;
+    
+    // see if we've been here already
+    if (font->encMap != NULL) return NULL;
+
+    if (encoding && it != PDInstanceTypeString) {
+        if (it == PDInstanceTypeRef) {
+            encoding = PDAutorelease(PDParserLocateAndCreateObject(font->parser, PDReferenceGetObjectID(encoding), true));
+            it = PDResolve(encoding);
+        }
+        if (it == PDInstanceTypeObj) {
+            PDFontDictionaryApplyEncodingObject(font->fontDict, font, encoding);
+            return NULL;
+        }
+        if (it == PDInstanceTypeString) {
+            PDDictionarySet(PDObjectGetDictionary(font->obj), "Encoding", encoding);
+        } else if (it == PDInstanceTypeDict) {
+            PDFontDictionaryApplyEncodingDictionary(font->fontDict, font, encoding);
+            encoding = NULL;
+        } else {
+            PDError("unknown instance type for encoding value in PDFontGetEncodingName");
+        }
+    }
+    return encoding;
 }
 
 PDStringEncoding PDFontGetEncoding(PDFontRef font)
 {
     if (font->enc != PDStringEncodingDefault) return font->enc;
 
-    font->enc = PDStringEncodingUndefined;
+    font->enc = PDStringEncodingCP1252;
     PDStringRef encName = PDFontGetEncodingName(font);
-    if (encName) font->enc = PDStringEncodingGetByName(PDStringBinaryValue(encName, NULL));
+    if (encName) {
+        font->enc = PDStringEncodingGetByName(PDStringBinaryValue(encName, NULL));
+    } else if (font->encMap != NULL) {
+        // the font maps to a custom encoding
+        font->enc = PDStringEncodingCustom;
+    }
 
     return font->enc;
 }
@@ -77,4 +113,31 @@ void PDFontCompileUnicodeMapping(PDFontRef font)
         }
         PDRelease(toUnicodeObj);
     }
+}
+
+PDStringRef PDFontProcessString(PDFontRef font, PDStringRef string)
+{
+    PDStringRef source = string;
+    
+    // is there a toUnicode mapping? if so we can get a UTF16BE from it
+    if (font->toUnicode) {
+        source = PDCMapApply(source->font->toUnicode, source);
+        source->enc = PDStringEncodingUTF16BE;
+        return source;
+    }
+
+    // is there an encMap?
+    if (font->encMap) {
+        unsigned char *em = font->encMap;
+        PDStringRef mapped = PDStringCreateFromStringWithType(source, PDStringTypeBinary, false, true);
+        unsigned char *data = (unsigned char *)mapped->data;
+        PDSize length = mapped->length;
+        for (PDSize i = 0; i < length; i++) {
+            data[i] = em[data[i]];
+        }
+        mapped->enc = PDStringEncodingCP1252;
+        return PDAutorelease(mapped);
+    }
+    
+    return string;
 }

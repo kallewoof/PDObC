@@ -169,6 +169,7 @@ PDInteger PDArrayGetCount(PDArrayRef array)
 
 void *PDArrayGetElement(PDArrayRef array, PDInteger index)
 {
+    PDAssert(index > -1 && index < array->count);
     void *ctr = array->values[index];
     if (NULL == ctr) {
         if (array->vstacks[index] != NULL) {

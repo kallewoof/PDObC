@@ -248,24 +248,24 @@ extern void *PDObjectGetValue(PDObjectRef object);
  */
 extern void PDObjectSetValue(PDObjectRef object, void *value);
 
-/**
- *  Get the instance type of the object.
- *
- *  @param object The object
- *
- *  @return Instance type value. PDInstanceTypeUnknown is returned if the instance type could not be determined.
- */
-extern PDInstanceType PDObjectGetInstanceType(PDObjectRef object);
-
-/**
- *  Get the instance for the object's definition. The instance is a PDDictionary, PDArray, PDString, etc. depending on what the
- *  object's definition looks like.
- *
- *  @param object The object
- *
- *  @return Appropriate object type. Use PDResolve() to determine its type if unsure.
- */
-extern void *PDObjectGetInstance(PDObjectRef object);
+///**
+// *  Get the instance type of the object.
+// *
+// *  @param object The object
+// *
+// *  @return Instance type value. PDInstanceTypeUnknown is returned if the instance type could not be determined.
+// */
+//extern PDInstanceType PDObjectGetInstanceType(PDObjectRef object);
+//
+///**
+// *  Get the instance for the object's definition. The instance is a PDDictionary, PDArray, PDString, etc. depending on what the
+// *  object's definition looks like.
+// *
+// *  @param object The object
+// *
+// *  @return Appropriate object type. Use PDResolve() to determine its type if unsure.
+// */
+//extern void *PDObjectGetInstance(PDObjectRef object);
 
 /**
  *  Get the dictionary of the object, or NULL if the object does not have a dictionary.

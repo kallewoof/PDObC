@@ -80,13 +80,11 @@ typedef struct PDContentStreamOperation *PDContentStreamOperationRef;
 ///! Basic operations
 
 /**
- *  Set up a content stream based on an existing object and its (existing) stream.
- *
- *  @param object The object containing a stream.
+ *  Set up a content stream for parsing one or multiple streams in PDObjects.
  *
  *  @return The content stream object
  */
-extern PDContentStreamRef PDContentStreamCreateWithObject(PDObjectRef object);
+extern PDContentStreamRef PDContentStreamCreate(void);
 
 /**
  *  Attach an operator function to a given operator (replacing the current operator, if any).
@@ -178,8 +176,17 @@ extern void PDContentStreamInheritContentStream(PDContentStreamRef dest, PDConte
  *  Execute the content stream, i.e. parse the stream and call the operators as appropriate.
  *
  *  @param cs The content stream
+ *  @param ob The object whose stream should be executed
  */
-extern void PDContentStreamExecute(PDContentStreamRef cs);
+extern void PDContentStreamExecute(PDContentStreamRef cs, PDObjectRef ob);
+
+/**
+ *  Reset the content stream, calling attached resetters. This should be done
+ *  when the stream has finished executing all objects it is meant to execute.
+ *
+ *  @param cs The content stream
+ */
+extern void PDContentStreamReset(PDContentStreamRef cs);
 
 /**
  *  Get the current operator stack from the content stream. 

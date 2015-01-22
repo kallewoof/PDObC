@@ -123,7 +123,6 @@ void PDObjectSetType(PDObjectRef object, PDObjectType type)
 PDObjectType PDObjectDetermineType(PDObjectRef object)
 {
     if (object->inst) {
-        object->type = PDObjectTypeUnknown;
         switch (PDResolve(object->inst)) {
             case PDInstanceTypeString:  object->type = PDObjectTypeString; break;
             case PDInstanceTypeRef:     object->type = PDObjectTypeReference; break;
@@ -131,8 +130,7 @@ PDObjectType PDObjectDetermineType(PDObjectRef object)
             case PDInstanceTypeDict:    object->type = PDObjectTypeDictionary; break;
             case PDInstanceTypeNumber:  object->type = ((PDNumberRef)object->inst)->type; break;
             case PDInstanceTypeObj:     object->type = PDObjectTypeReference; break;
-            default:
-                break;
+            default:                    object->type = PDObjectTypeUnknown; break;
         }
         if (object->type != PDObjectTypeUnknown) return object->type;
     }

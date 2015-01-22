@@ -132,9 +132,17 @@ extern void *PDAllocTyped(PDInstanceType it, PDSize size, void *dealloc, PDBool 
 #endif
 
 /**
- Flush autoreleased pool.
+ Flush autorelease pool.
  */
-extern void  PDFlush(void);
+extern void PDFlush(void);
+
+/**
+ *  Flush until the given object is encountered, or until the autorelease pool is exhausted. 
+ *  The object is released as well.
+ *
+ *  @param ob Termination marker for flush
+ */
+extern void PDFlushUntil(void *ob);
 
 /**
  Identifier for PD type checking.
@@ -296,8 +304,7 @@ extern void PDObjectStreamCommit(PDObjectStreamRef obstm);
  The content stream is a simple wrapper around an object, with additional support for PDF operators (the ones used to draw stuff on screen, for example).
  */
 struct PDContentStream {
-    PDObjectRef ob;                     ///< obstream object
-    PDSplayTreeRef opertree;                ///< operator tree
+    PDSplayTreeRef opertree;            ///< operator tree
     PDArrayRef args;                    ///< pending operator arguments
     pd_stack opers;                     ///< current operators stack
     pd_stack deallocators;              ///< deallocator (func, userInfo) pairs -- called when content stream object is about to be destroyed
@@ -433,7 +440,8 @@ struct PDParser {
     
     // miscellaneous
     PDBool success;                 ///< if true, the parser has so far succeeded at parsing the input file
-    PDSplayTreeRef skipT;               ///< whenever an object is ignored due to offset discrepancy, its ID is put on the skip tree; when the last object has been parsed, if the skip tree is non-empty, the parser aborts, as it means objects were lost
+    PDSplayTreeRef skipT;           ///< whenever an object is ignored due to offset discrepancy, its ID is put on the skip tree; when the last object has been parsed, if the skip tree is non-empty, the parser aborts, as it means objects were lost
+    PDFontDictionaryRef mfd;        ///< Master font dictionary, containing all fonts processed so far
 };
 
 /**
@@ -643,11 +651,19 @@ struct PDDictionary {
 };
 
 /**
+ The internal dictionary stack structure.
+ */
+struct PDDictionaryStack {
+    pd_stack dicts;             ///< Stack of PDDictionaries
+};
+
+/**
  *  The internal font dictionary structure.
  */
 struct PDFontDictionary {
     PDParserRef     parser;     ///< The owning parser
     PDDictionaryRef fonts;      ///< Dictionary mapping font names to their values
+    PDDictionaryRef encodings;  ///< Encoding dictionary
 };
 
 /**
@@ -655,9 +671,11 @@ struct PDFontDictionary {
  */
 struct PDFont {
     PDParserRef     parser;     ///< Parser reference
+    PDFontDictionaryRef fontDict;///< The owning font dictionary
     PDObjectRef     obj;        ///< Font object reference
     PDCMapRef       toUnicode;  ///< CMap, or NULL if not yet compiled or if non-existent
-    PDStringEncoding enc;       ///< String encoding
+    PDStringEncoding enc;       ///< String encoding, or NULL if not a string encoding
+    unsigned char  *encMap;     ///< Encoding map, a 256 byte array mapping bytes to bytes
 };
 
 typedef struct PDCMapRange PDCMapRange;                 ///< Private structure for ranges (<hex> <hex>), where multi-byte ranges are rectangles, not sequences (see PDF specification)
@@ -677,6 +695,7 @@ struct PDCMap {
     PDSize          csrCount;   ///< Number of codespace ranges
     PDSize          bfrCount;   ///< Number of BF ranges
     PDSize          bfcCount;   ///< Number of BF chars
+    PDSize          bfcLength;  ///< Length (in bytes) of input characters in BF ranges
     PDCMapRange    *csrs;       ///< Array of codespace ranges
     PDCMapRangeMapping *bfrs;   ///< BF ranges
     PDCMapCharMapping  *bfcs;   ///< BF chars

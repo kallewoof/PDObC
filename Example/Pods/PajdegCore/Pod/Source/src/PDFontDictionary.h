@@ -57,4 +57,28 @@ extern PDFontDictionaryRef PDFontDictionaryCreate(PDParserRef parser, PDObjectRe
  */
 extern PDFontRef PDFontDictionaryGetFont(PDFontDictionaryRef fontDict, const char *name);
 
+/**
+ *  Apply the given encoding to the font.
+ *  The reason why this is done in the font dictionary is because, often, several fonts inside the same
+ *  font dictionary share the same encoding object. The font dictionary keeps track of all processed encodings,
+ *  using cached values when the same encoding is encountered multiple times.
+ *
+ *  @param fontDict The font dictionary owning the font
+ *  @param font     The font object
+ *  @param encoding The encoding object
+ */
+extern void PDFontDictionaryApplyEncodingObject(PDFontDictionaryRef fontDict, PDFontRef font, PDObjectRef encodingOb);
+
+/**
+ *  Apply the given encoding to the font.
+ *  Due to the missing object ID compared to PDFontDictionaryApplyEncodingObject, 
+ *  this method does nothing practically useful except provide a convenient point
+ *  for the actual processing of encodings.
+ *
+ *  @param fontDict The font dictionary owning the font
+ *  @param font     The font object
+ *  @param encoding The encoding dictionary
+ */
+extern void PDFontDictionaryApplyEncodingDictionary(PDFontDictionaryRef fontDict, PDFontRef font, PDDictionaryRef encoding);
+
 #endif // INCLUDED_PDFontDictionary_h

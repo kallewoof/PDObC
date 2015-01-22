@@ -43,7 +43,7 @@
  b*         Close, fill, and stroke path using even-odd rule
  B*         Fill and stroke path using even-odd rule
  BDC        (PDF 1.2) Begin marked-content sequence with property list 
- BI         Begin inline image object
+ BI         Begin inline image object                                                           *
  BMC        (PDF 1.2) Begin marked-content sequence
  BT         Begin text object                                                                   *
  BX         (PDF 1.1) Begin compatibility section                                               *
@@ -56,7 +56,7 @@
  d1         Set glyph width and bounding box in Type 3 font
  Do         Invoke named XObject                                                                *
  DP         (PDF 1.2) Define marked-content point with property list
- EI         End inline image object
+ EI         End inline image object                                                             *
  EMC        (PDF 1.2) End marked-content sequence
  ET         End text object                                                                     *
  EX         (PDF 1.1) End compatibility section                                                 *
@@ -68,7 +68,7 @@
  gs         (PDF 1.2) Set parameters from graphics state parameter dictionary                   *
  h          Close subpath                                                                       *
  i          Set flatness tolerance
- ID         Begin inline image data
+ ID         Begin inline image data                                                             *
  j          Set line join style                                                                 *
  J          Set line cap style                                                                  *
  K          Set CMYK color for stroking operations                                              *
@@ -378,6 +378,111 @@ PDOperatorState PDContentStreamPrinter_Tstar(PDContentStreamRef cs, PDContentStr
     return PDOperatorStateIndependent;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Inline image commands
+////////////////////////////////////////////////////////////////////////////////
+
+PDOperatorState PDContentStreamPrinter_BI(PDContentStreamRef cs, PDContentStreamPrinterUIRef userInfo, PDArrayRef args, pd_stack inState, pd_stack *outState)
+{
+    fprintf(userInfo->stream, "%sBI \tBegin inline image object\n", userInfo->spacing);
+    return PDOperatorStatePush;
+}
+
+PDOperatorState PDContentStreamPrinter_EI(PDContentStreamRef cs, PDContentStreamPrinterUIRef userInfo, PDArrayRef args, pd_stack inState, pd_stack *outState)
+{
+    PDContentStreamPrinterPopSpacing(userInfo);
+    fprintf(userInfo->stream, "%sEI \tEnd inline image object\n", userInfo->spacing);
+    return PDOperatorStatePop;
+}
+
+PDOperatorState PDContentStreamPrinter_ID(PDContentStreamRef cs, PDContentStreamPrinterUIRef userInfo, PDArrayRef args, pd_stack inState, pd_stack *outState)
+{
+    // args is a pair-wise list of settings for this image; we are interested in /H, /W, /BPC, and /CS
+    // /H and /W are height and width; /BPC is bits per component, and /CS is the colorspace, which is e.g. /RGB
+    // we can define the # of bytes to seek by taking
+    //  /H * /W * (/BPC / 8) * colorspace_bytes(/CS)
+    // where colorspace_bytes() is 3 for /RGB
+#define KEY_BPC 0
+#define KEY_CS  1
+#define KEY_H   2
+#define KEY_W   3
+    static PDDictionaryRef entryMapping = NULL;
+    if (entryMapping == NULL) {
+        PDNumberRef refs[5];
+        refs[0] = PDNumberWithInteger(0);
+        refs[1] = PDNumberWithInteger(1);
+        refs[2] = PDNumberWithInteger(2);
+        refs[3] = PDNumberWithInteger(3);
+        refs[4] = PDNumberWithInteger(4);
+        entryMapping = PDDictionaryCreateWithKeyValueDefinition
+        (PDDef(
+               "BPC", refs[KEY_BPC],
+               "BitsPerComponent", refs[KEY_BPC],
+               "CS", refs[KEY_CS],
+               "ColorSpace", refs[KEY_CS],
+               "H", refs[KEY_H],
+               "Height", refs[KEY_H],
+               "W", refs[KEY_W],
+               "Width", refs[KEY_W],
+               
+               "DeviceGray", refs[1],
+               "G", refs[1],
+               "DeviceRGB", refs[3],
+               "RGB", refs[3],
+               "DeviceCMYK", refs[4],
+               "CMYK", refs[4]
+               ));
+    }
+    
+    PDInteger h = 1;
+    PDInteger w = 1;
+    PDInteger bpc = 8;
+    PDInteger csb = 1;
+    PDStringRef css = NULL;
+    PDSize argx = PDArrayGetCount(args);
+    for (PDSize i = 0; i < argx; i++) {
+        const char *key = PDStringEscapedValue(PDArrayGetElement(args, i++), false);
+        void *val = PDArrayGetElement(args, i);
+        PDNumberRef keyIndexN = PDDictionaryGet(entryMapping, key);
+        if (keyIndexN) {
+            PDInteger index = PDNumberGetInteger(keyIndexN);
+            switch (index) {
+                case KEY_BPC:
+                    bpc = PDNumberGetInteger(val);
+                    break;
+                case KEY_CS:
+                    css = val;
+                    PDNumberRef csbN = PDDictionaryGet(entryMapping, PDStringEscapedValue(val, false));
+                    if (csbN) {
+                        csb = PDNumberGetInteger(csbN);
+                    } else {
+                        PDWarn("undefined color space %s", PDStringNameValue(val, false));
+                    }
+                    break;
+                case KEY_H:
+                    h = PDNumberGetInteger(val);
+                    break;
+                case KEY_W:
+                    w = PDNumberGetInteger(val);
+                    break;
+                default:
+                    PDWarn("undefined index for key %s", key);
+            }
+        } else {
+            PDNotice("ignoring unknown inline image dictionary key %s", key);
+        }
+    }
+    
+    // PDF spec explicitly states that a single whitespace goes before the stream, so we do 1 + ...
+    PDInteger seekBytes = 1 + h * w * (bpc / 8) * csb;
+    
+    fprintf(userInfo->stream, "%sID \tBegin inline image data [W=%ld, H=%ld, BPC=%ld, CS = %s(%ldb) -> %ldb]\n", userInfo->spacing, w, h, bpc, PDStringNameValue(css, false), csb, seekBytes);
+    
+    pd_stack_push_object(outState, PDNumberWithInteger(seekBytes));
+    
+    return PDOperatorStateSeek;
+}
+
 PDOperatorState PDContentStreamPrinter_j(PDContentStreamRef cs, PDContentStreamPrinterUIRef userInfo, PDArrayRef args, pd_stack inState, pd_stack *outState)
 {
     fprintf(userInfo->stream, "%sj  \tSet line join style: %s\n", userInfo->spacing, PDStringEscapedValue(PDArrayGetElement(args, 0), false));
@@ -536,9 +641,9 @@ PDOperatorState PDContentStreamPrinter_catchall(PDContentStreamRef cs, PDContent
     return PDOperatorStateIndependent;
 }
 
-PDContentStreamRef PDContentStreamCreateStreamPrinter(PDObjectRef object, FILE *stream)
+PDContentStreamRef PDContentStreamCreateStreamPrinter(FILE *stream)
 {
-    PDContentStreamRef cs = PDContentStreamCreateWithObject(object);
+    PDContentStreamRef cs = PDContentStreamCreate();
     PDContentStreamPrinterUIRef printerUI = malloc(sizeof(struct PDContentStreamPrinterUI));
     printerUI->stream = stream;
     printerUI->spacing = strdup("                                                                                                                                                                                                                                                                     ");
@@ -561,6 +666,9 @@ PDContentStreamRef PDContentStreamCreateStreamPrinter(PDObjectRef object, FILE *
                                                             pair(Do),
                                                             pair(ET),
                                                             pair(gs),
+                                                            pair(BI),
+                                                            pair(EI),
+                                                            pair(ID),
                                                             pair(h),
                                                             pair(M),
                                                             pair(J),

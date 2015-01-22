@@ -42,12 +42,11 @@
  *
  *  This is purely for debugging Pajdeg and/or odd PDF content streams, or to learn what the various operators do and how they affect things.
  *
- *  @param object Object whose content stream should be printed
  *  @param stream The file stream to which printing should be made
  *
  *  @return A pre-configured content stream
  */
-extern PDContentStreamRef PDContentStreamCreateStreamPrinter(PDObjectRef object, FILE *stream);
+extern PDContentStreamRef PDContentStreamCreateStreamPrinter(FILE *stream);
 
 #endif
 

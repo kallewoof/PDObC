@@ -120,6 +120,7 @@ typedef struct PDContentStreamTextExtractorUI *PDContentStreamTextExtractorUI;
 struct PDContentStreamTextExtractorUI {
     char **result;
     char *buf;
+    PDBool inlineImage;
     PDPageRef page;
     PDInteger offset;
     PDInteger size;
@@ -200,9 +201,14 @@ PDOperatorState PDContentStreamTextExtractor_Tj(PDContentStreamRef cs, PDContent
         string = PDArrayGetElement(args, i);
         PDStringSetFont(string, userInfo->font);
         utf8string = PDStringCreateUTF8Encoded(string);
-        data = PDStringBinaryValue(utf8string, &length);
-        PDContentStreamTextExtractorPrint(userInfo, data, length);
-        PDRelease(utf8string);
+        if (utf8string) {
+            data = PDStringBinaryValue(utf8string, &length);
+            PDContentStreamTextExtractorPrint(userInfo, data, length);
+            PDRelease(utf8string);
+        } else {
+            PDWarn("Unable to extract string");
+            utf8string = PDStringCreateUTF8Encoded(string);
+        }
     }
     return PDOperatorStateIndependent;
 }
@@ -226,9 +232,14 @@ PDOperatorState PDContentStreamTextExtractor_TJ(PDContentStreamRef cs, PDContent
         if (PDResolve(v) == PDInstanceTypeString) {
             PDStringSetFont(v, userInfo->font);
             utf8string = PDStringCreateUTF8Encoded(v);
-            data = PDStringBinaryValue(utf8string, &length);
-            PDContentStreamTextExtractorPrint(userInfo, data, length);
-            PDRelease(utf8string);
+            if (utf8string) {
+                data = PDStringBinaryValue(utf8string, &length);
+                PDContentStreamTextExtractorPrint(userInfo, data, length);
+                PDRelease(utf8string);
+            } else {
+                PDWarn("Unable to extract string");
+                utf8string = PDStringCreateUTF8Encoded(v);
+            }
         }
     }
     
@@ -321,16 +332,124 @@ PDOperatorState PDContentStreamTextExtractor_Tcite(PDContentStreamRef cs, PDCont
     return PDContentStreamTextExtractor_Tj(cs, userInfo, args, inState, outState);
 }
 
-PDContentStreamRef PDContentStreamCreateTextExtractor(PDPageRef page, PDObjectRef object, char **result)
+////////////////////////////////////////////////////////////////////////////////
+// Inline image commands
+////////////////////////////////////////////////////////////////////////////////
+
+PDOperatorState PDContentStreamTextExtractor_BI(PDContentStreamRef cs, PDContentStreamTextExtractorUI userInfo, PDArrayRef args, pd_stack inState, pd_stack *outState)
 {
-    PDContentStreamRef cs = PDContentStreamCreateWithObject(object);
+    userInfo->inlineImage = true;
+    return PDOperatorStatePush;
+}
+
+PDOperatorState PDContentStreamTextExtractor_EI(PDContentStreamRef cs, PDContentStreamTextExtractorUI userInfo, PDArrayRef args, pd_stack inState, pd_stack *outState)
+{
+    userInfo->inlineImage = false;
+    return PDOperatorStatePop;
+}
+
+PDOperatorState PDContentStreamTextExtractor_ID(PDContentStreamRef cs, PDContentStreamTextExtractorUI userInfo, PDArrayRef args, pd_stack inState, pd_stack *outState)
+{
+    PDAssert(userInfo->inlineImage);
+    
+    // args is a pair-wise list of settings for this image; we are interested in /H, /W, /BPC, and /CS
+    // /H and /W are height and width; /BPC is bits per component, and /CS is the colorspace, which is e.g. /RGB
+    // we can define the # of bytes to seek by taking
+    //  /H * /W * (/BPC / 8) * colorspace_bytes(/CS)
+    // where colorspace_bytes() is 3 for /RGB
+#define KEY_BPC 0
+#define KEY_CS  1
+#define KEY_H   2
+#define KEY_W   3
+    static PDDictionaryRef entryMapping = NULL;
+    if (entryMapping == NULL) {
+        PDNumberRef refs[5];
+        refs[0] = PDNumberWithInteger(0);
+        refs[1] = PDNumberWithInteger(1);
+        refs[2] = PDNumberWithInteger(2);
+        refs[3] = PDNumberWithInteger(3);
+        refs[4] = PDNumberWithInteger(4);
+        entryMapping = PDDictionaryCreateWithKeyValueDefinition
+        (PDDef(
+               "BPC", refs[KEY_BPC],
+               "BitsPerComponent", refs[KEY_BPC],
+               "CS", refs[KEY_CS],
+               "ColorSpace", refs[KEY_CS],
+               "H", refs[KEY_H],
+               "Height", refs[KEY_H],
+               "W", refs[KEY_W],
+               "Width", refs[KEY_W],
+               
+               "DeviceGray", refs[1],
+               "G", refs[1],
+               "DeviceRGB", refs[3],
+               "RGB", refs[3],
+               "DeviceCMYK", refs[4],
+               "CMYK", refs[4]
+               ));
+    }
+    
+    PDInteger h = 1;
+    PDInteger w = 1;
+    PDInteger bpc = 8;
+    PDInteger csb = 1;
+    PDStringRef css = NULL;
+    PDSize argx = PDArrayGetCount(args);
+    for (PDSize i = 0; i < argx; i++) {
+        const char *key = PDStringEscapedValue(PDArrayGetElement(args, i++), false);
+        void *val = PDArrayGetElement(args, i);
+        PDNumberRef keyIndexN = PDDictionaryGet(entryMapping, key);
+        if (keyIndexN) {
+            PDInteger index = PDNumberGetInteger(keyIndexN);
+            switch (index) {
+                case KEY_BPC:
+                    bpc = PDNumberGetInteger(val);
+                    break;
+                case KEY_CS:
+                    css = val;
+                    PDNumberRef csbN = PDDictionaryGet(entryMapping, PDStringEscapedValue(val, false));
+                    if (csbN) {
+                        csb = PDNumberGetInteger(csbN);
+                    } else {
+                        PDWarn("undefined color space %s", PDStringNameValue(val, false));
+                    }
+                    break;
+                case KEY_H:
+                    h = PDNumberGetInteger(val);
+                    break;
+                case KEY_W:
+                    w = PDNumberGetInteger(val);
+                    break;
+                default:
+                    PDWarn("undefined index for key %s", key);
+            }
+        } else {
+            PDNotice("ignoring unknown inline image dictionary key %s", key);
+        }
+    }
+    
+    // PDF spec explicitly states that a single whitespace goes before the stream, so we do 1 + ...
+    PDInteger seekBytes = 1 + h * w * (bpc / 8) * csb;
+    
+    pd_stack_push_object(outState, PDNumberWithInteger(seekBytes));
+    
+    return PDOperatorStateSeek;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+PDContentStreamRef PDContentStreamCreateTextExtractor(PDPageRef page, char **result)
+{
+    PDContentStreamRef cs = PDContentStreamCreate();
     PDContentStreamTextExtractorUI teUI = malloc(sizeof(struct PDContentStreamTextExtractorUI));
     teUI->page = page;
     teUI->result = result;
+    teUI->inlineImage = false;
     *result = teUI->buf = malloc(128);
     teUI->buf[0] = '\n';
     teUI->buf[1] = 0;
     teUI->offset = 1;
+    teUI->font = NULL;
     teUI->size = 128;
     teUI->TM[TM_y] = teUI->TM[TM_x] = -1;
 
@@ -345,6 +464,9 @@ PDContentStreamRef PDContentStreamCreateTextExtractor(PDPageRef page, PDObjectRe
                                              pair(Tf),
                                              pair(Td),
                                              pair(TD),
+                                             pair(BI),
+                                             pair(EI),
+                                             pair(ID),
                                              pair(Tm)
                                              )
                                        );

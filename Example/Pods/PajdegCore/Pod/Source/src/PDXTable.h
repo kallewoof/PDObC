@@ -105,7 +105,10 @@ struct PDXTable {
     PDXTableRef next;       ///< next (newer) table (mostly debug related)
     
     PDOffset    offsCap;    ///< threshold for offsets using current offsSize
-
+    
+    PDArrayRef  w;          ///< The W entry, if set.
+    PDInteger  *nextOb;     ///< Array of object id's succeeding the object for the given array index. I.e. if the file has 4 0 obj ... endobj 10 0 obj ... endobj, then next[4] == 10 because object 10 is directly below object 4. This array is NULL until the first call to PDXTableDetermineObjectSize is made.
+    
     unsigned char typeSize;   ///< type size, current implementation requires this to be 1
     unsigned char offsSize;   ///< offset size
     unsigned char genSize;    ///< gen ID size
@@ -113,8 +116,6 @@ struct PDXTable {
     unsigned char offsAlign;  ///< offset align
     unsigned char genAlign;   ///< gen ID align
     unsigned char width;      ///< width of table entry
-    
-    PDArrayRef w;             ///< The W entry, if set.
 };
 
 /**
@@ -277,6 +278,16 @@ extern void PDXTableSetSizes(PDXTableRef table, unsigned char typeSize, unsigned
  Grow the xref table to accomodate the given cap.
  */
 extern void PDXTableGrow(PDXTableRef table, PDSize cap);
+
+/**
+ *  Determine the number of bytes between the first character in "<num> <num> obj" of the given object until the first character in the "<num> <num> obj" of the succeeding object in the file.
+ *
+ *  @param table PDX table
+ *  @param obid  Object whose size should be determined
+ *
+ *  @return Size of object in bytes
+ */
+extern PDSize PDXTableDetermineObjectSize(PDXTableRef table, PDInteger obid);
 
 #endif
 

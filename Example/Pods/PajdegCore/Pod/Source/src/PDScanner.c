@@ -647,7 +647,7 @@ void PDScannerScan(PDScannerRef scanner)
         symbol = state->symbol;
         symindex = state->symindex;
         
-        (*scanner->popFunc)(scanner);
+        scanner->popFunc(scanner);
         sym = scanner->sym;
         op = NULL;
         if (sym->slen > 0) {
@@ -702,13 +702,42 @@ void PDScannerScan(PDScannerRef scanner)
 
 PDBool PDScannerPollType(PDScannerRef scanner, char type)
 {
+    if (scanner->failed) return false;
+    
     if (scanner->symbolStack == NULL) {
         pd_stack_destroy(&scanner->garbageStack);
     }
+    
+    PDInteger boffs_copy = scanner->boffset;
+    pd_stack ss_copy = NULL;
+    
+    if (! scanner->strict) {
+        ss_copy = NULL;
+        for (pd_stack s = scanner->symbolStack; s; s = s->prev) {
+            PDScannerSymbolRef sym = malloc(sizeof(struct PDScannerSymbol));
+            memcpy(sym, s->info, sizeof(struct PDScannerSymbol));
+            pd_stack_push_freeable(&ss_copy, sym);
+        }
+    }
+    
     while (!scanner->failed && scanner->env && !scanner->resultStack) {
         if (PDScannerScanAttemptCap > -1 && PDScannerScanAttemptCap-- == 0) 
             return false;
         PDScannerScan(scanner);
+    }
+    
+    if (! scanner->strict) {
+        if (scanner->failed) {
+            scanner->boffset = boffs_copy;
+            if (scanner->sym) {
+                free(scanner->sym);
+            }
+            scanner->sym = NULL;
+            pd_stack_destroy(&scanner->symbolStack);
+            while (ss_copy) pd_stack_pop_into(&scanner->symbolStack, &ss_copy);
+        } else {
+            if (ss_copy) pd_stack_destroy(&ss_copy);
+        }
     }
     
     PDScannerScanAttemptCap = -1;
@@ -737,11 +766,8 @@ PDBool PDScannerPopStack(PDScannerRef scanner, pd_stack *value)
 PDBool PDScannerPopUnknown(PDScannerRef scanner, char **value)
 {
     if (scanner->failed) {
-        // there should be a sym available
-        if (! scanner->sym) {
-            PDWarn("scanner->sym was unexpectedly NULL");
-            (*scanner->popFunc)(scanner);
-        }
+        // failing means scanner reset to original position
+        scanner->popFunc(scanner);
         PDScannerSymbolRef sym = scanner->sym;
         if (sym) {
             if (sym->slen > 0) {

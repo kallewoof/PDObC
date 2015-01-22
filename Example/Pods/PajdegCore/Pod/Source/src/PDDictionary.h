@@ -68,6 +68,16 @@ extern PDDictionaryRef PDDictionaryCreateWithBucketCount(PDSize bucketCount);
 extern PDDictionaryRef PDDictionaryCreateWithComplex(pd_stack stack);
 
 /**
+ *  Create a dictionary using the key, value, key2, value2, ... PDDefs() definitions
+ *  in defs.
+ * 
+ *  @param defs A PDDefs() entry with key, value, key, value pairs
+ *
+ *  @return PDDictionary with the corresponding entries.
+ */
+extern PDDictionaryRef PDDictionaryCreateWithKeyValueDefinition(const void **defs);
+
+/**
  *  Add all entries from the given PDF dictionary stack to this hash map.
  *  Entries will replace pre-existing key/value pairs when a key in the 
  *  pd_stack matches the key in the hash map.
@@ -158,18 +168,6 @@ extern char *PDDictionaryToString(PDDictionaryRef hm);
 
 extern PDInteger PDDictionaryPrinter(void *inst, char **buf, PDInteger offs, PDInteger *cap);
 
-#ifdef PD_SUPPORT_CRYPTO
-
-/**
- *  Supply a crypto object to a hash map, and associate the hash map with a specific object. 
- *
- *  @param hm         The hash map
- *  @param crypto     The pd_crypt object
- *  @param objectID   The object ID of the owning object
- *  @param genNumber  Generation number of the owning object
- */
-extern void PDDictionaryAttachCrypto(PDDictionaryRef hm, pd_crypto crypto, PDInteger objectID, PDInteger genNumber);
-
 extern void *PDDictionaryGetTyped(PDDictionaryRef dictionary, const char *key, PDInstanceType type);
 
 #define PDDictionaryGetString(d,k)      PDDictionaryGetTyped(d,k,PDInstanceTypeString)
@@ -182,6 +180,18 @@ extern void *PDDictionaryGetTyped(PDDictionaryRef dictionary, const char *key, P
  *  Short cut to getting an integer value from a PDDictionary
  */
 #define PDDictionaryGetInteger(d,k)     PDNumberGetInteger(PDDictionaryGet(d,k))
+
+#ifdef PD_SUPPORT_CRYPTO
+
+/**
+ *  Supply a crypto object to a hash map, and associate the hash map with a specific object. 
+ *
+ *  @param hm         The hash map
+ *  @param crypto     The pd_crypt object
+ *  @param objectID   The object ID of the owning object
+ *  @param genNumber  Generation number of the owning object
+ */
+extern void PDDictionaryAttachCrypto(PDDictionaryRef hm, pd_crypto crypto, PDInteger objectID, PDInteger genNumber);
 
 #endif // PD_SUPPORT_CRYPTO
 

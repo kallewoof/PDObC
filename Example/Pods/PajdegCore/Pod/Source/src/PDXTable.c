@@ -32,6 +32,7 @@
 #include "PDXTable.h"
 #include "PDReference.h"
 #include "PDObject.h"
+#include "PDSplayTree.h"
 #include "PDStreamFilter.h"
 #include "pd_pdf_implementation.h"
 #include "PDDictionary.h"
@@ -223,8 +224,8 @@ struct PDXI {
 
 void PDXTableDestroy(PDXTableRef xtable)
 {
+    if (xtable->nextOb) free(xtable->nextOb);
     PDRelease(xtable->w);
-//    if (xtable->w) free(xtable->w);
     free(xtable->xrefs);
 }
 
@@ -275,14 +276,10 @@ PDBool PDXTableInsertXRef(PDParserRef parser)
     
     PDObjectRef tob = parser->trailer;
     
-//    sprintf(obuf, "%lu", parser->mxt->count);
     PDDictionaryRef tobd = PDObjectGetDictionary(tob);
     PDDictionarySet(tobd, "Size", PDNumberWithSize(parser->mxt->count));
     PDDictionaryDelete(tobd, "Prev");
     PDDictionaryDelete(tobd, "XRefStm");
-//    PDDictionarySet(PDObjectGetDictionary(tob), "Size", obuf);
-//    PDDictionaryDelete(PDObjectGetDictionary(tob), "Prev");
-//    PDDictionaryDelete(PDObjectGetDictionary(tob), "XRefStm");
     
     char *string = NULL;
     len = PDObjectGenerateDefinition(tob, &string, 0);
@@ -310,18 +307,12 @@ PDBool PDXTableInsertXRefStream(PDParserRef parser)
     PDXTableSetTypeForID(mxt, trailer->obid, PDXTypeUsed);
     
     PDDictionaryRef tobd = PDObjectGetDictionary(trailer);
-//    sprintf(obuf, "%lu", mxt->count);
     PDDictionarySet(tobd, "Size", PDNumberWithSize(mxt->count));
     PDDictionarySet(tobd, "W", PDXTableWEntry(mxt));
-//    PDDictionarySet(PDObjectGetDictionary(trailer), "Size", obuf);
-//    PDDictionarySet(PDObjectGetDictionary(trailer), "W", PDXTableWEntry(mxt));
 
     PDDictionaryDelete(tobd, "Prev");
     PDDictionaryDelete(tobd, "Index");
     PDDictionaryDelete(tobd, "XRefStm");
-//    PDDictionaryDelete(PDObjectGetDictionary(trailer), "Prev");
-//    PDDictionaryDelete(PDObjectGetDictionary(trailer), "Index");
-//    PDDictionaryDelete(PDObjectGetDictionary(trailer), "XRefStm");
 
     // override filters/decode params always -- better than risk passing something on by mistake that makes the xref stream unreadable
     PDObjectSetFlateDecodedFlag(trailer, true);
@@ -1213,4 +1204,69 @@ void PDXTableGrow(PDXTableRef table, PDSize cap)
 {
     table->cap = cap;
     table->xrefs = xrefrealloc(table, table->xrefs, cap, table->width);
+}
+
+//#define DEBUG_PDX_GNAI
+
+struct gnai_s {
+    PDInteger *nextOb;
+    PDInteger  prevOb;
+#ifdef DEBUG_PDX_GNAI
+    PDInteger  prevOffset;
+    PDSize     cap;
+#endif
+};
+
+void PDXTableGNAIterator(char *key, void *value, void *userInfo, PDBool *shouldStop)
+{
+    struct gnai_s *gna = userInfo;
+    PDInteger obid = (PDInteger)value;
+#ifdef DEBUG_PDX_GNAI
+    PDInteger offs = (PDInteger)key;
+    PDAssert(gna->cap > obid);
+    PDAssert(gna->prevOffset < offs);
+    gna->prevOffset = offs;
+#endif
+    if (gna->prevOb) gna->nextOb[gna->prevOb] = obid;
+    gna->prevOb = obid;
+}
+
+void PDXTableGenerateNextArray(PDXTableRef table)
+{
+    struct gnai_s userInfo;
+    PDSize cap = table->count;
+    PDSplayTreeRef tree = PDSplayTreeCreate();
+    for (PDSize i = 1; i < cap; i++) {
+        if (PDXTableGetTypeForID(table, i) == PDXTypeUsed) {
+            PDOffset offs = PDXTableGetOffsetForID(table, i);
+            PDSplayTreeInsert(tree, (PDInteger)offs, (void *)i);
+        }
+    }
+    
+    PDInteger *nextOb = table->nextOb = calloc(cap, sizeof(PDInteger));
+    userInfo.nextOb = nextOb;
+    userInfo.prevOb = 0;
+#ifdef DEBUG_PDX_GNAI
+    userInfo.prevOffset = -1;
+    userInfo.cap = cap;
+#endif
+    PDSplayTreeIterate(tree, PDXTableGNAIterator, &userInfo);
+    PDRelease(tree);
+}
+
+PDSize PDXTableDetermineObjectSize(PDXTableRef table, PDInteger obid)
+{
+    if (table->nextOb == NULL) {
+        PDXTableGenerateNextArray(table);
+    }
+    PDInteger nextOb = table->nextOb[obid];
+    if (! nextOb) {
+        // we give back a rather high value, but we don't want to risk not being able to read in an object; and chances are this is the very last object in the file so reading until the end of the buffer will not be super time consuming (we will get some overhead in terms of mem use for a sec though)
+        return 2500000;
+    }
+    
+    PDOffset startOffset = PDXTableGetOffsetForID(table, obid);
+    PDOffset endOffset = PDXTableGetOffsetForID(table, nextOb);
+    PDAssert(endOffset > startOffset); // crash = the XRef table is broken; the object (obid) is said to be at the same position or after the object that is supposedly after it (nextOb)
+    return (PDSize) (endOffset - startOffset);
 }
