@@ -24,6 +24,7 @@
 
 #import "PDPage.h"
 #import "PDIPage.h"
+#import "PDIReference.h"
 #import "PDIObject.h"
 #import "PDDefines.h"
 #import "pd_internal.h"
@@ -79,34 +80,50 @@
 //    return _contents;
 }
 
+- (void)iterateContentObjectsArray:(NSArray *)array withCallback:(void(^)(PDIObject *ob))callback
+{
+    for (id contentsValue in array) {
+        PDIObject *contents = contentsValue;
+        if ([contentsValue isKindOfClass:[PDIReference class]]) {
+            contents = [_session fetchReadonlyObjectWithID:[(PDIReference *)contentsValue objectID]];
+        }
+        if (contents.type == PDObjectTypeArray) {
+            [self iterateContentObjectsArray:contents.constructArray withCallback:callback];
+        } else {
+            callback(contents);
+        }
+    }
+}
+
 - (NSString *)text
 {
     if (_text) return _text;
     NSString *t;
-    NSMutableString *result = [NSMutableString string];
     char *buf;
-    for (PDIObject *contents in [self contentObjects]) {
+    PDContentStreamRef cs = PDContentStreamCreateTextExtractor(_pageRef, &buf);
+    [self iterateContentObjectsArray:[self contentObjects] withCallback:^(PDIObject *contents) {
         [contents enableMutationViaMimicSchedulingWithSession:_session];
         [contents prepareStream];
-        PDContentStreamRef cs = PDContentStreamCreateTextExtractor(_pageRef, contents.objectRef, &buf);
-        PDContentStreamExecute(cs);
-        PDRelease(cs);
-        t = nil;
-        // nowadays, PD converts input to UTF-8 when possible, and is aware of MacRoman encoding, so below is unnecessary
-//        if (NULL != strstr(buf, "\xa9")) {
-//            t = [NSString stringWithCString:buf encoding:NSMacOSRomanStringEncoding];
-//        }
-        if (t == nil) t = @(buf);
-        if (t == nil) t = [NSString stringWithCString:buf encoding:NSMacOSRomanStringEncoding];
-        if (t == nil) t = [NSString stringWithCString:buf encoding:NSISOLatin1StringEncoding];
-        if (t == nil) t = @(buf);
-        free(buf);
-        if ([t rangeOfString:@"\\251"].location != NSNotFound) {
-            t = [t stringByReplacingOccurrencesOfString:@"\\251" withString:@""];
-        }
-        [result appendString:t];
+        PDContentStreamExecute(cs, contents.objectRef);
+    }];
+//    for (PDIObject *contents in [self contentObjects]) {
+//        [contents enableMutationViaMimicSchedulingWithSession:_session];
+//        [contents prepareStream];
+//        PDContentStreamExecute(cs, contents.objectRef);
+//    }
+    PDContentStreamReset(cs);
+    PDRelease(cs);
+    t = nil;
+    // nowadays, PD converts input to UTF-8 when possible, and is aware of MacRoman encoding, so below is unnecessary
+    if (t == nil) t = @(buf);
+    if (t == nil) t = [NSString stringWithCString:buf encoding:NSMacOSRomanStringEncoding];
+    if (t == nil) t = [NSString stringWithCString:buf encoding:NSISOLatin1StringEncoding];
+    if (t == nil) t = @(buf);
+    free(buf);
+    if ([t rangeOfString:@"\\251"].location != NSNotFound) {
+        t = [t stringByReplacingOccurrencesOfString:@"\\251" withString:@""];
     }
-    _text = result;
+    _text = t;
     return _text;
 }
 
