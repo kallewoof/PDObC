@@ -342,7 +342,7 @@ void PDIObjectSynchronizer(void *parser, void *object, const void *syncInfo)
 
 - (void)setStreamContent:(NSData *)content encrypted:(BOOL)encrypted
 {
-    PDObjectSetStreamFiltered(_obj, (char *)[content bytes], [content length], encrypted);
+    PDObjectSetStreamFiltered(_obj, (char *)[content bytes], [content length], false, encrypted);
     [self scheduleMimicking];
 }
 

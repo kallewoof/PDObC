@@ -104,7 +104,60 @@
 
 @end
 
+static inline NSDateFormatter *dateTimeStringFormatter()
+{
+    static NSDateFormatter *df = nil;
+    if (! df) {
+        df = [[NSDateFormatter alloc] init];
+        df.timeZone = [NSTimeZone timeZoneWithName:@"UTC"];
+        [df setFormatterBehavior:NSDateFormatterBehavior10_4];
+        [df setDateFormat:@"yyyy'-'MM'-'dd'T'HH':'mm':'ss"];
+    }
+    return df;
+}
+
+static inline NSDateFormatter *dateTimeString2Formatter()
+{
+    static NSDateFormatter *df = nil;
+    if (! df) {
+        df = [[NSDateFormatter alloc] init];
+        df.timeZone = [NSTimeZone timeZoneWithName:@"UTC"];
+        [df setFormatterBehavior:NSDateFormatterBehavior10_4];
+        [df setDateFormat:@"yyyy'-'MM'-'dd'T'HH':'mm':'ssZZZZZ"];
+    }
+    return df;
+}
+
+@implementation NSDate (PDIEntity)
+
+- (const char *)PDFString
+{
+    NSDateFormatter *df = [[NSDateFormatter alloc] init];
+    [df setFormatterBehavior:NSDateFormatterBehavior10_4];
+    [df setDateFormat:@"'(D:'yyyyMMddHHmmss')'"];
+    return [[df stringFromDate:self] cStringUsingEncoding:NSUTF8StringEncoding];
+}
+
+- (void *)PDValue
+{
+    return PDStringWithCString(strdup([self PDFString]));
+}
+
+- (NSString *)datetimeString
+{
+    return [dateTimeStringFormatter() stringFromDate:self];
+}
+
+@end
+
 @implementation NSString (PDIEntity)
+
+- (NSDate *)dateFromDatetimeString
+{
+    NSDate *d = [dateTimeStringFormatter() dateFromString:self];
+    if (! d) d = [dateTimeString2Formatter() dateFromString:self];
+    return d;
+}
 
 + (NSString *)stringWithPDFString:(const char *)PDFString
 {
@@ -122,7 +175,7 @@
 {
     return (PDStringGetType(PDString) == PDStringTypeName
             ? [PDIName nameWithPDString:PDString]
-            : [self stringWithPDFString:PDStringEscapedValue(PDString, false)]);
+            : [self stringWithPDFString:PDStringEscapedValue(PDString, false, NULL)]);
 }
 
 - (NSString *)PXUString
@@ -207,35 +260,6 @@
 - (NSString *)string
 {
     return _s;
-}
-
-@end
-
-@implementation NSDate (PDIEntity)
-
-- (const char *)PDFString
-{
-    NSDateFormatter *df = [[NSDateFormatter alloc] init];
-    [df setFormatterBehavior:NSDateFormatterBehavior10_4];
-    [df setDateFormat:@"'(D:'yyyyMMddHHmmss')'"];
-    return [[df stringFromDate:self] cStringUsingEncoding:NSUTF8StringEncoding];
-}
-
-- (void *)PDValue
-{
-    return PDStringWithCString(strdup([self PDFString]));
-}
-
-- (NSString *)datetimeString
-{
-    static NSDateFormatter *df = nil;
-    if (! df) {
-        df = [[NSDateFormatter alloc] init];
-        df.timeZone = [NSTimeZone timeZoneWithName:@"UTC"];
-        [df setFormatterBehavior:NSDateFormatterBehavior10_4];
-        [df setDateFormat:@"yyyy'-'MM'-'dd'T'HH':'mm':'ss'"];
-    }
-    return [df stringFromDate:self];
 }
 
 @end

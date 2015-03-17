@@ -51,6 +51,8 @@
 - (NSString *)stringByRemovingPDFControlCharacters;
 - (NSString *)stringByAddingPDFControlCharacters;
 
+- (NSDate *)dateFromDatetimeString;
+
 @end
 
 /**
