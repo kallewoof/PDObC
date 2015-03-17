@@ -532,19 +532,21 @@ struct PDScanner {
 
 /// @name Stack
 
-#define PD_STACK_STRING   0      ///< Stack string type
-#define PD_STACK_ID       1      ///< Stack identifier type
-#define PD_STACK_STACK    2      ///< Stack stack type
-#define PD_STACK_PDOB     3      ///< Stack object (PDTypeRef managed) type
-#define PD_STACK_FREEABLE 4      ///< Stack freeable type
+typedef enum {
+    PD_STACK_STRING = 0,        ///< Stack string type
+    PD_STACK_ID     = 1,        ///< Stack identifier type
+    PD_STACK_STACK  = 2,        ///< Stack stack type
+    PD_STACK_PDOB   = 3,        ///< Stack object (PDTypeRef managed) type
+    PD_STACK_FREEABLE = 4       ///< Stack freeable type
+} pd_stack_type;
 
 /**
  The internal stack structure
  */
 struct pd_stack {
-    pd_stack   prev;            ///< Previous object in stack
-    char       type;            ///< Stack type
-    void      *info;            ///< The stack content, based on its type
+    pd_stack      prev;         ///< Previous object in stack
+    pd_stack_type type;         ///< Stack type
+    void         *info;         ///< The stack content, based on its type
 };
 
 
@@ -1038,12 +1040,16 @@ extern void _PDBreak();
  */
 #define as(type, expr...) ((type)(expr))
 
+#ifdef DEBUG
 /**
  Perform assertions related to the twin stream's internal state.
  
  @param ts The twin stream.
  */
 extern void PDTwinStreamAsserts(PDTwinStreamRef ts);
+#else 
+#   define PDTwinStreamAsserts(ts) 
+#endif
 
 #define PDInstancePrinterRequire(b, r) \
     if (*cap - offs < b) { \

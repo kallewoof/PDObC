@@ -107,7 +107,7 @@ extern char *PDParserFetchCurrentObjectStream(PDParserRef parser, PDInteger obid
  @param object The object whose stream is to be fetched. Assertion is thrown if it is not in the original PDF.
  @return Stream buffer.
  */
-extern char *PDParserLocateAndFetchObjectStreamForObject(PDParserRef parser, PDObjectRef object);
+extern const char *PDParserLocateAndFetchObjectStreamForObject(PDParserRef parser, PDObjectRef object);
 
 /**
  Determine if the PDF is encrypted or not.

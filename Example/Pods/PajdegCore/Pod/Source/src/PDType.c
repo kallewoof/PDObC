@@ -447,7 +447,7 @@ const char *PDDescription(void *pajdegObject)
     }
     if (cap == offs) buf = realloc(buf, cap+1);
     buf[offs] = 0;
-    PDAutorelease(PDStringCreate(buf));
+    PDAutorelease(PDStringCreate(buf, strlen(buf)));
     return buf;
 }
 

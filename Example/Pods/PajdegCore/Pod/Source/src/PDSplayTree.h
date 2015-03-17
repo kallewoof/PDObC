@@ -13,6 +13,8 @@
 
 extern PDSplayTreeRef PDSplayTreeCreate(void);
 extern PDSplayTreeRef PDSplayTreeCreateWithDeallocator(PDDeallocator deallocator);
+extern void PDSplayTreeSetDeallocator(PDSplayTreeRef tree, PDDeallocator deallocator);
+extern void PDSplayTreeSetInitiator(PDSplayTreeRef tree, void *initiator);
 extern void PDSplayTreeInsert(PDSplayTreeRef tree, PDInteger key, void *value);
 extern void *PDSplayTreeGet(PDSplayTreeRef tree, PDInteger key);
 extern void PDSplayTreeDelete(PDSplayTreeRef tree, PDInteger key);
@@ -26,7 +28,7 @@ extern PDInteger PDSplayTreeGetCount(PDSplayTreeRef tree);
  *  @param it       Iterator function
  *  @param userInfo User info to pass to iterator function
  */
-extern void PDSplayTreeIterate(PDSplayTreeRef tree, PDHashIterator it, void *userInfo);
+extern void PDSplayTreeIterate(PDSplayTreeRef tree, PDSplayTreeIterator it, void *userInfo);
 
 /**
  *  Dump all keys (not values) into preallocated array. 

@@ -89,6 +89,8 @@ void PDCMapCompile(PDCMapRef cmap, char *stream, PDSize len)
 {
     pd_ps_env pse = pd_ps_create();
     pd_ps_set_cmap(pse, cmap);
+    // since some PDF creators think it's okay to not include the request for CIDInit, we make it for all of them...
+    pd_ps_execute_postscript(pse, "/CIDInit /ProcSet findresource begin", 36);
     PDBool success = pd_ps_execute_postscript(pse, stream, len);
     if (success) {
         // there should be a single resource in the CMap category

@@ -674,7 +674,7 @@ void *PDInstanceCreateFromComplex(pd_stack *complex)
             result = PDStringCreateWithName(strdup((*complex)->prev->info));
         }
         else if (PDIdentifies(tid, PD_STRING)) {
-            result = PDStringCreate(strdup((*complex)->prev->info));
+            result = PDStringCreate(strdup((*complex)->prev->info), strlen((*complex)->prev->info));
 //            PDStringForceWrappedState(str, false);
 //            result = PDStringCreateFromStringWithType(str, PDStringTypeEscaped, true);
 //            PDRelease(str);
@@ -715,7 +715,7 @@ void *PDInstanceCreateFromComplex(pd_stack *complex)
         else if (0 == strcmp(value, "null"))  result = PDRetain(PDNullObject);
         else {
             PDError("unknown string value type %s", value);
-            result = PDStringCreate(strdup((*complex)->info));
+            result = PDStringCreate(strdup((*complex)->info), strlen((*complex)->info));
         }
     } else {
         PDError("unable to create PDType from unknown complex structure");

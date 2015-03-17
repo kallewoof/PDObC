@@ -31,6 +31,7 @@ struct PDPSX {
 
 void PDPSXDestroy(PDPSXRef x)
 {}
+
 PDPSXRef PDPSXCreate(char *stream)
 {
     PDPSXRef x = PDAllocTyped(PDInstanceTypePSExec, sizeof(struct PDPSX), PDPSXDestroy, false);
@@ -224,12 +225,17 @@ PDBool pd_ps_compile_next(pd_ps_env cenv)
             }
         }
         
-        PDError("PostScript error: undefined: %s", operatorName);
-        cenv->failure = true;
-        return false;
+        // would love to actually abort here and return false, but Adobe InDesign has the following, absolutely wonderful piece of PS code:
+        //      12 dict begin\nbegincmap\nCIDSystemInfo\n<< /Registry (Adobe)\n/Ordering (UCS) /Supplement 0 >> def
+        // which means we have to accept it as a name and pretend nothing's wrong
+        PDWarn("PostScript error: undefined operator is used as a named key: %s", operatorName);
+        PDStringRef namedKey = PDStringCreate(operatorName, strlen(operatorName));
+        pd_ps_push(namedKey);
+//        cenv->failure = true;
+        return true;
     } 
     
-    if (string) pd_ps_push(PDStringCreate(string));
+    if (string) pd_ps_push(PDStringCreate(string, strlen(string)));
 
     PDError("???");
     cenv->failure = true;

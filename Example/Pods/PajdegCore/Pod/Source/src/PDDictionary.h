@@ -157,14 +157,19 @@ extern void PDDictionaryPrint(PDDictionaryRef hm);
 
 /**
  *  Generate a C string formatted according to the PDF specification for this hash map.
+ *  Note that in some cases, the returned string contains UTF16 (big-endian) data, which will
+ *  prematurely truncate the data, if regarded as a C string. It is therefore sometimes 
+ *  necessary to track and make use of the returned length, rather than relying on strlen() 
+ *  and other string.h family members.
  *
  *  @note The returned string must be freed.
  *
- *  @param hm The hash map
+ *  @param hm        The hash map
+ *  @param outLength Pointer to integer into which the total length of the string is to be stored. If NULL, the length is not written
  *
  *  @return C string representation of hash map, as a PDF dictionary
  */
-extern char *PDDictionaryToString(PDDictionaryRef hm);
+extern char *PDDictionaryToString(PDDictionaryRef hm, PDInteger *outLength);
 
 extern PDInteger PDDictionaryPrinter(void *inst, char **buf, PDInteger offs, PDInteger *cap);
 

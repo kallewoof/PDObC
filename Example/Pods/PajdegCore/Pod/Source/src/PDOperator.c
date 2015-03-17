@@ -58,22 +58,17 @@ void PDOperatorSymbolGlobSetup()
     for (i = '0'; i <= '9'; i++) {
         PDOperatorSymbolGlobDehex[i - '0'] = i;
         PDOperatorSymbolGlobHex[i] = i - '0';
-        PDOperatorSymbolGlobEscaping[i] = 1;
     }
     
     char aAoffs = 'a' - 'A';
     for (i = 'A'; i <= 'F'; i++) {
         PDOperatorSymbolGlobDehex[10 + i - 'A'] = i;
         PDOperatorSymbolGlobHex[i] = PDOperatorSymbolGlobHex[i + aAoffs] = 10 + i - 'A';
-        PDOperatorSymbolGlobEscaping[i] = PDOperatorSymbolGlobEscaping[i + aAoffs] = 1;
-    }
-
-    for (i = 'G'; i <= 'Z'; i++) {
-        PDOperatorSymbolGlobEscaping[i] = PDOperatorSymbolGlobEscaping[i + aAoffs] = 1;
     }
     
 #define _(z) PDOperatorSymbolGlobEscaping[z]
-    _(' ') = _('.') = _('_') = _(',') = _('!') = _('@') = _('#') = _('$') = _('%') = _('^') = _('&') = _('*') = _('-') = _('=') = _('+') = _('[') = _(']') = _('{') = _('}') = _(';') = _('\'') = _('"') = _('/') = _('<') = _('>') = _('~') = _('|') = 1;
+    _(0) = 1;
+//    _(' ') = _('.') = _('_') = _(',') = _('!') = _('@') = _('#') = _('$') = _('%') = _('^') = _('&') = _('*') = _('-') = _('=') = _('+') = _('[') = _(']') = _('{') = _('}') = _(';') = _('\'') = _('"') = _('/') = _('<') = _('>') = _('~') = _('|') = 1;
     _('\t') = 't';
     _('\n') = 'n';
     _('\r') = 'r';

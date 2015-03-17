@@ -207,6 +207,7 @@ PDOperatorState PDContentStreamTextExtractor_Tj(PDContentStreamRef cs, PDContent
             PDRelease(utf8string);
         } else {
             PDWarn("Unable to extract string");
+            string->enc = string->font && string->font->enc && string->font->enc != PDStringEncodingUndefined ? string->font->enc : PDStringEncodingDefault;
             utf8string = PDStringCreateUTF8Encoded(string);
         }
     }
@@ -228,7 +229,7 @@ PDOperatorState PDContentStreamTextExtractor_TJ(PDContentStreamRef cs, PDContent
     PDSize length;
     const char *data;
     for (PDInteger i = 0; i < argc; i++) {
-        void *v = PDArrayGetElement(args, i);
+        PDStringRef v = PDArrayGetElement(args, i);
         if (PDResolve(v) == PDInstanceTypeString) {
             PDStringSetFont(v, userInfo->font);
             utf8string = PDStringCreateUTF8Encoded(v);
@@ -396,7 +397,7 @@ PDOperatorState PDContentStreamTextExtractor_ID(PDContentStreamRef cs, PDContent
     PDStringRef css = NULL;
     PDSize argx = PDArrayGetCount(args);
     for (PDSize i = 0; i < argx; i++) {
-        const char *key = PDStringEscapedValue(PDArrayGetElement(args, i++), false);
+        const char *key = PDStringEscapedValue(PDArrayGetElement(args, i++), false, NULL);
         void *val = PDArrayGetElement(args, i);
         PDNumberRef keyIndexN = PDDictionaryGet(entryMapping, key);
         if (keyIndexN) {
@@ -407,7 +408,7 @@ PDOperatorState PDContentStreamTextExtractor_ID(PDContentStreamRef cs, PDContent
                     break;
                 case KEY_CS:
                     css = val;
-                    PDNumberRef csbN = PDDictionaryGet(entryMapping, PDStringEscapedValue(val, false));
+                    PDNumberRef csbN = PDDictionaryGet(entryMapping, PDStringEscapedValue(val, false, NULL));
                     if (csbN) {
                         csb = PDNumberGetInteger(csbN);
                     } else {

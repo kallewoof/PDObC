@@ -105,9 +105,9 @@ void PDFontCompileUnicodeMapping(PDFontRef font)
     PDReferenceRef toUnicodeRef = PDDictionaryGet(PDObjectGetDictionary(font->obj), "ToUnicode");
     if (toUnicodeRef) {
         PDObjectRef toUnicodeObj = PDParserLocateAndCreateObject(font->parser, PDReferenceGetObjectID(toUnicodeRef), true);
-        char *stream = PDParserLocateAndFetchObjectStreamForObject(font->parser, toUnicodeObj);
+        const char *stream = PDParserLocateAndFetchObjectStreamForObject(font->parser, toUnicodeObj);
         if (stream) {
-            font->toUnicode = PDCMapCreateWithData(stream, PDObjectGetExtractedStreamLength(toUnicodeObj));
+            font->toUnicode = PDCMapCreateWithData(toUnicodeObj->streamBuf, PDObjectGetExtractedStreamLength(toUnicodeObj));
         } else {
             PDError("NULL stream for ToUnicode object %ld 0 R", PDObjectGetObID(toUnicodeObj));
         }

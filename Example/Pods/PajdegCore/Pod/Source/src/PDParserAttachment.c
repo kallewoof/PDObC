@@ -118,7 +118,6 @@ void PDParserAttachmentImportStack(PDParserAttachmentRef attachment, pd_stack *d
                          0x3f999c ("array")
                          */
                         const char *key = s->prev->info;
-                        printf("(dict) %s\n", key);
                         for (ek = 0; ek < excludeKeysCount; ek++) 
                             if (0 == strcmp(key, excludeKeys[ek]))
                                 break;
@@ -189,11 +188,8 @@ void PDParserAttachmentPerformImport(PDParserAttachmentRef attachment, PDObjectR
     
     PDParserClarifyObjectStreamExistence(attachment->foreignParser, source);
     if (source->hasStream) {
-        char *stream = PDParserLocateAndFetchObjectStreamForObject(attachment->foreignParser, source);
-        //        if (PDObjectHasTextStream(source)) {
-        //            printf("stream [%ld b]:\n===\n%s\n", (long)source->streamLen, stream);
-        //        }
-        PDObjectSetStreamFiltered(dest, stream, source->extractedLen, false);
+        PDParserLocateAndFetchObjectStreamForObject(attachment->foreignParser, source);
+        PDObjectSetStreamFiltered(dest, source->streamBuf, source->extractedLen, false, false);
     }
 }
 

@@ -241,31 +241,10 @@ extern void *PDObjectGetValue(PDObjectRef object);
 /**
  Set the value of the given object.
  
- @note If object is non-primitive (e.g. dictionary), this operation will at best leak memory and at worst crash.
- 
  @param object The object
- @param The new value of the primitive (string, integer, real, ...) object. 
+ @param The new value of the object (PDString, PDDictionary, etc).
  */
 extern void PDObjectSetValue(PDObjectRef object, void *value);
-
-///**
-// *  Get the instance type of the object.
-// *
-// *  @param object The object
-// *
-// *  @return Instance type value. PDInstanceTypeUnknown is returned if the instance type could not be determined.
-// */
-//extern PDInstanceType PDObjectGetInstanceType(PDObjectRef object);
-//
-///**
-// *  Get the instance for the object's definition. The instance is a PDDictionary, PDArray, PDString, etc. depending on what the
-// *  object's definition looks like.
-// *
-// *  @param object The object
-// *
-// *  @return Appropriate object type. Use PDResolve() to determine its type if unsure.
-// */
-//extern void *PDObjectGetInstance(PDObjectRef object);
 
 /**
  *  Get the dictionary of the object, or NULL if the object does not have a dictionary.
@@ -326,12 +305,12 @@ extern void PDObjectSkipStream(PDObjectRef object);
  *  
  *  @note The stream is inserted as is, with no filtering applied to it whatsoever. To insert a filtered stream, e.g. FlateDecoded, use PDObjectSetStreamFiltered() instead.
  *  
- *  @param object The object.
- *  @param str The stream data.
- *  @param len The length of the stream data.
+ *  @param object        The object.
+ *  @param str           The stream data.
+ *  @param len           The length of the stream data.
  *  @param includeLength Whether the object's /Length entry should be updated to reflect the new stream content length.
- *  @param allocated Whether str should be free()d after the object is done using it.
- *  @param encrypted If true, str is presumed to be already encrypted (e.g. copied from original PDF or pre-encrypted); if false, Pajdeg will encrypt the string before inserting it into the pipe. If the PDF is not encrypted, this argument has no effect
+ *  @param allocated     Whether str should be free()d after the object is done using it.
+ *  @param encrypted     If true, str is presumed to be already encrypted (e.g. copied from original PDF or pre-encrypted); if false, Pajdeg will encrypt the string before inserting it into the pipe. If the PDF is not encrypted, this argument has no effect
  */
 extern void PDObjectSetStream(PDObjectRef object, char *str, PDInteger len, PDBool includeLength, PDBool allocated, PDBool encrypted);
 
@@ -348,14 +327,15 @@ extern void PDObjectSetStream(PDObjectRef object, char *str, PDInteger len, PDBo
  *  
  *  @warning str is not freed.
  *  
- *  @param object The object.
- *  @param str The stream data.
- *  @param len The length of the stream data.
+ *  @param object    The object.
+ *  @param str       The stream data.
+ *  @param len       The length of the stream data.
+ *  @param allocated Whether str should be free()d after the object is done using it.
  *  @param encrypted If true, str is presumed to be already encrypted (e.g. copied from original PDF or pre-encrypted); if false, Pajdeg will encrypt the string before inserting it into the pipe. If the PDF is not encrypted, this argument has no effect
  *  
  *  @return Success value. If false is returned, the stream remains unset.
  */
-extern PDBool PDObjectSetStreamFiltered(PDObjectRef object, char *str, PDInteger len, PDBool encrypted);
+extern PDBool PDObjectSetStreamFiltered(PDObjectRef object, char *str, PDInteger len, PDBool allocated, PDBool encrypted);
 
 /**
  Enable or disable compression (FlateDecode) filter flag for the object stream.

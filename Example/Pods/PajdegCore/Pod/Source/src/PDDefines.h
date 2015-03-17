@@ -299,6 +299,14 @@ typedef const char         **PDID;
 typedef void (*PDDeallocator)(void *ob);
 
 /**
+ Initiation signature. 
+ 
+ This is only used in a few places, but it is used to match the deallocator so that people can insert and delete from 
+ a collection without caring about strdup()ing or free()ing stuff.
+ */
+typedef void *(*PDInitiator)(void *ob);
+
+/**
  NOP function (e.g. used as NULL deallocator).
  */
 extern void PDNOP(void*);
@@ -353,6 +361,13 @@ typedef struct PDArray      *PDArrayRef;
  If *shouldStop is set to true, iteration will end even if there are more items.
  */
 typedef void (*PDHashIterator)(char *key, void *value, void *userInfo, PDBool *shouldStop);
+
+/**
+ Splay tree iterator signature.
+ 
+ @see PDHashIterator
+ */
+typedef void (*PDSplayTreeIterator)(PDInteger key, void *value, void *userInfo, PDBool *shouldStop);
 
 /**
  A hash map implementation.
@@ -654,24 +669,42 @@ typedef enum {
 } PDStringType;
 
 typedef enum {
+    // Apple specified encodings (plus some extras)
     PDStringEncodingDefault = 0,    ///< This is most likely ASCII or UTF-8, but implicit checks are made where necessary
     PDStringEncodingASCII = 1,      ///< 8-bit regular ascii encoding (this is probably 7-bit, actually)
-    PDStringEncodingUTF8 = 2,       ///< UTF-8 encoding
-    PDStringEncodingUTF16BE = 3,    ///< UTF-16 encoding (big endian)
-    PDStringEncodingUTF16LE = 4,    ///< UTF-16 encoding (little endian)
-    PDStringEncodingUTF32 = 5,      ///< UTF-32 encoding
-    PDStringEncodingMacRoman = 6,   ///< Mac Roman encoding
-    PDStringEncodingEUCJP = 7,      ///< EUC-JP
-    PDStringEncodingSHIFTJIS = 8,   ///< SHIFT-JIS
-    PDStringEncodingISO8859_1 = 9,  ///< ISO-8859-1 (latin1)
-    PDStringEncodingISO8859_2 = 10, ///< ISO-8859-2 (latin2)
-    PDStringEncodingCP1251 = 11,    ///< Windows CP-1251
-    PDStringEncodingCP1252 = 12,    ///< Windows CP-1252
-    PDStringEncodingCP1253 = 13,    ///< Windows CP-1253
-    PDStringEncodingCP1254 = 14,    ///< Windows CP-1254
-    PDStringEncodingCP1250 = 15,    ///< Windows CP-1250
-    PDStringEncodingISO2022JP = 16, ///< ISO-2022-JP
-    __PDSTRINGENC_END = 16,         ///< --marker--
+    PDStringEncodingPDF = 2,        ///< PDFDocEncoding [built-in]
+    PDStringEncodingUTF8 = 3,       ///< UTF-8 encoding
+    PDStringEncodingUTF16BE = 4,    ///< UTF-16 encoding (big endian)
+    PDStringEncodingUTF16LE = 5,    ///< UTF-16 encoding (little endian)
+    PDStringEncodingUTF32 = 6,      ///< UTF-32 encoding
+    PDStringEncodingMacRoman = 7,   ///< Mac Roman encoding
+    PDStringEncodingEUCJP = 8,      ///< EUC-JP
+    PDStringEncodingSHIFTJIS = 9,   ///< SHIFT-JIS
+    PDStringEncodingISO8859_1 = 10, ///< ISO-8859-1 (latin1)
+    PDStringEncodingISO8859_2 = 11, ///< ISO-8859-2 (latin2)
+    PDStringEncodingCP1251 = 12,    ///< Windows CP-1251
+    PDStringEncodingCP1252 = 13,    ///< Windows CP-1252
+    PDStringEncodingCP1253 = 14,    ///< Windows CP-1253
+    PDStringEncodingCP1254 = 15,    ///< Windows CP-1254
+    PDStringEncodingCP1250 = 16,    ///< Windows CP-1250
+    PDStringEncodingISO2022JP = 17, ///< ISO-2022-JP
+    
+    // PDF specification listed standard encodings (extended from above list)
+    // Chinese (simplified)
+    PDStringEncodingEUCCN = 18,     ///< EUC-CN (aka GB-2312)
+    PDStringEncodingGBK = 19,       ///< GBK
+    PDStringEncodingGB18030 = 20,   ///< GB18030
+    PDStringEncodingUCS2 = 21,      ///< UCS-2BE, Unicode (UCS-2)
+    // Chinese (traditional)
+    PDStringEncodingBIG5 = 22,      ///< BIG5, Big Five character set (Mac OS)
+    PDStringEncodingBIG5HKSCS = 23, ///< BIG5-HKSCS, Hong Kong SCS, an extension to the Big Five char set/encoding
+    PDStringEncodingCP950 = 24,     ///< CP950, Windows CP-950 (Big Five char set with ETen extensions)
+    PDStringEncodingEUCTW = 25,     ///< EUC-TW, CNS 11643-1992 character set
+    // Korean
+    PDStringEncodingEUCKR = 26,     ///< EUC-KR
+    PDStringEncodingUHC = 27,       ///< UHC, Microsoft Code Page 949
+    
+    __PDSTRINGENC_END = 28,         ///< --marker--
     
     PDStringEncodingCustom = 998,   ///< The encoding has a custom mapping in an associated font object
     PDStringEncodingUndefined = 999,///< The encoding used was not determined correctly. The string may be a binary value or similar

@@ -44,7 +44,8 @@ char *PDStringEscapedToHex(char *string, PDSize len, PDBool hasW, PDBool addW); 
 char *PDStringEscapedToBinary(char *string, PDSize len, PDBool hasW, PDSize *outLength);            ///< "foo\123"              -> 01101010
 char *PDStringEscapedToName(char *string, PDSize len, PDBool hasW, PDBool addW);                    ///< "foo\123"              -> "/foo\123"
 // bin->*
-char *PDStringBinaryToEscaped(char *string, PDSize len, PDBool addW, char prefix);                  ///< 01101010               -> "foo\123"
+char *PDStringBinaryToEscaped(char *string, PDStringEncoding encoding, PDSize len, PDBool addW, char prefix, PDSize *outLength);
+                                                                                                    ///<01101010               -> "foo\123"
 char *PDStringBinaryToHex(char *string, PDSize len, PDBool addW);                                   ///< 01101010               -> "abc123"
 // name->*
 char *PDStringNameToEscaped(char *string, PDSize len, PDBool hasW, PDBool addW);                    ///< "/foo123"              -> "foo123"
@@ -52,7 +53,7 @@ char *PDStringNameToHex(char *string, PDSize len, PDBool hasW, PDBool addW);    
 char *PDStringNameToBinary(char *string, PDSize len, PDBool hasW, PDSize *outLength);               ///< "/foo123"              -> "01101010"
 
 // Defined in PDStringUTF.c
-extern void PDStringDetermineEncoding(PDStringRef string);
+extern PDStringEncoding PDStringDetermineEncoding(PDStringRef string);
 
 // Public
 
@@ -81,10 +82,16 @@ void PDStringVerifyOwnership(char *string, PDSize len)
 }
 #endif
 
-PDStringRef PDStringCreate(char *string)
+PDStringRef PDStringCreateL(char *string)
 {
+    return PDStringCreate(string, strlen(string));
+}
+
+PDStringRef PDStringCreate(char *string, PDSize length)
+{
+    if (length == 0) length = strlen(string);
 #ifdef DEBUG
-    PDStringVerifyOwnership(string, strlen(string));
+    PDStringVerifyOwnership(string, length);
 #endif
     
     PDStringRef res = PDAllocTyped(PDInstanceTypeString, sizeof(struct PDString), PDStringDestroy, false);
@@ -92,7 +99,7 @@ PDStringRef PDStringCreate(char *string)
     res->data = string;
     res->alt = NULL;
     res->font = NULL;
-    res->length = strlen(string);
+    res->length = length;
     res->type = PDStringTypeEscaped;
     res->wrapped = (string[0] == '(' && string[res->length-1] == ')');
 #ifdef PD_SUPPORT_CRYPTO
@@ -101,31 +108,52 @@ PDStringRef PDStringCreate(char *string)
     return res;
 }
 
-PDStringRef PDStringCreateUnescaped(char *unescapedString)
+PDStringRef PDStringCreateUnescaped(char *unescapedString, PDSize length)
 {
-    PDSize len = strlen(unescapedString);
+    if (length == 0) length = strlen(unescapedString);
 #ifdef DEBUG
-    PDStringVerifyOwnership(unescapedString, len);
+    PDStringVerifyOwnership(unescapedString, length);
 #endif
     
-    PDStringRef result = PDStringCreate(PDStringBinaryToEscaped(unescapedString, len, true, 0));
+    PDStringEncoding enc = PDStringEncodingUndefined;
+    
+    // PDF does not allow UTF-8 but instead requires UTF-16BE or plain ASCII.
+    // we thus check the string for UTF-8 sequences, which is simply a check
+    // if the highest bit is set; if it is, we generate a UTF-16BE string and
+    // return that
+    for (int j = 0; unescapedString[j]; j++) 
+        if (unescapedString[j] & 0x80) {
+            PDStringRef str = PDStringCreateBinary(unescapedString, strlen(unescapedString));
+            if (PDStringDetermineEncoding(str) == PDStringEncodingUTF16BE) return str;
+            PDStringRef ues = PDStringCreateUTF16Encoded(str);
+            PDRelease(str);
+            return ues;
+        } else if (unescapedString[j] == 0) {
+            // this is a UTF-16 sequence
+            enc = PDStringEncodingUTF16BE;
+        }
+    
+    char *str = PDStringBinaryToEscaped(unescapedString, enc, length, true, 0, &length);
+    PDStringRef result = PDStringCreate(str, length);
     free(unescapedString);
     return result;
 }
 
 PDStringRef PDStringCreateWithName(char *name)
 {
+    PDSize len = strlen(name);
 #ifdef DEBUG
-    PDStringVerifyOwnership(name, strlen(name));
+    PDStringVerifyOwnership(name, len);
 #endif
     
     if (name[0] != '/') {
         // names always include '/' in the data
-        char *fixedName = malloc(strlen(name) + 2);
+        char *fixedName = malloc(len + 2);
         fixedName[0] = '/';
         strcpy(&fixedName[1], name);
         free(name);
         name = fixedName;
+        len++;
     }
     
     PDStringRef res = PDAllocTyped(PDInstanceTypeString, sizeof(struct PDString), PDStringDestroy, false);
@@ -133,7 +161,7 @@ PDStringRef PDStringCreateWithName(char *name)
     res->data = name;
     res->alt = NULL;
     res->font = NULL;
-    res->length = strlen(name);
+    res->length = len;
     res->type = PDStringTypeName;
     res->wrapped = res->length > 1 && (name[1] == '(' && name[res->length-1] == ')');
 #ifdef PD_SUPPORT_CRYPTO
@@ -144,6 +172,7 @@ PDStringRef PDStringCreateWithName(char *name)
 
 PDStringRef PDStringCreateBinary(char *data, PDSize length)
 {
+    if (length == 0) length = strlen(data);
 #ifdef DEBUG
     PDStringVerifyOwnership(data, length);
 #endif
@@ -216,7 +245,10 @@ PDStringRef PDStringCreateFromStringWithType(PDStringRef string, PDStringType ty
     PDStringRef result;
     switch (type) {
         case PDStringTypeEscaped:
-            result = PDStringCreate(strdup(PDStringEscapedValue(string, wrap)));
+            res = PDStringEscapedValue(string, wrap, &len);
+            buf = malloc(len + 1);
+            memcpy(buf, res, len + 1);
+            result = PDStringCreate(buf, len);
             break;
             
         case PDStringTypeName:
@@ -229,13 +261,9 @@ PDStringRef PDStringCreateFromStringWithType(PDStringRef string, PDStringType ty
             
         default:
             res = PDStringBinaryValue(string, &len);
-//            if (res) {
-                buf = malloc(len);
-                memcpy(buf, res, len);
-                result = PDStringCreateBinary(buf, len);
-//            } else {
-//                result = NULL;
-//            }
+            buf = malloc(len + 1);
+            memcpy(buf, res, len + 1);
+            result = PDStringCreateBinary(buf, len);
     }
     
 #ifdef PD_SUPPORT_CRYPTO
@@ -267,16 +295,22 @@ PDStringEncoding PDStringGetEncoding(PDStringRef string)
     return string->enc;
 }
 
-const char *PDStringEscapedValue(PDStringRef string, PDBool wrap)
+const char *PDStringEscapedValue(PDStringRef string, PDBool wrap, PDSize *outLength)
 {
     if (string == NULL) return NULL;
     
-    if (PDResolve(string) == PDInstanceTypeNumber) return PDNumberToString((PDNumberRef)string);
+    if (PDResolve(string) == PDInstanceTypeNumber) {
+        const char *numstr = PDNumberToString((PDNumberRef)string);
+        if (outLength) *outLength = strlen(numstr);
+        return numstr;
+    }
     
     // see if we have what is asked for already
     if (string->type == PDStringTypeEscaped && string->wrapped == wrap) {
+        if (outLength) *outLength = string->length;
         return string->data;
     } else if (string->alt && string->alt->type == PDStringTypeEscaped && string->alt->wrapped == wrap) {
+        if (outLength) *outLength = string->alt->length;
         return string->alt->data;
     } 
     
@@ -287,22 +321,18 @@ const char *PDStringEscapedValue(PDStringRef string, PDBool wrap)
                           : string);
     
     char *data;
-    if (source->type == PDStringTypeBinary)
-        data = PDStringBinaryToEscaped(source->data, source->length, wrap, 0);
-    else if (source->type == PDStringTypeHex)
+    if (source->type == PDStringTypeBinary) {
+        data = PDStringBinaryToEscaped(source->data, PDStringDetermineEncoding(source), source->length, wrap, 0, outLength);
+    } else if (source->type == PDStringTypeHex) {
         data = PDStringHexToEscaped(source->data, source->length, source->wrapped, wrap, 0);
-    else 
+        if (outLength) *outLength = strlen(data);
+    } else {
         data = PDStringTransform(source->data, source->length, source->type == PDStringTypeName, source->wrapped, 0, wrap ? '(' : 0, wrap ? ')' : 0);
-        
-//        if (source->type == PDStringTypeName) 
-//        data = PDStringNameToEscaped(source->data, source->length, source->wrapped, wrap);
-//    else if (wrap) 
-//        data = PDStringWrappedValue(source->data, source->length, 0, '(', ')');
-//    else 
-//        data = PDStringUnwrappedValue(source->data, source->length, false, 0);
-
+        if (outLength) *outLength = strlen(data);
+    }
+    
     PDRelease(string->alt);
-    string->alt = PDStringCreate(data);
+    string->alt = PDStringCreate(data, strlen(data));
 #ifdef PD_SUPPORT_CRYPTO
     if (string->ci) PDStringAttachCryptoInstance(string->alt, string->ci, string->encrypted);
 #endif
@@ -328,7 +358,7 @@ const char *PDStringNameValue(PDStringRef string, PDBool wrap)
     
     char *data;
     if (source->type == PDStringTypeBinary)
-        data = PDStringBinaryToEscaped(source->data, source->length, wrap, '/');
+        data = PDStringBinaryToEscaped(source->data, PDStringDetermineEncoding(source), source->length, wrap, '/', NULL);
     else if (source->type == PDStringTypeHex)
         data = PDStringHexToEscaped(source->data, source->length, source->wrapped, wrap, '/');
     else 
@@ -346,6 +376,11 @@ const char *PDStringNameValue(PDStringRef string, PDBool wrap)
     if (string->ci) PDStringAttachCryptoInstance(string->alt, string->ci, string->encrypted);
 #endif
     return string->alt->data;
+}
+
+const char *PDStringPlainName(PDStringRef string)
+{
+    return string->type == PDStringTypeName ? &string->data[1] : string->data;
 }
 
 const char *PDStringBinaryValue(PDStringRef string, PDSize *outLength)
@@ -483,7 +518,7 @@ char *PDStringHexToBinary(char *string, PDSize len, PDBool wrapped, PDSize *outL
 //        PDInteger b = PDOperatorSymbolGlobHex[csr[i+1]];
 //        PDInteger c = (a << 4) + b;
 //        PDInteger d = (PDOperatorSymbolGlobHex[csr[i]] << 4) + PDOperatorSymbolGlobHex[csr[i+1]];
-        res[reslen++] = (PDOperatorSymbolGlobHex[csr[i]] << 4) + PDOperatorSymbolGlobHex[csr[i+1]];
+        res[reslen++] = (PDOperatorSymbolGlobHex[(unsigned char)csr[i]] << 4) + PDOperatorSymbolGlobHex[(unsigned char)csr[i+1]];
         
         if (reslen == rescap) {
             // in theory we should never end up here; if we do, we just make sure we don't crash
@@ -560,11 +595,6 @@ char *PDStringNameToBinary(char *string, PDSize len, PDBool wrapped, PDSize *out
     return PDStringEscapedToBinary(&string[1], len-1, wrapped, outLength);
 }
 
-char *PDStringBinaryToName(char *string, PDSize len, PDBool wrapped)
-{
-    return PDStringBinaryToEscaped(string, len, wrapped, '/');
-}
-
 char *PDStringEscapedToName(char *string, PDSize len, PDBool hasW, PDBool addW)
 {
     return PDStringTransform(string, len, false, hasW, '/', addW ? '(' : 0, addW ? ')' : 0);
@@ -603,29 +633,38 @@ char *PDStringBinaryToHex(char *string, PDSize len, PDBool wrapped)
     return res;
 }
 
-char *PDStringBinaryToEscaped(char *string, PDSize len, PDBool addW, char prefix)
+char *PDStringBinaryToEscaped(char *string, PDStringEncoding encoding, PDSize len, PDBool addW, char prefix, PDSize *outLength)
 {
-    PDSize rescap = (len << 1) + (addW << 1) + (prefix != 0);
+    PDSize rescap = 2 + (len << 1) + (addW << 1) + (prefix != 0);
     if (rescap < 10) rescap = 10;
     PDSize reslen = 0;
     char *res = malloc(rescap);
     char ch, e;
     short ord;
     PDSize i;
+    PDBool allowNull = outLength != NULL;
+    PDAssert(allowNull || encoding != PDStringEncodingUTF16BE); // crash = a UTF-16 encoded string is escaped; the escaped result will have NUL values in it for all regular ASCII characters; the length of the string will be impossible to determine using regular strlen() etc methods and will be truncated at the first occurrence of such a code point
     
     if (prefix) res[reslen++] = prefix;
     if (addW) res[reslen++] = '(';
     
+    if (encoding == PDStringEncodingUTF16BE) {
+        // write 254, 255 (U+FEFF) indicating that the string is UTF-16 big-endian (see PDF Reference v 1.7, p. 158)
+        res[reslen++] = 254;
+        res[reslen++] = 255;
+    }
+    
     for (i = 0; i < len; i++) {
         ch = string[i];
         ord = ch < 0 ? ch + 256 : ch;
-        e = PDOperatorSymbolGlobEscaping[ord];
+        // The NUL character is being printed unescaped by Adobe Acrobat Pro for UTF16-BE strings, so we choose to override the escaping definition for char code \x00, if outLength is provided (otherwise the string will be prematurely truncated at the first NUL). This means C strings break, but in return, UTF-16 strings in PDF do not come out as "\000T\000h\000i\000s\000 \000i\000s\000 [etc]".
+        e = !ord && allowNull ? 0 : PDOperatorSymbolGlobEscaping[ord];
         switch (e) {
-            case 0: // needs escaping using octal code
-                reslen += sprintf(&res[reslen], "\\%s%o", ord < 8 ? "00" : ord < 128 ? "0" : "", ord);
-                break;
-            case 1: // needs no escaping
+            case 0: // needs no escaping
                 res[reslen++] = ch;
+                break;
+            case 1: // needs escaping using octal code
+                reslen += sprintf(&res[reslen], "\\%s%o", ord < 8 ? "00" : ord < 128 ? "0" : "", ord);
                 break;
             default: // can be escaped with a charcode
                 res[reslen++] = '\\';
@@ -641,6 +680,8 @@ char *PDStringBinaryToEscaped(char *string, PDSize len, PDBool addW, char prefix
     
     res[reslen] = 0;
     
+    if (outLength) *outLength = reslen;
+
 #ifdef DEBUG_PD_STRINGS
     // ensure the opposite is identical
     PDSize opplen;
@@ -659,7 +700,7 @@ char *PDStringHexToEscaped(char *string, PDSize len, PDBool hasW, PDBool addW, c
 {
     // currently we do this by going to binary format first
     char *tmp = PDStringHexToBinary(string, len, hasW, &len);
-    char *res = PDStringBinaryToEscaped(tmp, len, addW, prefix);
+    char *res = PDStringBinaryToEscaped(tmp, PDStringEncodingUndefined, len, addW, prefix, NULL);
     free(tmp);
     return res;
 }
@@ -686,6 +727,13 @@ PDInteger PDStringPrinter(void *inst, char **buf, PDInteger offs, PDInteger *cap
     }
 #endif
     
+    if (i->type == PDStringTypeBinary) {
+        PDStringRef wrapped = PDStringCreateFromStringWithType(i, PDStringTypeEscaped, true, false);
+        offs = PDStringPrinter(wrapped, buf, offs, cap);
+        PDRelease(wrapped);
+        return offs;
+    }
+    
     if ((i->type == PDStringTypeEscaped || i->type == PDStringTypeHex) && ! i->wrapped) {
         PDStringRef wrapped = PDStringCreateFromStringWithType(i, i->type, true, false);
         offs = PDStringPrinter(wrapped, buf, offs, cap);
@@ -694,38 +742,28 @@ PDInteger PDStringPrinter(void *inst, char **buf, PDInteger offs, PDInteger *cap
     }
     
     char *bv = *buf;
-    strcpy(&bv[offs], i->data);
+    memcpy(&bv[offs], i->data, i->length + 1);
     return offs + i->length;
-//    
-//    PDBool ownsStr = false;
-//    char *str = i->data;
-//    PDSize len = i->length;
-//    if (i->type == PDStringTypeBinary) {
-//        ownsStr = true;
-//        str = PDStringBinaryToEscaped(str, len, true);
-//        len = strlen(str);
-//        PDInstancePrinterRequire(1 + len, 1 + len);
-//    } else if (! i->wrapped) {
-//        ownsStr = true;
-//        str = PDStringWrappedValue(str, len, i->type == PDStringTypeHex ? '<' : '(', i->type == PDStringTypeHex ? '>' : ')');
-//        len += 2;
-//    }
-//    
-//    char *bv = *buf;
-//    strcpy(&bv[offs], str);
-//    if (ownsStr) free(str);
-//    return offs + len;
 }
 
 PDBool PDStringEqualsCString(PDStringRef string, const char *cString)
 {
     PDBool result;
     
-    PDStringRef compat = PDStringCreateFromStringWithType(string, cString[0] == '/' ? PDStringTypeName : PDStringTypeEscaped, false, false);
-    
-    result = 0 == strcmp(cString, compat->data);
+    PDStringRef utf8 = PDStringCreateUTF8Encoded(string);
+    PDStringRef compat = PDStringCreateFromStringWithType(utf8, cString[0] == '/' ? PDStringTypeName : PDStringTypeBinary, false, false);
+
+    result = 0 == strcmp(compat->data, cString);
+    if (! result) {
+        // we may have a UTF starting symbol (which is invisible)
+        unsigned char *c = (unsigned char *)compat->data;
+        if (c[0] == 0xef && c[1] == 0xbb && c[2] == 0xbf) {
+            result = 0 == strcmp(&compat->data[3], cString);
+        }
+    }
     
     PDRelease(compat);
+    PDRelease(utf8);
     
     return result;
 }
@@ -812,7 +850,7 @@ PDStringRef PDStringCreateDecrypted(PDStringRef string)
     data[len] = 0;
     
     pd_crypto_convert(string->ci->crypto, string->ci->obid, string->ci->genid, data, len);
-    PDStringRef decrypted = PDStringCreate(data);
+    PDStringRef decrypted = PDStringCreate(data, strlen(data));
     PDStringAttachCryptoInstance(decrypted, string->ci, false);
     return decrypted;
 }

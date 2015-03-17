@@ -40,7 +40,7 @@ PDTaskResult PDTaskExec(PDTaskRef task, PDPipeRef pipe, PDObjectRef object)
     
     while (task) {
         if (task->isActive)
-            res = (*task->func)(pipe, task, object, task->info);
+            res = task->func(pipe, task, object, task->info);
         else 
             res = PDTaskDone;
         

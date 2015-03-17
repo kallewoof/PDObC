@@ -258,7 +258,7 @@ void PDDictionaryAddEntriesFromComplex(PDDictionaryRef hm, pd_stack stack)
         char *key = entry->info;
         entry = entry->prev;
         if (entry->type == PD_STACK_STRING) {
-            PDDictionarySet(hm, key, PDStringCreate(strdup(entry->info)));
+            PDDictionarySet(hm, key, PDStringCreate(strdup(entry->info), strlen(entry->info)));
         } else {
             entry = entry->info;
             pd_stack_set_global_preserve_flag(true);
@@ -329,7 +329,7 @@ void PDDictionarySet(PDDictionaryRef hm, const char *key, void *value)
     PDAssert(value != NULL); // crash = value is NULL; use delete to remove keys
     
 #ifdef PD_SUPPORT_CRYPTO
-    if (hm->ci) (*PDInstanceCryptoExchanges[PDResolve(value)])(value, hm->ci, false);
+    if (hm->ci) PDInstanceCryptoExchanges[PDResolve(value)](value, hm->ci, false);
 #endif
     
     prof(operations++);
@@ -447,7 +447,15 @@ void pd_hm_print(char *key, void *val, hm_printer *p, PDBool *shouldStop)
     strcpy(&bv[offs], key);
     offs += klen;
     bv[offs++] = ' ';
-    offs = (*PDInstancePrinters[PDResolve(val)])(val, buf, offs, cap);
+    PDInstanceType it = PDResolve(val);
+    if (it == PDInstanceTypeString) {
+        PDStringRef str = val;
+        PDStringType st = PDStringGetType(str);
+        if (st == PDStringTypeBinary || st == PDStringTypeEscaped)  {
+            str = PDAutorelease(PDStringCreateFromStringWithType(str, PDStringTypeEscaped, true, false));
+        }
+        offs = PDInstancePrinters[PDInstanceTypeString](str, buf, offs, cap);
+    } else offs = PDInstancePrinters[PDResolve(val)](val, buf, offs, cap);
     PDInstancePrinterRequire(4, 4);
     bv = *buf;
     bv[offs++] = ' ';
@@ -455,7 +463,7 @@ void pd_hm_print(char *key, void *val, hm_printer *p, PDBool *shouldStop)
     *p->bv = bv;
     *p->offs = offs;
     
-    //    printf("\t%s: %s\n", key, val);
+//    printf("\t%s: %s\n", key, val);
 }
 
 void PDDictionaryPopulateKeys(PDDictionaryRef hm, char **keys)
@@ -466,17 +474,18 @@ void PDDictionaryPopulateKeys(PDDictionaryRef hm, char **keys)
     PDDictionaryIterate(hm, (PDHashIterator)pd_hm_getkeys, &kg);
 }
 
-char *PDDictionaryToString(PDDictionaryRef hm)
+char *PDDictionaryToString(PDDictionaryRef hm, PDInteger *outLength)
 {
-    PDInteger len = 6 + 20 * hm->count;
-    char *str = malloc(len);
-    PDDictionaryPrinter(hm, &str, 0, &len);
+    PDInteger cap = 6 + 20 * hm->count;
+    char *str = malloc(cap);
+    PDInteger len = PDDictionaryPrinter(hm, &str, 0, &cap);
+    if (outLength) *outLength = len;
     return str;
 }
 
 void PDDictionaryPrint(PDDictionaryRef hm)
 {
-    char *str = PDDictionaryToString(hm);
+    char *str = PDDictionaryToString(hm, NULL);
     puts(str);
     free(str);
 }

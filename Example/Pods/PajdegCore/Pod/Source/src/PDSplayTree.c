@@ -19,6 +19,7 @@ typedef struct st_node *st_node;
 
 struct PDSplayTree {
     PDDeallocator deallocator;
+    PDInitiator   initiator;
     st_node       root;
     PDInteger     count;
 };
@@ -82,14 +83,14 @@ static inline PDInteger st_node_populate_keys(st_node root, PDInteger *dest)
     return i;
 }
 
-static inline PDBool st_node_iterate(st_node root, PDHashIterator it, void *userInfo)
+static inline PDBool st_node_iterate(st_node root, PDSplayTreeIterator it, void *userInfo)
 {
     PDBool shouldStop = false;
     while (root) {
         if (root->brc[0]) 
             if (st_node_iterate(root->brc[0], it, userInfo)) return true;
         if (root->value) {
-            it((char*)root->key, root->value, userInfo, &shouldStop);
+            it(root->key, root->value, userInfo, &shouldStop);
             if (shouldStop) return true;
         }
         root = root->brc[1];
@@ -119,6 +120,7 @@ PDSplayTreeRef PDSplayTreeCreateWithDeallocator(PDDeallocator deallocator)
 {
     PDSplayTreeRef st = PDAllocTyped(PDInstanceTypeTree, sizeof(struct PDSplayTree), PDSplayTreeDestroy, false);
     st->deallocator = deallocator;
+    st->initiator = NULL;
     st->count = 0;
     st->root = NULL;
     return st;
@@ -129,11 +131,23 @@ PDSplayTreeRef PDSplayTreeCreate(void)
     return PDSplayTreeCreateWithDeallocator(st_node_null);
 }
 
+void PDSplayTreeSetDeallocator(PDSplayTreeRef tree, PDDeallocator deallocator)
+{
+    tree->deallocator = deallocator;
+}
+
+void PDSplayTreeSetInitiator(PDSplayTreeRef tree, void *initiator)
+{
+    tree->initiator = initiator;
+}
+
 void PDSplayTreeInsert(PDSplayTreeRef tree, PDInteger key, void *value)
 {
+    if (tree->initiator) value = tree->initiator(value);
+    
     st_node z = st_node_find(tree->root, key);
     if (z) {
-        (*tree->deallocator)(z->value);
+        tree->deallocator(z->value);
         z->value = value;
         return;
     }
@@ -201,7 +215,7 @@ PDInteger PDSplayTreePopulateKeys(PDSplayTreeRef tree, PDInteger *dest)
     return st_node_populate_keys(tree->root, dest);
 }
 
-void PDSplayTreeIterate(PDSplayTreeRef tree, PDHashIterator it, void *userInfo)
+void PDSplayTreeIterate(PDSplayTreeRef tree, PDSplayTreeIterator it, void *userInfo)
 {
     st_node_iterate(tree->root, it, userInfo);
 }

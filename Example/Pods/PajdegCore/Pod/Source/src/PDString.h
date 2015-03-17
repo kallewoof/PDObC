@@ -48,19 +48,23 @@
  *  @note Use PDStringCreateBinary for strings that need to be escaped, even if they're proper NUL-terminated strings.
  *
  *  @param string NUL-terminated, escaped string optionally wrapped in parentheses.
+ *  @param length Length of string. May be 0, in which case strlen(string) is used
  *
  *  @return New PDString instance for string
  */
-extern PDStringRef PDStringCreate(char *string);
+extern PDStringRef PDStringCreate(char *string, PDSize length);
+
+extern PDStringRef PDStringCreateL(char *string);
 
 /**
  *  Create a PDString from an existing, unescaped string by escaping the string and keeping the resulting value.
  *
  *  @param unescapedString A string that needs to be, but is not currently, escaped.
+ *  @param length          Length of unescapedString. May be 0, in which case strlen(unescapedString) is used
  *
  *  @return New PDString instance for escaped variant of unescapedString
  */
-extern PDStringRef PDStringCreateUnescaped(char *unescapedString);
+extern PDStringRef PDStringCreateUnescaped(char *unescapedString, PDSize length);
 
 /**
  *  Create a PDString from an existing, escaped name. Names differ from regular strings in one single way: they have a slash prefix. Beyond that, they can be wrapped or non-wrapped, just like normal.
@@ -77,7 +81,7 @@ extern PDStringRef PDStringCreateWithName(char *name);
  *  @note Ownership of the data is taken, and the data is freed when the PDString object is released.
  *
  *  @param data   Data containing binary string
- *  @param length Length of the data, in bytes
+ *  @param length Length of the data, in bytes. May be 0, in which case strlen(data) is used
  *
  *  @return New PDString instance for data
  */
@@ -193,27 +197,28 @@ extern void PDStringForceWrappedState(PDStringRef string, PDBool wrapped);
  */
 #define PDStringCreateBinaryFromString(string) PDStringCreateFromStringWithType(string, PDStringTypeBinary, false, false)
 
-//#define PDStringWithUnescapedCString(unescapedCString) PDAutorelease(PDStringCreateBinary(unescapedCString, strlen(unescapedCString)))
+#define PDStringEscapingCString(unescapedCString) PDAutorelease(PDStringCreateUnescaped(unescapedCString, 0))
 
-#define PDStringEscapingCString(unescapedCString) PDAutorelease(PDStringCreateUnescaped(unescapedCString))
-
-#define PDStringWithCString(cString) PDAutorelease(PDStringCreate(cString))
+#define PDStringWithCString(cString) PDAutorelease(PDStringCreate(cString, 0))
 
 #define PDStringWithName(name) PDAutorelease(PDStringCreateWithName(name))
 
 /**
  *  Generate a C string containing the escaped contents of string and return it. 
  *  If wrap is set, the string is wrapped in parentheses.
+ *  If outLength is non-NULL, the pointed to PDSize will have the length of the string written to it. Note that for UTF-16
+ *  strings, this is required as the NUL character may occur in the middle of the string.
  *
  *  @note The returned string should not be freed.
  *  @note It is safe to pass a NULL string value. If string is NULL, NULL is returned.
  *
- *  @param string PDString instance
- *  @param wrap   Whether or not the returned string should be enclosed in parentheses
+ *  @param string    PDString instance
+ *  @param wrap      Whether or not the returned string should be enclosed in parentheses
+ *  @param outLength Pointer to PDSize into which length of string is to be written, or NULL if not necessary
  *
  *  @return Escaped NUL-terminated C string.
  */
-extern const char *PDStringEscapedValue(PDStringRef string, PDBool wrap);
+extern const char *PDStringEscapedValue(PDStringRef string, PDBool wrap, PDSize *outLength);
 
 /**
  *  Generate a C string containing the escaped contents of string as a name, i.e. with a forward slash preceding it.
@@ -228,6 +233,8 @@ extern const char *PDStringEscapedValue(PDStringRef string, PDBool wrap);
  *  @return Escaped NUL-terminated C string with a forward slash prefix.
  */
 extern const char *PDStringNameValue(PDStringRef string, PDBool wrap);
+
+extern const char *PDStringPlainName(PDStringRef string); 
 
 /**
  *  Generate the binary value of string, writing its length to the PDSize pointed to by outLength and returning the 

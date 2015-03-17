@@ -216,7 +216,7 @@ void PDContentStreamExecute(PDContentStreamRef cs, PDObjectRef ob)
                 PDArrayClear(args);
             }
         }
-        while (i < len && PDOperatorSymbolGlob[stream[i]] == PDOperatorSymbolGlobWhitespace) i++;
+        while (i < len && PDOperatorSymbolGlob[(unsigned char)stream[i]] == PDOperatorSymbolGlobWhitespace) i++;
         PDRelease(arg);
     }
 }
@@ -246,7 +246,7 @@ PDArrayRef PDContentStreamPopArray(PDContentStreamRef cs, const char *stream, PD
     // accept a leading '[', but don't mind if we were handed the char after
     mark += (stream[mark] == '[');
     while (mark < len) {
-        while (mark < len && PDOperatorSymbolGlob[stream[mark]] == PDOperatorSymbolGlobWhitespace)
+        while (mark < len && PDOperatorSymbolGlob[(unsigned char)stream[mark]] == PDOperatorSymbolGlobWhitespace)
             mark++;
         if (mark >= len || stream[mark] == ']') break;
         v = PDContentStreamPopValue(cs, stream, len, &mark);
@@ -271,13 +271,13 @@ PDDictionaryRef PDContentStreamPopDictionary(PDContentStreamRef cs, const char *
     // accept leading '<<'
     mark += (stream[mark] == '<' && stream[mark+1] == '<') + (stream[mark] == '<' && stream[mark+1] == '<');
     while (mark < len) {
-        while (mark < len && PDOperatorSymbolGlob[stream[mark]] == PDOperatorSymbolGlobWhitespace) mark++;
+        while (mark < len && PDOperatorSymbolGlob[(unsigned char)stream[mark]] == PDOperatorSymbolGlobWhitespace) mark++;
         if (mark + 1 >= len || (stream[mark] == '>' && stream[mark+1] == '>')) break;
         key = PDContentStreamPopValue(cs, stream, len, &mark);
         if (PDResolve(key) != PDInstanceTypeString || PDStringGetType(key) != PDStringTypeName) {
             PDWarn("invalid key instance type in content stream dictionary (%s): skipping", PDResolve(key) != PDInstanceTypeString ? "not a string" : "not a name type string");
         } else {
-            while (mark < len && PDOperatorSymbolGlob[stream[mark]] == PDOperatorSymbolGlobWhitespace) mark++;
+            while (mark < len && PDOperatorSymbolGlob[(unsigned char)stream[mark]] == PDOperatorSymbolGlobWhitespace) mark++;
             v = PDContentStreamPopValue(cs, stream, len, &mark);
             if (v == NULL) {
                 PDWarn("NULL value in content stream (pop value): using 'null' object");
@@ -320,7 +320,7 @@ void *PDContentStreamPopValue(PDContentStreamRef cs, const char *stream, PDInteg
             termChar = ')';
             termWS = false;
             termD = false;
-            cf = (creatorFunc) PDStringCreate;
+            cf = (creatorFunc) PDStringCreateL;
             break;
         case '/':
             // PDString (name)
@@ -348,7 +348,7 @@ void *PDContentStreamPopValue(PDContentStreamRef cs, const char *stream, PDInteg
             return PDContentStreamPopArray(cs, stream, len, iptr);
         default:
             // operator
-            cf = (creatorFunc) PDStringCreate;
+            cf = (creatorFunc) PDStringCreateL;
             break;
     }
     
@@ -368,7 +368,7 @@ void *PDContentStreamPopValue(PDContentStreamRef cs, const char *stream, PDInteg
             nestLevel += stream[mark] == nestChar;
             
             if (termWS || termD) {
-                chtype = PDOperatorSymbolGlob[stream[mark]];
+                chtype = PDOperatorSymbolGlob[(unsigned char)stream[mark]];
                 if (termWS && chtype == PDOperatorSymbolGlobWhitespace) break;
                 if (termD && nestLevel == 1 && chtype == PDOperatorSymbolGlobDelimiter) break;
             }

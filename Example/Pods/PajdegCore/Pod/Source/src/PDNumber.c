@@ -82,7 +82,7 @@ PDNumberRef PDNumberCreateWithCString(const char *cString)
         if (0 == strcmp(cString, "true"))  return PDNumberCreateWithBool(true);
         if (0 == strcmp(cString, "false")) return PDNumberCreateWithBool(false);
         PDWarn("unknown constant value %s; passing back PDStringRef instead of PDNumberRef!", cString);
-        return (void *) PDStringCreate(strdup(cString));
+        return (void *) PDStringCreate(strdup(cString), strlen(cString));
     }
     // integer or real; determined by existence of a dot
     PDBool realValue = false;

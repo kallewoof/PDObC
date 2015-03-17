@@ -406,6 +406,7 @@ void PDTwinStreamCutBranch(PDTwinStreamRef ts, char *buf)
     return ts->scanner->buf - ts->heap + ts->scanner->boffset - ts->cursor;
 }*/
 
+#ifdef DEBUG
 void PDTwinStreamAsserts(PDTwinStreamRef ts)
 {
     PDOffset fp;
@@ -422,6 +423,7 @@ void PDTwinStreamAsserts(PDTwinStreamRef ts)
     }
      */
 }
+#endif
 
 void PDTwinStreamRealign(PDTwinStreamRef ts)
 {

@@ -285,6 +285,8 @@ static inline void pd_stack_free_info(pd_stack stack)
         case PD_STACK_PDOB:
             PDRelease(stack->info);
             break;
+        case PD_STACK_ID:
+            break;
     }
 }
 

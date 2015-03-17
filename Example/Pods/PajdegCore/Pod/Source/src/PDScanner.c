@@ -197,7 +197,7 @@ void PDScannerSkip(PDScannerRef scanner, PDSize bytes)
 
 PDInteger PDScannerPassSymbolCharacterType(PDScannerRef scanner, PDInteger symbolCharType)
 {
-    char *buf;
+    const char *buf;
     PDInteger len, i, bsize;
     
     buf = scanner->buf;
@@ -254,7 +254,7 @@ void PDScannerPopSymbol(PDScannerRef scanner)
         if (bsize <= i) {
             scanner->outgrown |= scanner->fixedBuf;
             if (! scanner->fixedBuf) 
-                (*scanner->bufFunc)(scanner->bufFuncInfo, scanner, &buf, &bsize, 0);
+                scanner->bufFunc(scanner->bufFuncInfo, scanner, &buf, &bsize, 0);
             if (bsize <= i) 
                 break;
         }

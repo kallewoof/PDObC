@@ -83,7 +83,7 @@ PDArrayRef PDArrayCreateWithStackList(pd_stack stack)
     pd_stack_set_global_preserve_flag(true);
     for (count = 0; s; s = s->prev) {
         if (s->type == PD_STACK_STRING) {
-            arr->values[count] = PDStringCreate(strdup(s->info));
+            arr->values[count] = PDStringCreate(strdup(s->info), strlen(s->info));
 //            arr->values[count] =  // strdup(s->info);
             arr->vstacks[count] = NULL;
         } else {
@@ -143,7 +143,7 @@ stack<0x14cdde90> {
     for (count = 0; s; s = s->prev) {
         entry = as(pd_stack, s->info)->prev;
         if (entry->type == PD_STACK_STRING) {
-            arr->values[count] = PDStringCreate(strdup(entry->info));
+            arr->values[count] = PDStringCreate(strdup(entry->info), strlen(entry->info));
             arr->vstacks[count] = NULL;
         } else {
             arr->vstacks[count] = /*entry =*/ pd_stack_copy(entry->info);
