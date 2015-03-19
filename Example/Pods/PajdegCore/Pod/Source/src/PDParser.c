@@ -675,9 +675,13 @@ void PDParserUpdateObject(PDParserRef parser)
     // [*]endobj                endobj
     // (two potential scanner locs; the latter one for 'skip stream' or 'no stream' case)
 
-    // discard 'endobj' keyword (if object should be skipped), or push object definition
+    // discard 'endobj' keyword if necessary (if object should be skipped), or push object definition
     if (ob->skipObject) {
-        PDScannerAssertString(scanner, "endobj");
+        // if the object has a stream, the object constructor pulled in the stream keyword and stopped after the stream,
+        // the stream was then read in, but the endobj keyword remains; if the object had no stream, the object 
+        // constructor pulled in the endobj keyword; thus, if the object has a stream, the endobj keyword must be read
+        // in here
+        if (ob->hasStream) PDScannerAssertString(scanner, "endobj");
         PDTwinStreamDiscardContent(parser->stream);
     } else {
 //    // push object def, unless it should be skipped
