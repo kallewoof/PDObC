@@ -49,3 +49,4 @@ DerivedData
 # Pods/
 
 Pajdeg.podspec
+push-pod.sh
