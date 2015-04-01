@@ -31,7 +31,6 @@
 void PDFontDictionaryDestroy(PDFontDictionaryRef fontDict)
 {
     PDRelease(fontDict->fonts);
-    PDRelease(fontDict->parser);
     PDRelease(fontDict->encodings);
 }
 
@@ -39,7 +38,7 @@ PDFontDictionaryRef PDFontDictionaryCreate(PDParserRef parser, PDObjectRef pageO
 {
     PDFontDictionaryRef fontDict = PDAllocTyped(PDInstanceTypeFontDict, sizeof(struct PDFontDictionary), PDFontDictionaryDestroy, false);
     fontDict->fonts = NULL;
-    fontDict->parser = PDRetain(parser);
+    fontDict->parser = parser;
     
     if (pageObject) {
     

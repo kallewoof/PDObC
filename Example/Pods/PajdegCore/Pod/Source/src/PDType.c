@@ -354,7 +354,7 @@ void PDRelease(void *pajdegObject)
         _PDDebugLogRetrelCall("dealloc", file, lineNumber, pajdegObject, 0);
         PDFocusCheck(pajdegObject);
         _PDDebugDeallocating(pajdegObject);
-        (*type->dealloc)(pajdegObject);
+        type->dealloc(pajdegObject);
         free(type);
     }
 }

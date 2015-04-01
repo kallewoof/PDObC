@@ -15,20 +15,20 @@
 // FBSnapshotTestCase
 #define COCOAPODS_POD_AVAILABLE_FBSnapshotTestCase
 #define COCOAPODS_VERSION_MAJOR_FBSnapshotTestCase 1
-#define COCOAPODS_VERSION_MINOR_FBSnapshotTestCase 5
+#define COCOAPODS_VERSION_MINOR_FBSnapshotTestCase 6
 #define COCOAPODS_VERSION_PATCH_FBSnapshotTestCase 0
 
 // PajdegCore
 #define COCOAPODS_POD_AVAILABLE_PajdegCore
 #define COCOAPODS_VERSION_MAJOR_PajdegCore 0
 #define COCOAPODS_VERSION_MINOR_PajdegCore 3
-#define COCOAPODS_VERSION_PATCH_PajdegCore 3
+#define COCOAPODS_VERSION_PATCH_PajdegCore 4
 
 // PajdegPDF
 #define COCOAPODS_POD_AVAILABLE_PajdegPDF
 #define COCOAPODS_VERSION_MAJOR_PajdegPDF 0
 #define COCOAPODS_VERSION_MINOR_PajdegPDF 3
-#define COCOAPODS_VERSION_PATCH_PajdegPDF 3
+#define COCOAPODS_VERSION_PATCH_PajdegPDF 4
 
 // Specta
 #define COCOAPODS_POD_AVAILABLE_Specta
