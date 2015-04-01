@@ -27,6 +27,7 @@
 #import "PDNumber.h"
 #import "PDArray.h"
 #import "PDDictionary.h"
+#import "pd_internal.h"
 
 @implementation NSDictionary (PDIEntity)
 
@@ -104,7 +105,7 @@
 
 @end
 
-static inline NSDateFormatter *dateTimeStringFormatter()
+static NSDateFormatter *dateTimeStringFormatter()
 {
     static NSDateFormatter *df = nil;
     if (! df) {
@@ -116,7 +117,7 @@ static inline NSDateFormatter *dateTimeStringFormatter()
     return df;
 }
 
-static inline NSDateFormatter *dateTimeString2Formatter()
+static NSDateFormatter *dateTimeString2Formatter()
 {
     static NSDateFormatter *df = nil;
     if (! df) {
@@ -128,14 +129,36 @@ static inline NSDateFormatter *dateTimeString2Formatter()
     return df;
 }
 
+static NSDateFormatter *dateTimeString3Formatter()
+{
+    static NSDateFormatter *df = nil;
+    if (! df) {
+        df = [[NSDateFormatter alloc] init];
+        df.timeZone = [NSTimeZone timeZoneWithName:@"UTC"];
+        [df setFormatterBehavior:NSDateFormatterBehavior10_4];
+        [df setDateFormat:@"'D:'yyyyMMddHHmmss"];
+    }
+    return df;
+}
+
+static NSDateFormatter *dateTimeString4Formatter()
+{
+    static NSDateFormatter *df = nil;
+    if (! df) {
+        df = [[NSDateFormatter alloc] init];
+        df.timeZone = [NSTimeZone timeZoneWithName:@"UTC"];
+        [df setFormatterBehavior:NSDateFormatterBehavior10_4];
+        [df setDateFormat:@"'D:'yyyyMMddHHmmssZ"];
+    }
+    return df;
+}
+
 @implementation NSDate (PDIEntity)
 
 - (const char *)PDFString
 {
-    NSDateFormatter *df = [[NSDateFormatter alloc] init];
-    [df setFormatterBehavior:NSDateFormatterBehavior10_4];
-    [df setDateFormat:@"'(D:'yyyyMMddHHmmss')'"];
-    return [[df stringFromDate:self] cStringUsingEncoding:NSUTF8StringEncoding];
+    NSDateFormatter *df = dateTimeString3Formatter();
+    return [[NSString stringWithFormat:@"(%@)", [df stringFromDate:self]] cStringUsingEncoding:NSUTF8StringEncoding];
 }
 
 - (void *)PDValue
@@ -156,7 +179,21 @@ static inline NSDateFormatter *dateTimeString2Formatter()
 {
     NSDate *d = [dateTimeStringFormatter() dateFromString:self];
     if (! d) d = [dateTimeString2Formatter() dateFromString:self];
+    if (! d) d = [dateTimeString3Formatter() dateFromString:self];
+    if (! d) d = [dateTimeString4Formatter() dateFromString:self];
+    if (! d && self.length > 16) {
+        // we have something weird after the date/time most likely. 
+        d = [[self substringToIndex:16] dateFromDatetimeString];
+    }
     return d;
+}
+
+- (NSString *)datetimeString
+{
+    if (! [self hasPrefix:@"D:"]) {
+        PDError("datetimeString requested from non-date formatted string '%s'", self.UTF8String);
+    }
+    return self;
 }
 
 + (NSString *)stringWithPDFString:(const char *)PDFString

@@ -53,6 +53,13 @@
 
 - (NSDate *)dateFromDatetimeString;
 
+/**
+ *  Ensure the string begins with D:, warn if it doesn't, and return itself. 
+ *  This is basically a dummy method which lets you transparently ask something
+ *  that is either an NSString or an NSDate for its datetimeString.
+ */
+- (NSString *)datetimeString;
+
 @end
 
 /**
